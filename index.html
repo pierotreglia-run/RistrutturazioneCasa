@@ -523,6 +523,10 @@
       -webkit-overflow-scrolling: touch;
     }
 
+    /* Computo: tabella densa → card leggibili */
+    #tabella-computo { display: none !important; }
+    .mobile-cards { display: flex !important; }
+
     /* Metriche: 2 colonne */
     .metrics-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
 
@@ -650,6 +654,96 @@
   }
   .more-menu-item:active { background: var(--surface-2); }
   .more-menu-item svg { width: 18px; height: 18px; color: var(--text-2); }
+
+  /* ── CARD MOBILE (liste dense trasformate in card leggibili) ── */
+  .mobile-cards {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 2px 8px;
+  }
+  .voce-card {
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 14px 12px;
+  }
+  .voce-card-top {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .voce-card-num {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text-3); font-weight: 600;
+  }
+  .voce-card-main { flex: 1; min-width: 0; }
+  .voce-card-desc {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.35;
+  }
+  .voce-card-tariffa {
+    font-size: 10px;
+    color: var(--text-3);
+    font-family: monospace;
+    margin-top: 3px;
+  }
+  .voce-card-note {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+  .voce-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0 0;
+  }
+  .voce-card-badges .badge { font-size: 10px; }
+  .voce-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 0.5px solid var(--border);
+  }
+  .voce-card-qta {
+    font-size: 12px;
+    color: var(--text-2);
+    font-family: monospace;
+  }
+  .voce-card-totali { text-align: right; }
+  .voce-card-imponibile {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    font-family: monospace;
+  }
+  .voce-card-iva {
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: monospace;
+    margin-top: 1px;
+  }
+  .voce-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .voce-card-actions .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 12px;
+    padding: 9px 0;
+  }
 </style>
 </head>
 <body>
@@ -1188,6 +1282,7 @@
           </thead>
           <tbody id="tbody-computo"></tbody>
         </table>
+        <div id="cards-computo" class="mobile-cards"></div>
       </div>
     </div>
 
@@ -2799,10 +2894,12 @@ function renderTabella() {
   const empty = document.getElementById('empty-computo');
   const table = document.getElementById('tabella-computo');
   const tbody = document.getElementById('tbody-computo');
+  const cards = document.getElementById('cards-computo');
 
   if (voci.length === 0) {
     empty.style.display = 'block';
     table.style.display = 'none';
+    if (cards) cards.innerHTML = '';
     return;
   }
   empty.style.display = 'none';
@@ -2837,6 +2934,45 @@ function renderTabella() {
       </td>
     </tr>`;
   }).join('');
+
+  // ── Card mobile ──
+  if (cards) {
+    cards.innerHTML = voci.map(v => {
+      const iva = v.imponibile * 0.10;
+      const [sc, sl] = BADGE_STATO[v.stato] || ['badge-gray', v.stato];
+      const agev = BADGE_AGEV[v.agevolazione];
+      const qtaLine = (v.quantita || v.prezzoUnit)
+        ? `${v.quantita ? Number(v.quantita).toLocaleString('it-IT',{maximumFractionDigits:2}) + ' ' + escHtml(v.um||'') : ''}${v.quantita && v.prezzoUnit ? ' × ' : ''}${v.prezzoUnit ? formatEur(v.prezzoUnit) : ''}`
+        : '';
+      return `<div class="voce-card">
+        <div class="voce-card-top">
+          <div class="voce-card-num">${escHtml(v.numero||'—')}</div>
+          <div class="voce-card-main">
+            <div class="voce-card-desc">${escHtml(v.descrizione)}</div>
+            ${v.tariffa ? `<div class="voce-card-tariffa">${escHtml(v.tariffa)}</div>` : ''}
+            ${v.note ? `<div class="voce-card-note">${escHtml(v.note)}</div>` : ''}
+            ${v.dataInizio || v.dataFine ? `<div class="voce-card-note">${v.dataInizio || '?'} → ${v.dataFine || '?'}</div>` : ''}
+          </div>
+        </div>
+        <div class="voce-card-badges">
+          <span class="badge badge-gray">${escHtml(v.categoria)}</span>
+          ${agev ? `<span class="badge ${agev[0]}">${agev[1]}</span>` : ''}
+          <span class="badge ${sc}">${sl}</span>
+        </div>
+        <div class="voce-card-bottom">
+          <div class="voce-card-qta">${qtaLine}</div>
+          <div class="voce-card-totali">
+            <div class="voce-card-imponibile">${formatEur(v.imponibile)}</div>
+            <div class="voce-card-iva">+ IVA ${formatEur(iva)}</div>
+          </div>
+        </div>
+        <div class="voce-card-actions">
+          <button class="btn btn-sm" onclick="modificaVoce('${v.id}')">✏️ Modifica</button>
+          <button class="btn btn-sm btn-danger" onclick="eliminaVoce('${v.id}')">✕ Elimina</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   aggiornaMetricheComputo();
 }
