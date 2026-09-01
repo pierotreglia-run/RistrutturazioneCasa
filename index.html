@@ -2,8 +2,17 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
 <title>Casa — Gestione Ristrutturazione</title>
+
+<!-- iOS: comportamento da app quando aggiunta a Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Casa">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#161616">
+<link rel="apple-touch-icon" href="data:image/png;base64,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2vR3Lz72ekEYaJvzSZHJAUITml/IgT3wHVCJPvU7QvqE9B22Egx7P/SVMQbS6Pn0Y5UDAEEI6Tv2NueTopEDuHDM2IQFS8bN+yobeEUnav6oa2cAePYw8rmffNhzaxMq6a903n1EoXKsGR+/D9WACweRAZdaEFXRPMawkOXIKcRC1PyVEKg6nh+q3F4PtNZDw45QCqiUc0iPgnqwBo6jcBAZQ9ce8NsHn8KVA0DkFuqhco63eK/33UXXOuKupj4X28dbOdjXrew27QLtSAp1Kousq3kNCJEzugOD43v14QRefIyfjkpxzZ9o3WbG9vGCfKRyIcqBqIQRbNn6ZOJAo+arQNd+dyAouD/fgECWfWAZAABvXvubgo1CClEOhsiFbsb3blv9LcdOaoFqAJk9JeMEfHfz/+KMMWmENX909+u/3N/wpDTChTnLHfxn2fcXAOFY8UD1xInzl0RHnyG0Utqnisn2nbtf/+X++pXCFyrAASVL4crBsnsSHVM5aX90rJB+RFWIne8AAEh17kbXkka4kI0v3NkKYwxRcakLzWclDmQH6Xy36ITBpQEyz8/3OyoFLQdjPfnynh2LpUQBPN/vqBS8HFkKdVQubQpytkIUBiQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJ/8Pv095emF2drwAAAAASUVORK5CYII=">
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAADaUlEQVR4nO1WW2tcVRRe39r7nJnJdIJJrIkxXkhJabWx2ojUQB9a9EVRoqXEaxVEW0R9EBTB21/wAj7kxUs10QdjRbBg8cULRcylVksVxUoarZdMx7Q5c2bOviwfJtXazC1iQMHFfjicdfb61lp7fd/Z6OnpoZU0XtHo/wP8KwD0Mr4FQCAiISLx/zAAWDlT8q4MIqhQBRnxrpmNTbUIrE1cSLd2D9z2xsBd4y3tvUkxD24quUYAAMBJ9GvHmm2Duz9gnfK2PLhrf+f6G5OFXwAmNIhQzw1W4l0SF3q3PHL1PeOz06MTe26Zen346CcvDtwx2nfd06Y0L86AVb0gtaQCrG35FOt0/9DznetvOPT2gz8eHAta2kFIormuy4Y27hjJH/340Fu7bfmkTrWKt8sAAOukmM+dd+mm219jFUyN7Tx5/POwpUPEkRCUTqJ8dvXaTbe+qlOrJkfvnJ+dCLPnVsWoDpAU892X7+gfeuHnr/Z9Mf6ATRaCdKt3f+5npW15ASrYcNOzF1wxfPjdR49NvhJm2ghcGeN6ACKub+sTlwzumvns5Z++3Ms6zTpcOpRgJc7YJOpcd/3F19w/Ozn69ftPLc21yqiBOJXrPPjmvV3926/auTcp5gEQ4azUKrkEmbYT3380PXZ398ZhsPbOAGjUIhFnIgK2PDw98+nIsYmXwmy7+LOpC2ZT/K1rw81925788LkrrYl0mMOSFlUjC6BTrSJOvHEmNnEBzOIdgU9LhZB4sDJxwZlIvOEgE7CqWmV1Nop4EU8EQEEF4ABQzpadjYmIdZp1GmCoANBEIPEiHqhCiIZ0FxIhIu+SbMeaVavXESia+zaa+wY6RSJVDmaZAEQgAN4la699Bqy8S3QqN7Fne8XV0JoSOxGqlH/kvccOv/OQOAvWDXOvWMMKcHoREQWZtjOU5y+uvwEAIvK25G1cWeKNS4ouicRbb2MS523sbYlI6sDUEjuIt5vv25/KdcWFGVahiGtp7y2fOi7eZc65MDrxHYi9N+nc+c4UD4xs9c4uJUHtCkAi/si+x9su2rwoEoC3ZVYBEbwrs05X/pxgNf/DlDMl1mFl3pqsgIjgTNHb0hkvsBjijwciImKdUkG21pnXOQPRYZZSuUbTssiyWu56UyTim7891LL//sVrxQF+B/4riWRMbTthAAAAAElFTkSuQmCC">
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -498,7 +507,7 @@
 
     main {
       margin-left: 0;
-      padding-bottom: 68px; /* spazio per bottom nav */
+      padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); /* spazio per bottom nav + home indicator */
     }
 
     .page { padding: 16px 14px 24px; }
@@ -507,9 +516,12 @@
     .form-grid { grid-template-columns: 1fr; }
     .form-group.span2, .form-group.span3 { grid-column: span 1; }
 
-    /* Tabelle scrollabili */
+    /* Tabelle scrollabili con inerzia stile iOS */
     table { font-size: 11px; }
     th, td { padding: 7px 8px; }
+    div[style*="overflow-x:auto"], div[style*="overflow-y:auto"] {
+      -webkit-overflow-scrolling: touch;
+    }
 
     /* Metriche: 2 colonne */
     .metrics-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -518,22 +530,61 @@
     .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
     .page-header .flex-gap { flex-wrap: wrap; }
 
-    /* Modal fullscreen su mobile */
+    /* Modal fullscreen su mobile, rispetta notch e home indicator */
     .modal-overlay { padding: 0; align-items: flex-end; }
     .modal {
       max-width: 100% !important;
-      max-height: 92vh;
+      max-height: 92dvh;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      -webkit-overflow-scrolling: touch;
+    }
+    .modal-footer {
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     }
 
-    /* Chat button mobile */
-    #claude-chat-btn { bottom: 76px; right: 16px; }
-    #claude-chat-panel { bottom: 136px; right: 8px; left: 8px; width: auto; }
+    /* Niente zoom automatico iOS quando si tocca un campo (richiede font-size >= 16px) */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+    /* Eccezione: campo % split molto stretto — allarga invece di ridurre il font */
+    .input-compact-pct {
+      width: 58px !important;
+    }
+
+    /* Tap target minimi consigliati da Apple HIG (44x44pt) sui bottoni icona */
+    .btn-sm {
+      min-width: 40px;
+      min-height: 36px;
+    }
+    button, .btn, .nav-link, .bnav-item, select, input[type="checkbox"], input[type="radio"] {
+      touch-action: manipulation; /* elimina il ritardo di 300ms sui tap */
+    }
+
+    /* Chat button mobile — rispetta home indicator */
+    #claude-chat-btn {
+      bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+      right: 16px;
+    }
+    #claude-chat-panel {
+      bottom: calc(136px + env(safe-area-inset-bottom, 0px));
+      right: 8px; left: 8px; width: auto;
+      max-height: 70dvh;
+    }
 
     /* Confronto 2 colonne → 1 colonna */
     #mut-sim-730 .card-body > div[style*="grid-template-columns:1fr 1fr"] {
       grid-template-columns: 1fr !important;
     }
+  }
+
+  /* Evita il "rimbalzo" elastico di Safari su tutta la pagina (effetto app nativa) */
+  html, body {
+    overscroll-behavior-y: none;
+  }
+  /* Scroll interno con inerzia ovunque sia previsto overflow */
+  .modal-body, #chat-messages {
+    -webkit-overflow-scrolling: touch;
   }
 
   /* ── BOTTOM NAV MOBILE ── */
@@ -548,7 +599,7 @@
     align-items: stretch;
     justify-content: space-around;
     padding: 0 4px;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   @media (max-width: 768px) {
@@ -579,11 +630,11 @@
   #mobile-more-menu {
     display: none;
     position: fixed;
-    bottom: 64px; left: 0; right: 0;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0;
     background: var(--surface);
     border-top: 0.5px solid var(--border);
     z-index: 199;
-    padding: 8px 0;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
   }
   #mobile-more-menu.open { display: block; }
@@ -591,10 +642,11 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 20px;
+    padding: 14px 20px;
     color: var(--text);
     font-size: 14px;
     cursor: pointer;
+    touch-action: manipulation;
   }
   .more-menu-item:active { background: var(--surface-2); }
   .more-menu-item svg { width: 18px; height: 18px; color: var(--text-2); }
@@ -4012,7 +4064,7 @@ function renderAllocazioneVoci(voci, vociPerCont, vociProQuota) {
     const splitCell = `
       <div style="display:flex;align-items:center;gap:4px">
         <input type="number" min="0" max="100" step="5" value="${splitVal || ''}" placeholder="0"
-          style="width:48px;font-size:11px;padding:3px 4px;text-align:right"
+          style="width:48px;font-size:11px;padding:3px 4px;text-align:right" class="input-compact-pct"
           onchange="cambiaSplit('${v.id}',this.value)">
         <span style="font-size:10px;color:var(--text-3)">% PDC</span>
         ${splitVal > 0 ? `<span style="font-size:10px;color:var(--accent-text);margin-left:2px">${formatEur(splitImporto)}</span>` : ''}
