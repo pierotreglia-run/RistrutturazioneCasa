@@ -565,17 +565,6 @@
       touch-action: manipulation; /* elimina il ritardo di 300ms sui tap */
     }
 
-    /* Chat button mobile — rispetta home indicator */
-    #claude-chat-btn {
-      bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-      right: 16px;
-    }
-    #claude-chat-panel {
-      bottom: calc(136px + env(safe-area-inset-bottom, 0px));
-      right: 8px; left: 8px; width: auto;
-      max-height: 70dvh;
-    }
-
     /* Confronto 2 colonne → 1 colonna */
     #mut-sim-730 .card-body > div[style*="grid-template-columns:1fr 1fr"] {
       grid-template-columns: 1fr !important;
@@ -587,7 +576,7 @@
     overscroll-behavior-y: none;
   }
   /* Scroll interno con inerzia ovunque sia previsto overflow */
-  .modal-body, #chat-messages {
+  .modal-body {
     -webkit-overflow-scrolling: touch;
   }
 
@@ -2137,51 +2126,6 @@
       <button class="btn" onclick="chiudiModalEstinzione()">Annulla</button>
       <button class="btn btn-primary" onclick="salvaEstinzione()">Aggiungi estinzione</button>
     </div>
-  </div>
-</div>
-
-<!-- ══ CHAT CLAUDE ══ -->
-<div id="claude-chat-btn" onclick="toggleChat()"
-  style="position:fixed;bottom:24px;right:24px;z-index:300;width:48px;height:48px;border-radius:50%;
-  background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.25);transition:transform 0.15s"
-  title="Chiedi a Claude">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-  </svg>
-</div>
-
-<div id="claude-chat-panel"
-  style="position:fixed;bottom:84px;right:24px;z-index:299;width:380px;max-height:520px;
-  background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);
-  box-shadow:0 8px 32px rgba(0,0,0,0.2);display:none;flex-direction:column;overflow:hidden">
-
-  <!-- Header -->
-  <div style="padding:14px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--accent);color:#fff">
-    <div>
-      <div style="font-size:13px;font-weight:600">Assistente AI</div>
-      <div style="font-size:11px;opacity:0.8">Chiedi info sul tuo progetto</div>
-    </div>
-    <button onclick="toggleChat()" style="background:none;border:none;color:#fff;cursor:pointer;padding:4px;font-size:16px;line-height:1">✕</button>
-  </div>
-
-  <!-- Messaggi -->
-  <div id="chat-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:200px;max-height:340px">
-    <div style="background:var(--surface-2);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--text-2);max-width:90%">
-      Ciao! Sono qui per aiutarti con la tua ristrutturazione. Puoi chiedermi calcoli, spiegazioni sulle agevolazioni, o consigli sul mutuo. Ho accesso ai dati del tuo progetto.
-    </div>
-  </div>
-
-  <!-- Input -->
-  <div style="padding:10px 12px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:flex-end">
-    <textarea id="chat-input" placeholder="Scrivi una domanda…"
-      style="flex:1;resize:none;min-height:36px;max-height:100px;font-size:13px;padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border-strong);font-family:var(--font);background:var(--surface);color:var(--text);outline:none"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();inviaChat()}"
-      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-    <button onclick="inviaChat()" id="chat-send-btn"
-      style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:8px 12px;cursor:pointer;font-size:13px;white-space:nowrap;height:36px;flex-shrink:0">
-      Invia
-    </button>
   </div>
 </div>
 
@@ -6589,104 +6533,6 @@ function renderCaparre() {
         <button class="btn btn-sm btn-danger" onclick="eliminaCaparra('${c.id}')">✕</button>
       </div></td>
     </tr>`).join('')}</tbody></table>`;
-}
-
-// ══════════════════════════════════════════
-//  CHAT CLAUDE
-// ══════════════════════════════════════════
-let chatHistory = [];
-let chatAperta = false;
-
-function toggleChat() {
-  const panel = document.getElementById('claude-chat-panel');
-  chatAperta = !chatAperta;
-  panel.style.display = chatAperta ? 'flex' : 'none';
-  if (chatAperta) {
-    document.getElementById('chat-input').focus();
-    const msgs = document.getElementById('chat-messages');
-    msgs.scrollTop = msgs.scrollHeight;
-  }
-}
-
-function costruisciContestoProg() {
-  // Sintetizza i dati chiave del progetto per il contesto AI
-  const t = calcolaTotaliComputo();
-  const acq = state.acquisto || {};
-  const mutuo = state.mutuo || mutState.params;
-  const int = state.intestatari || {};
-  const voci = state.voci || [];
-  const fatture = state.fatture || [];
-
-  return `Sei un assistente specializzato in ristrutturazioni edilizie, agevolazioni fiscali italiane e mutui. 
-Stai aiutando ${int.a?.nome || 'l\'utente'} con il suo progetto di acquisto e ristrutturazione di un immobile a ${int.indirizzo || 'Maglie (LE)'}.
-
-DATI PROGETTO AGGIORNATI:
-- Immobile: ${acq.prezzo > 0 ? `prezzo rogito €${acq.prezzo.toLocaleString('it-IT')}` : 'prezzo non inserito'}, acquisto ${acq.tipo === 'impresa' ? 'da impresa' : 'da privato'}
-- Caparre versate: €${(acq.caparre||[]).reduce((s,c)=>s+c.importo,0).toLocaleString('it-IT')}
-- Imposte rogito stimate: €${(acq.imposte||0).toLocaleString('it-IT')}
-- Computo metrico: ${voci.length} voci, imponibile totale €${t.totImp.toLocaleString('it-IT')}, costo totale con IVA e onorari €${t.totFinale.toLocaleString('it-IT')}
-- Fatture: ${fatture.length} fatture registrate, totale €${fatture.reduce((s,f)=>s+(f.totaleFattura||0),0).toLocaleString('it-IT')}
-- Mutuo: ${mutuo ? `€${mutuo.capitale?.toLocaleString('it-IT')} a ${mutuo.tasso}% fisso per ${mutuo.durata} anni, rata €${mutuo.rata?.toFixed(2)}` : 'non configurato'}
-- Intestatari: ${int.a?.nome || 'A'} (RAL €${(int.a?.ral||0).toLocaleString('it-IT')}) e ${int.b?.nome || 'B'} (RAL €${(int.b?.ral||0).toLocaleString('it-IT')})
-- Anno lavori: ${state.agevConfig?.anno || '2026'}, prima casa: ${state.agevConfig?.tipoImmobile === 'prima-casa' ? 'sì' : 'no'}
-
-Rispondi in italiano, in modo conciso e pratico. Fai riferimento ai dati specifici del progetto quando rilevante.`;
-}
-
-async function inviaChat() {
-  const input = document.getElementById('chat-input');
-  const domanda = input.value.trim();
-  if (!domanda) return;
-
-  const msgs = document.getElementById('chat-messages');
-  const btn = document.getElementById('chat-send-btn');
-
-  // Aggiunge messaggio utente
-  msgs.innerHTML += `<div style="background:var(--accent);color:#fff;border-radius:var(--radius);padding:10px 12px;font-size:12px;max-width:85%;align-self:flex-end;margin-left:auto">${escHtml(domanda)}</div>`;
-  input.value = '';
-  input.style.height = '36px';
-  msgs.scrollTop = msgs.scrollHeight;
-
-  // Indicatore caricamento
-  const loadId = 'chat-loading-' + Date.now();
-  msgs.innerHTML += `<div id="${loadId}" style="background:var(--surface-2);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--text-3);max-width:90%">⏳ Sto pensando…</div>`;
-  msgs.scrollTop = msgs.scrollHeight;
-  btn.disabled = true;
-  btn.style.opacity = '0.5';
-
-  // Aggiorna history
-  chatHistory.push({ role: 'user', content: domanda });
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        system: costruisciContestoProg(),
-        messages: chatHistory.slice(-10) // ultimi 10 scambi
-      })
-    });
-
-    if (!response.ok) throw new Error(`Errore API: ${response.status}`);
-    const data = await response.json();
-    const risposta = data.content?.map(c => c.text || '').join('') || 'Nessuna risposta';
-
-    chatHistory.push({ role: 'assistant', content: risposta });
-
-    // Rimuove loading e aggiunge risposta
-    document.getElementById(loadId)?.remove();
-    msgs.innerHTML += `<div style="background:var(--surface-2);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--text);max-width:90%;line-height:1.6">${risposta.replace(/\n/g, '<br>')}</div>`;
-
-  } catch(err) {
-    document.getElementById(loadId)?.remove();
-    msgs.innerHTML += `<div style="background:var(--danger-light);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--danger);max-width:90%">⚠ ${err.message}</div>`;
-  }
-
-  btn.disabled = false;
-  btn.style.opacity = '1';
-  msgs.scrollTop = msgs.scrollHeight;
 }
 
 // ══════════════════════════════════════════
