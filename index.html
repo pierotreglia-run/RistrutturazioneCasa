@@ -2186,9 +2186,9 @@
         <div class="page-subtitle">Confronta capitale, durata e tasso senza toccare il piano reale</div>
       </div>
       <div class="flex-gap">
-        <button class="btn" id="btn-sim-esporta" onclick="esportaSimulatoreCSV()" style="display:none">
+        <button class="btn" id="btn-sim-esporta" onclick="esportaSimulatoreExcel()" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.11"/></svg>
-          Esporta CSV
+          Esporta Excel
         </button>
         <button class="btn btn-primary" onclick="calcolaSimulatore()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
@@ -7773,66 +7773,300 @@ function calcolaSimulatore() {
 // ══════════════════════════════════════════
 //  SIMULATORE — EXPORT CSV
 // ══════════════════════════════════════════
-function esportaSimulatoreCSV() {
+function esportaSimulatoreExcel() {
+  if (!window.ExcelJS) {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+    script.onload = () => _buildExcelSimulatore();
+    script.onerror = () => alert('Impossibile caricare la libreria Excel. Verifica la connessione.');
+    document.head.appendChild(script);
+  } else {
+    _buildExcelSimulatore();
+  }
+}
+
+async function _buildExcelSimulatore() {
   if (!simState.piani || !simState.piani[30]) { alert('Calcola prima gli scenari.'); return; }
 
   const capitale = getInputNum('sim-capitale');
   const tasso = parseFloat(document.getElementById('sim-tasso').value);
   const estinzione = getInputNum('sim-estinzione');
-  const anniEst = document.getElementById('sim-anni-estinzione').value;
-  const meseEst = document.getElementById('sim-mese-prima-est').value;
+  const anniEst = parseInt(document.getElementById('sim-anni-estinzione').value) || 0;
+  const meseEst = parseInt(document.getElementById('sim-mese-prima-est').value) || 12;
   const oggi = new Date().toLocaleDateString('it-IT');
 
-  let csv = '\uFEFF'; // BOM per Excel
-  csv += `SIMULATORE SCENARI MUTUO — Esportato il ${oggi}\n`;
-  csv += `Capitale;${capitale.toFixed(2).replace('.',',')}\n`;
-  csv += `Tasso fisso annuo;${tasso}%\n`;
-  csv += `Estinzione anticipata annua;${estinzione.toFixed(2).replace('.',',')}\n`;
-  csv += `Per quanti anni;${anniEst}\n`;
-  csv += `Mese prima estinzione;${meseEst}\n\n`;
+  const FONT = 'Calibri';
+  const COL = {
+    slate: 'FF44546A', slateLight: 'FFE9EDF4', zebra: 'FFF6F7F9',
+    totalFill: 'FFDCE4F0', estFill: 'FFE3EFE6', accentText: 'FF2E6B4F',
+    darkTx: 'FF2B3A55', grayTx: 'FF7A7A7A', border: 'FFD5DAE2'
+  };
+  const EUR = '#,##0.00 "€"';
+  const PCT = '0.00%';
+  const thin = { style: 'thin', color: { argb: COL.border } };
+  const B = { top: thin, bottom: thin, left: thin, right: thin };
+  const fill = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
 
-  // Confronto sintetico
-  csv += 'CONFRONTO SINTETICO\n';
-  csv += 'Durata (anni);Rata iniziale;Rata dopo 10 anni;Debito residuo anno 10;Durata effettiva (mesi);Interessi totali\n';
-  [20, 25, 30].forEach(durata => {
-    const p = simState.piani[durata];
-    const annoDieci = p.righeAnnuali[10] || p.righeAnnuali[p.righeAnnuali.length - 1];
-    csv += `${durata};${p.rataBase.toFixed(2).replace('.',',')};${annoDieci.rata.toFixed(2).replace('.',',')};${annoDieci.saldo.toFixed(2).replace('.',',')};${p.durataEffMesi};${p.interessiTotali.toFixed(2).replace('.',',')}\n`;
-  });
-  csv += '\n';
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Casa — Gestione Ristrutturazione';
 
-  // Tabelle dettaglio per ogni durata
-  [20, 25, 30].forEach(durata => {
-    const p = simState.piani[durata];
-    csv += `PIANO ${durata} ANNI — dettaglio anno per anno\n`;
-    csv += 'Anno;Rata;Capitale rimborsato (cum.);Interessi pagati (cum.);Estinzioni (cum.);Debito residuo\n';
-    p.righeAnnuali.forEach(r => {
-      csv += `${r.anno};${r.rata.toFixed(2).replace('.',',')};${r.capCum.toFixed(2).replace('.',',')};${r.intCum.toFixed(2).replace('.',',')};${r.estCum.toFixed(2).replace('.',',')};${r.saldo.toFixed(2).replace('.',',')}\n`;
+  function addTitolo(ws, text, span) {
+    const r = ws.addRow([text]);
+    r.font = { name: FONT, size: 15, bold: true, color: { argb: COL.darkTx } };
+    r.height = 24;
+    ws.mergeCells(r.number, 1, r.number, span);
+    return r;
+  }
+  function addSub(ws, text, span) {
+    const r = ws.addRow([text]);
+    r.font = { name: FONT, size: 9, italic: true, color: { argb: COL.grayTx } };
+    ws.mergeCells(r.number, 1, r.number, span);
+    return r;
+  }
+  function addSezione(ws, text, span) {
+    ws.addRow([]);
+    const r = ws.addRow([text]);
+    r.font = { name: FONT, size: 11, bold: true, color: { argb: COL.darkTx } };
+    for (let i = 1; i <= span; i++) r.getCell(i).fill = fill(COL.slateLight);
+    r.height = 20;
+    ws.mergeCells(r.number, 1, r.number, span);
+    return r;
+  }
+  function addHeader(ws, arr) {
+    const r = ws.addRow(arr);
+    r.eachCell(c => {
+      c.font = { name: FONT, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      c.fill = fill(COL.slate);
+      c.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      c.border = B;
     });
-    csv += '\n';
+    r.height = 24;
+    return r;
+  }
+  function addData(ws, arr, opts) {
+    opts = opts || {};
+    const r = ws.addRow(arr);
+    r.eachCell({ includeEmpty: true }, (c, colN) => {
+      c.font = { name: FONT, size: 10, bold: !!opts.bold, color: { argb: opts.color || 'FF000000' } };
+      c.border = B;
+      if (opts.zebra) c.fill = fill(COL.zebra);
+      if (opts.est) c.fill = fill(COL.estFill);
+      if (opts.totale) { c.fill = fill(COL.totalFill); c.font = { name: FONT, size: 10, bold: true, color: { argb: COL.darkTx } }; }
+      if (opts.eur && opts.eur.includes(colN)) c.numFmt = EUR;
+      if (opts.pct && opts.pct.includes(colN)) c.numFmt = PCT;
+      const isNumericish = typeof arr[colN-1] === 'number' || (arr[colN-1] && typeof arr[colN-1] === 'object' && 'formula' in arr[colN-1]);
+      if (colN === 1 && !opts.centerFirst) c.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+      else c.alignment = { vertical: 'middle', horizontal: isNumericish ? 'right' : 'left', wrapText: true };
+    });
+    return r;
+  }
+  const F = (formula, result) => ({ formula, result });
+
+  // ═══ FOGLI "PIANO NN ANNI" — costruiti per primi per conoscere i numeri di riga da referenziare dal foglio Parametri ═══
+  const pianoRefs = {};
+  const durate = [20, 25, 30];
+
+  durate.forEach(durataAnni => {
+    const p = simState.piani[durataAnni];
+    const nRate = durataAnni * 12;
+    const ws = wb.addWorksheet(`Piano ${durataAnni} anni`, { views: [{ showGridLines: false, state: 'frozen', ySplit: 1 }] });
+    ws.columns = [{ width: 9 }, { width: 13 }, { width: 13 }, { width: 13 }, { width: 13 }, { width: 13 }, { width: 14 }];
+
+    addTitolo(ws, `Piano di ammortamento — ${durataAnni} anni`, 7);
+    addSub(ws, `Capitale € ${capitale.toLocaleString('it-IT')} · Tasso ${tasso}% · Estinzione € ${estinzione.toLocaleString('it-IT')}/anno per ${anniEst} anni, a partire dal mese ${meseEst} · Modalità: riduzione rata`, 7);
+
+    // ── Parametri di questo scenario (riferimenti + calcoli propri) ──
+    addSezione(ws, 'Parametri di questo scenario', 7);
+    const rDurata = addData(ws, ['Durata (anni)', durataAnni], {});
+    const rNRate = addData(ws, ['Numero rate (mesi)', F(`B${rDurata.number}*12`, nRate)], { zebra: true });
+    const rCap = addData(ws, ['Capitale (€)', capitale], { eur: [2] });
+    const rTassoA = addData(ws, ['Tasso annuo', tasso/100], { zebra: true, pct: [2] });
+    const rTassoM = addData(ws, ['Tasso mensile', F(`B${rTassoA.number}/12`, tasso/100/12)], { pct: [2] });
+    const rEst = addData(ws, ['Estinzione annua (€)', estinzione], { zebra: true, eur: [2] });
+    const rAnniEst = addData(ws, ['Per quanti anni', anniEst], {});
+    const rMeseEst = addData(ws, ['Mese prima estinzione', meseEst], { zebra: true });
+    const rRataBase = addData(ws, ['Rata base (PMT)', F(`-PMT(B${rTassoM.number},B${rNRate.number},B${rCap.number})`, p.rataBase)], { bold: true, eur: [2] });
+
+    // ── Dettaglio mensile completo (formule concatenate riga su riga) ──
+    addSezione(ws, 'Dettaglio mensile completo', 7);
+    addHeader(ws, ['Mese', 'Rata', 'Interessi', 'Capitale', 'Saldo post-amm.', 'Estinzione', 'Saldo residuo']);
+    const firstM = ws.rowCount + 1;
+
+    // Calcolo JS in parallelo (stesso identico algoritmo delle formule) per fornire
+    // a ogni cella un valore precalcolato corretto, non solo la formula
+    const rMens = tasso / 12 / 100;
+    const estinzioniMesiSet = new Set();
+    for (let i = 0; i < anniEst; i++) estinzioniMesiSet.add(meseEst + i * 12);
+
+    let jsSaldoPrev = null; // saldo di fine mese precedente (G della riga precedente)
+    let jsRataPrev = null;  // rata applicata nella riga precedente (B della riga precedente)
+
+    for (let m = 1; m <= nRate; m++) {
+      const rn = ws.rowCount + 1;
+      let formA, formB, formC, formD, formE, formF, formG;
+      let jsRata, jsInt, jsCap, jsSaldoPostAmm, jsEst, jsSaldoFin;
+
+      if (m === 1) {
+        formA = m;
+        jsRata = p.rataBase;
+        jsInt = capitale * rMens;
+        jsCap = Math.min(jsRata - jsInt, capitale);
+        jsSaldoPostAmm = capitale - jsCap;
+        formB = F(`$B$${rRataBase.number}`, jsRata);
+        formC = F(`$B$${rCap.number}*$B$${rTassoM.number}`, jsInt);
+        formD = F(`MIN(B${rn}-C${rn},$B$${rCap.number})`, jsCap);
+        formE = F(`$B$${rCap.number}-D${rn}`, jsSaldoPostAmm);
+      } else {
+        const rp = rn - 1;
+        if (jsSaldoPrev <= 0.005) {
+          jsRata = jsRataPrev; jsInt = 0; jsCap = 0; jsSaldoPostAmm = 0;
+        } else {
+          jsRata = jsRataPrev;
+          jsInt = jsSaldoPrev * rMens;
+          jsCap = Math.min(jsRata - jsInt, jsSaldoPrev);
+          jsSaldoPostAmm = jsSaldoPrev - jsCap;
+        }
+        formA = F(`A${rp}+1`, m);
+        formB = F(`IF(AND(F${rp}>0,G${rp}>0.005,($B$${rNRate.number}-A${rp})>0),-PMT($B$${rTassoM.number},$B$${rNRate.number}-A${rp},G${rp}),B${rp})`, jsRata);
+        formC = F(`IF(G${rp}<=0.005,0,G${rp}*$B$${rTassoM.number})`, jsInt);
+        formD = F(`IF(G${rp}<=0.005,0,MIN(B${rn}-C${rn},G${rp}))`, jsCap);
+        formE = F(`IF(G${rp}<=0.005,0,G${rp}-D${rn})`, jsSaldoPostAmm);
+      }
+
+      jsEst = 0;
+      if (estinzioniMesiSet.has(m) && jsSaldoPostAmm > 0.005) {
+        jsEst = Math.min(estinzione, jsSaldoPostAmm);
+      }
+      jsSaldoFin = Math.max(0, jsSaldoPostAmm - jsEst);
+
+      formF = F(`IF(AND(A${rn}>=$B$${rMeseEst.number},MOD(A${rn}-$B$${rMeseEst.number},12)=0,(A${rn}-$B$${rMeseEst.number})/12<$B$${rAnniEst.number},E${rn}>0.005),MIN($B$${rEst.number},E${rn}),0)`, jsEst);
+      formG = F(`MAX(0,E${rn}-F${rn})`, jsSaldoFin);
+
+      addData(ws, [formA, formB, formC, formD, formE, formF, formG], { zebra: m % 2 === 0, eur: [2,3,4,5,6,7] });
+
+      // Aggiorna stato per la prossima iterazione, includendo l'eventuale ricalcolo rata post-estinzione
+      jsSaldoPrev = jsSaldoFin;
+      if (jsEst > 0 && jsSaldoFin > 0.005) {
+        const rateRimanenti = nRate - m;
+        if (rateRimanenti > 0) {
+          jsRataPrev = jsSaldoFin * rMens * Math.pow(1+rMens, rateRimanenti) / (Math.pow(1+rMens, rateRimanenti) - 1);
+        } else {
+          jsRataPrev = jsRata;
+        }
+      } else {
+        jsRataPrev = jsRata;
+      }
+    }
+    const lastM = ws.rowCount;
+
+    // ── Riepilogo scenario (interessi totali, durata effettiva) — DOPO il dettaglio, così può referenziarlo ──
+    addSezione(ws, 'Riepilogo scenario', 7);
+    const rDurataEff = addData(ws, ['Durata effettiva (mesi)', F(`COUNTIF(D${firstM}:D${lastM},">0")`, p.durataEffMesi)], { bold: true });
+    const rIntTot = addData(ws, ['Interessi totali (intera durata)', F(`SUM(C${firstM}:C${lastM})`, p.interessiTotali)], { zebra: true, bold: true, eur: [2] });
+
+    // ── Piano anno per anno (anni 0-10), pesca dal dettaglio mensile ──
+    addSezione(ws, 'Piano anno per anno (anni 0-10)', 7);
+    addHeader(ws, ['Anno', 'Rata', 'Capitale rimborsato (cum.)', 'Interessi pagati (cum.)', 'Estinzioni (cum.)', 'Saldo residuo', '']);
+    const rAnno0 = addData(ws, [0, F(`$B$${rRataBase.number}`, p.rataBase), 0, 0, 0, F(`$B$${rCap.number}`, capitale), null], { zebra: false, eur: [2,3,4,5,6] });
+    const rAnnoFirst = rAnno0.number;
+    for (let anno = 1; anno <= 10; anno++) {
+      const meseRow = firstM + anno*12 - 1;
+      const meseRowRata = Math.min(meseRow + 1, lastM); // rata "in vigore da qui in poi" — riflette un eventuale ricalcolo per estinzione nell'ultimo mese dell'anno
+      const rw = p.righeAnnuali[anno] || p.righeAnnuali[p.righeAnnuali.length-1];
+      addData(ws, [
+        anno,
+        F(`B${meseRowRata}`, rw.rata),
+        F(`SUM(D${firstM}:D${meseRow})`, rw.capCum),
+        F(`SUM(C${firstM}:C${meseRow})`, rw.intCum),
+        F(`SUM(F${firstM}:F${meseRow})`, rw.estCum),
+        F(`G${meseRow}`, rw.saldo),
+        null
+      ], { zebra: anno % 2 === 0, eur: [2,3,4,5,6] });
+    }
+
+    pianoRefs[durataAnni] = { rCap, rTassoA, rEst, rAnniEst, rMeseEst, rRataBase, rDurataEff, rIntTot, rAnnoFirst, firstM };
   });
 
-  // Surroga se calcolata
-  const annoSurroga = document.getElementById('sur-anno')?.value;
-  const tassoSurroga = document.getElementById('sur-tasso')?.value;
+  // ═══ FOGLIO "PARAMETRI" — creato per primo (tab iniziale) ma popolato ora che conosciamo i riferimenti ═══
+  const wsP = wb.addWorksheet('Parametri', { views: [{ showGridLines: false }] });
+  wb.worksheets.unshift(wb.worksheets.pop()); // sposta "Parametri" come prima scheda
+  wsP.columns = [{ width: 46 }, { width: 18 }, { width: 18 }, { width: 20 }, { width: 22 }, { width: 18 } ];
+  addTitolo(wsP, 'Simulatore scenari mutuo', 6);
+  addSub(wsP, `Generato il ${oggi} · Modalità riduzione rata: dopo ogni estinzione la rata si ricalcola sulle rate residue originali`, 6);
+
+  addSezione(wsP, 'Parametri di confronto (comuni ai 3 scenari)', 6);
+  const pCap = addData(wsP, ['Capitale (€)', capitale], { eur: [2] });
+  const pTasso = addData(wsP, ['Tasso fisso annuo', tasso/100], { zebra: true, pct: [2] });
+  const pEst = addData(wsP, ['Estinzione anticipata annua (€)', estinzione], { eur: [2] });
+  const pAnniEst = addData(wsP, ['Per quanti anni', anniEst], { zebra: true });
+  const pMeseEst = addData(wsP, ['Mese prima estinzione', meseEst], {});
+  addSub(wsP, 'Questi valori sono ripetuti (non collegati) in ogni foglio "Piano NN anni" — modificali lì se vuoi cambiare lo scenario, poi aggiorna qui per coerenza.', 6);
+
+  addSezione(wsP, 'Confronto sintetico', 6);
+  addHeader(wsP, ['Durata (anni)', 'Rata iniziale', 'Rata dopo 10 anni', 'Debito residuo anno 10', 'Durata effettiva (mesi)', 'Interessi totali']);
+  durate.forEach((durataAnni, i) => {
+    const ref = pianoRefs[durataAnni];
+    const sheet = `Piano ${durataAnni} anni`;
+    const rAnno10 = ref.rAnnoFirst + 10;
+    addData(wsP, [
+      durataAnni,
+      F(`'${sheet}'!B${ref.rRataBase.number}`, simState.piani[durataAnni].rataBase),
+      F(`'${sheet}'!B${rAnno10}`, simState.piani[durataAnni].righeAnnuali[10]?.rata),
+      F(`'${sheet}'!F${rAnno10}`, simState.piani[durataAnni].righeAnnuali[10]?.saldo),
+      F(`'${sheet}'!B${ref.rDurataEff.number}`, simState.piani[durataAnni].durataEffMesi),
+      F(`'${sheet}'!B${ref.rIntTot.number}`, simState.piani[durataAnni].interessiTotali)
+    ], { zebra: i % 2 === 1, eur: [2,3,4,6], centerFirst: true });
+  });
+  addSub(wsP, 'Tutte le celle sono collegate ai rispettivi fogli "Piano NN anni" — cambia un parametro lì e questo confronto si aggiorna.', 6);
+
+  // ═══ FOGLIO "SURROGA" (solo se configurata nell'app) ═══
+  const annoSurroga = parseInt(document.getElementById('sur-anno')?.value);
+  const tassoSurroga = parseFloat(document.getElementById('sur-tasso')?.value);
   const p30 = simState.piani[30];
-  const rigaSurroga = p30?.righeAnnuali.find(r => r.anno === parseInt(annoSurroga));
-  if (rigaSurroga && annoSurroga && tassoSurroga) {
+  const rigaSurroga = p30?.righeAnnuali.find(r => r.anno === annoSurroga);
+  if (rigaSurroga && annoSurroga >= 0 && !isNaN(tassoSurroga)) {
     const nuovaDurataInput = parseInt(document.getElementById('sur-durata')?.value);
-    const nuovaDurata = nuovaDurataInput > 0 ? nuovaDurataInput : (30 - parseInt(annoSurroga));
-    const rNuovo = parseFloat(tassoSurroga) / 12 / 100;
+    const nuovaDurata = nuovaDurataInput > 0 ? nuovaDurataInput : (30 - annoSurroga);
+    const rNuovo = tassoSurroga / 12 / 100;
     const nRateNuovo = nuovaDurata * 12;
     const nuovaRata = rigaSurroga.saldo * rNuovo * Math.pow(1+rNuovo, nRateNuovo) / (Math.pow(1+rNuovo, nRateNuovo) - 1);
-    csv += 'SIMULAZIONE SURROGA (basata su scenario 30 anni)\n';
-    csv += `Anno surroga;${annoSurroga}\n`;
-    csv += `Debito residuo a quell'anno;${rigaSurroga.saldo.toFixed(2).replace('.',',')}\n`;
-    csv += `Rata prima della surroga;${rigaSurroga.rata.toFixed(2).replace('.',',')}\n`;
-    csv += `Nuovo tasso;${tassoSurroga}%\n`;
-    csv += `Nuova durata;${nuovaDurata} anni\n`;
-    csv += `Nuova rata;${nuovaRata.toFixed(2).replace('.',',')}\n`;
+
+    const ref30 = pianoRefs[30];
+    const rigaAnnoSurroga = ref30.rAnnoFirst + annoSurroga;
+    const wsS = wb.addWorksheet('Surroga', { views: [{ showGridLines: false }] });
+    wsS.columns = [{ width: 42 }, { width: 20 }];
+    addTitolo(wsS, 'Simulazione surroga', 2);
+    addSub(wsS, `Basata sullo scenario a 30 anni · Anno surroga ${annoSurroga}`, 2);
+
+    addSezione(wsS, 'Parametri surroga', 2);
+    const sAnno = addData(wsS, ['Anno di surroga', annoSurroga], {});
+    const sTasso = addData(wsS, ['Nuovo tasso annuo', tassoSurroga/100], { zebra: true, pct: [2] });
+    const sDurata = addData(wsS, ['Nuova durata (anni)', nuovaDurata], {});
+
+    addSezione(wsS, 'Situazione prima della surroga', 2);
+    const sSaldo = addData(wsS, ['Debito residuo', F(`'Piano 30 anni'!F${rigaAnnoSurroga}`, rigaSurroga.saldo)], { eur: [2] });
+    addData(wsS, ['Rata corrente', F(`'Piano 30 anni'!B${rigaAnnoSurroga}`, rigaSurroga.rata)], { zebra: true, eur: [2] });
+    addData(wsS, ['Durata residua se non surroghi', F(`30-B${sAnno.number}`, 30-annoSurroga)], {});
+
+    addSezione(wsS, 'Situazione dopo la surroga', 2);
+    const sNuovoRateM = addData(wsS, ['Nuovo tasso mensile', F(`B${sTasso.number}/12`, tassoSurroga/100/12)], {});
+    const sNRateNuovo = addData(wsS, ['Nuovo numero rate (mesi)', F(`B${sDurata.number}*12`, nRateNuovo)], { zebra: true });
+    const sNuovaRata = addData(wsS, ['Nuova rata (PMT)', F(`-PMT(B${sNuovoRateM.number},B${sNRateNuovo.number},B${sSaldo.number})`, nuovaRata)], { bold: true, eur: [2] });
+
+    addSezione(wsS, 'Confronto', 2);
+    addData(wsS, ['Variazione rata mensile', F(`B${sNuovaRata.number}-'Piano 30 anni'!B${rigaAnnoSurroga}`, nuovaRata - rigaSurroga.rata)], { eur: [2] });
+    addSub(wsS, 'Stima indicativa — la banca applica costi di istruttoria ed eventuali penali da considerare separatamente. Cambia tasso o durata qui sopra per aggiornare tutto.', 2);
   }
 
-  scaricaCSV(csv, `simulatore-mutuo-${new Date().toISOString().slice(0,10)}.csv`);
+  // ── Download ──
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `simulatore-mutuo-${new Date().toISOString().slice(0,10)}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ══════════════════════════════════════════
