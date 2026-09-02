@@ -1652,7 +1652,15 @@
         <span class="val" id="t-onorari-netti">€ 0,00</span>
       </div>
       <div class="totali-row">
-        <span>IVA 22% su onorari</span>
+        <span>Cassa previdenziale <span style="font-size:10px;color:var(--text-3)">(su onorari)</span></span>
+        <span class="val" style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <input type="text" id="t-cassa-pct" value="4" inputmode="numeric" style="width:44px;text-align:right;font-size:13px;padding:3px 4px" onblur="salvaCassaComputo()">
+          <span style="font-size:12px;color:var(--text-3)">%</span>
+          <span id="t-cassa-importo" style="min-width:80px;text-align:right">€ 0,00</span>
+        </span>
+      </div>
+      <div class="totali-row">
+        <span>IVA 22% su onorari+cassa</span>
         <span class="val" id="t-iva-onorari">€ 0,00</span>
       </div>
       <div class="totali-row" style="border-top: 0.5px solid var(--border); padding-top: 8px; margin-top: 4px;">
@@ -2006,15 +2014,15 @@
             <input type="month" id="mut-data-inizio" value="2026-01">
           </div>
           <div class="form-group">
-            <label>Rimborso 730 annuo previsto (€)</label>
+            <label>Rimborso 730 — media stimata (€) <span style="font-size:10px;font-weight:400;color:var(--text-3)">sola lettura</span></label>
             <div style="display:flex;gap:8px;align-items:center">
-              <input type="text" id="mut-rimborso-730" placeholder="es. 9.700" min="0" inputmode="numeric" style="flex:1" onfocus="this.value=getInputNum('mut-rimborso-730')||''  ;this.select()" onblur="formatInputNum(this,0)">
+              <input type="text" id="mut-rimborso-730" placeholder="calcolato da Agevolazioni" readonly min="0" inputmode="numeric" style="flex:1;background:var(--surface-2);cursor:default">
               <button class="btn btn-sm" onclick="genera730()" style="white-space:nowrap;flex-shrink:0">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
                 Genera piano
               </button>
             </div>
-            <div style="font-size:11px;color:var(--text-3);margin-top:3px">Clicca "Genera piano" per creare le estinzioni annuali automatiche, poi modificale liberamente</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:3px">"Genera piano" calcola una detrazione diversa per ogni anno (dal tab Agevolazioni, non una media flat) e crea le estinzioni corrispondenti — modificale liberamente dopo</div>
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label>Effetto estinzione anticipata</label>
@@ -2887,18 +2895,14 @@
       <!-- Causale bonifico -->
       <div style="margin-top:18px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:11px;font-weight:600;letter-spacing:0.05em;color:var(--text-3);text-transform:uppercase">Causale bonifico parlante</div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.05em;color:var(--text-3);text-transform:uppercase">Causali bonifico parlante</div>
           <button class="btn btn-sm" onclick="generaCausale()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
             Genera
           </button>
         </div>
-        <textarea id="ff-causale" placeholder="Clicca 'Genera' per creare la causale bonifico parlante art.16-bis…" style="min-height:68px;font-size:12px;font-family:monospace;background:var(--surface-2)" readonly></textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:4px">
-          <button class="btn btn-sm" onclick="copiaCausale()">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            Copia causale
-          </button>
+        <div id="ff-causali-container">
+          <div style="font-size:12px;color:var(--text-3)">Clicca "Genera" per creare una causale distinta per ogni agevolazione presente nella fattura.</div>
         </div>
       </div>
 
@@ -3082,11 +3086,14 @@ function calcolaTotaliComputo() {
   const totIva = totImp * 0.10;
   const totLavori = totImp + totIva;
   const onorariNetti = totImp * 0.08;    // onorari sul netto (confermato dal tecnico)
-  const ivaOnorari = onorariNetti * 0.22;
-  const totOnorari = onorariNetti + ivaOnorari;
+  const cassaPct = state.cassaPrevidenzialePct !== undefined ? state.cassaPrevidenzialePct : 0.04; // default 4% (INARCASSA/Cassa tecnica) — modificabile
+  const cassaPrevidenziale = onorariNetti * cassaPct;
+  const imponibileOnorariIva = onorariNetti + cassaPrevidenziale; // la cassa è imponibile IVA
+  const ivaOnorari = imponibileOnorariIva * 0.22;
+  const totOnorari = imponibileOnorariIva + ivaOnorari;
   const totFinale = totLavori + totOnorari;
   const fattoreSconto = totImpLordo > 0 ? totImp / totImpLordo : 1;
-  return { totImpLordo, sconto, totImp, totIva, totLavori, onorariNetti, ivaOnorari, totOnorari, totFinale, fattoreSconto };
+  return { totImpLordo, sconto, totImp, totIva, totLavori, onorariNetti, cassaPct, cassaPrevidenziale, imponibileOnorariIva, ivaOnorari, totOnorari, totFinale, fattoreSconto };
 }
 
 function fattoreScontoComputo() {
@@ -3097,6 +3104,16 @@ function fattoreScontoComputo() {
 
 function salvaScontoComputo() {
   state.scontoComputo = getInputNum('t-sconto') || 0;
+  salvaStato();
+  aggiornaMetricheComputo();
+  ricalcolaAgevolazioni();
+  ricalcolaCashFlow();
+  if (document.getElementById('page-dashboard')?.classList.contains('active')) aggiornaDashboard();
+}
+
+function salvaCassaComputo() {
+  const pct = parseFloat(document.getElementById('t-cassa-pct').value.replace(',','.')) || 0;
+  state.cassaPrevidenzialePct = pct / 100;
   salvaStato();
   aggiornaMetricheComputo();
   ricalcolaAgevolazioni();
@@ -3124,6 +3141,11 @@ function aggiornaMetricheComputo() {
   document.getElementById('t-iva-lavori').textContent = formatEur(t.totIva);
   document.getElementById('t-lavori').textContent = formatEur(t.totLavori);
   document.getElementById('t-onorari-netti').textContent = formatEur(t.onorariNetti);
+  const cassaPctEl = document.getElementById('t-cassa-pct');
+  if (cassaPctEl && document.activeElement !== cassaPctEl) {
+    cassaPctEl.value = (t.cassaPct * 100).toString().replace('.', ',');
+  }
+  document.getElementById('t-cassa-importo').textContent = formatEur(t.cassaPrevidenziale);
   document.getElementById('t-iva-onorari').textContent = formatEur(t.ivaOnorari);
   document.getElementById('t-onorari').textContent = formatEur(t.totOnorari);
   document.getElementById('t-totale-finale').textContent = formatEur(t.totFinale);
@@ -3897,7 +3919,8 @@ function apriModalFattura(id) {
   editingFatturaId = id || null;
   document.getElementById('modal-fattura-title').textContent = id ? 'Modifica fattura' : 'Nuova fattura';
   document.getElementById('parser-status').style.display = 'none';
-  document.getElementById('ff-causale').value = '';
+  window._causaliCorrenti = [];
+  renderCausaliBlocchi([]);
 
   if (id) {
     const f = (state.fatture||[]).find(x => x.id===id);
@@ -3911,7 +3934,16 @@ function apriModalFattura(id) {
     document.getElementById('ff-importo-pag').value = f.importoPagato||'';
     document.getElementById('ff-intestatario').value = f.intestatario||'A';
     document.getElementById('ff-note').value = f.note||'';
-    document.getElementById('ff-causale').value = f.causale||'';
+    if (f.causaliBonifico && f.causaliBonifico.length) {
+      // Formato nuovo: blocchi multipli già salvati
+      window._causaliCorrenti = f.causaliBonifico;
+      renderCausaliBlocchi(f.causaliBonifico);
+    } else if (f.causale) {
+      // Retrocompatibilità: fatture salvate col vecchio formato a causale singola
+      const blocco = [{ label: 'Bonifico parlante', tipo: 'parlante', importo: f.totaleFattura||0, causale: f.causale }];
+      window._causaliCorrenti = blocco;
+      renderCausaliBlocchi(blocco);
+    }
     righeCorrente = (f.righe||[]).map(r => ({...r}));
   } else {
     document.getElementById('ff-data').value = new Date().toISOString().slice(0,10);
@@ -3972,7 +4004,9 @@ function salvaFattura() {
     importoPagato: parseFloat(document.getElementById('ff-importo-pag').value)||null,
     intestatario: document.getElementById('ff-intestatario').value,
     note: document.getElementById('ff-note').value.trim(),
-    causale: document.getElementById('ff-causale').value,
+    causaliBonifico: window._causaliCorrenti || [],
+    // Retrocompatibilità: riepilogo testuale piatto, usato solo se causaliBonifico non presente
+    causale: (window._causaliCorrenti || []).filter(b => b.causale).map(b => `[${b.label}] ${b.causale}`).join('\n\n'),
     createdAt: editingFatturaId
       ? ((state.fatture||[]).find(f=>f.id===editingFatturaId)||{}).createdAt
       : Date.now()
@@ -3998,29 +4032,108 @@ function eliminaFattura(id) {
 }
 
 // ══════════════════════════════════════════
-//  FATTURE — CAUSALE BONIFICO
+//  FATTURE — CAUSALE BONIFICO (multi-blocco per agevolazione)
 // ══════════════════════════════════════════
+const LAW_REF_CAUSALE = {
+  'bonus50': "Pagamento per detrazioni fiscali di cui all'art. 16-bis DPR 917/86",
+  'ecobonus': "Pagamento per detrazioni fiscali (Ecobonus) di cui all'art. 14 D.L. 63/2013"
+};
+
 function generaCausale() {
   const fornitore = document.getElementById('ff-fornitore').value.trim() || '[FORNITORE]';
   const piva = document.getElementById('ff-piva').value.trim() || '[P.IVA/CF]';
   const numero = document.getElementById('ff-numero').value.trim();
   const data = document.getElementById('ff-data').value;
   const dataFmt = data ? new Date(data).toLocaleDateString('it-IT') : '[DATA]';
-  const nFattura = numero ? ` - Fattura n. ${numero} del ${dataFmt}` : '';
-  // Descrizione aggregata dalle righe
-  const desc = righeCorrente.filter(r=>r.descrizione).map(r=>r.descrizione).join('; ') || '[DESCRIZIONE LAVORI]';
-  const causale = `Pagamento per detrazioni fiscali di cui all'art. 16-bis DPR 917/86 - ${desc}${nFattura} - Immobile: ${IMMOBILE.indirizzo} - Beneficiario: ${fornitore} P.IVA/CF ${piva} - CF ordinante: ${IMMOBILE.cfOrdinante}`;
-  document.getElementById('ff-causale').value = causale;
+  const nFattura = numero ? `Fattura n. ${numero} del ${dataFmt}` : '[N. FATTURA]';
+
+  // Raggruppa le righe per tipo di agevolazione: se la fattura del general contractor
+  // mescola più categorie (es. BR + Ecobonus), serve un bonifico parlante SEPARATO
+  // per ciascuna — la causale deve citare il riferimento normativo corretto per l'importo pagato.
+  const gruppi = { bonus50: [], ecobonus: [], 'conto-termico': [], nessuna: [] };
+  righeCorrente.forEach(r => {
+    if (!r.descrizione && !r.imponibile) return;
+    if (r.agevolazione === 'bonus50') gruppi.bonus50.push(r);
+    else if (r.agevolazione === 'ecobonus50' || r.agevolazione === 'ecobonus65') gruppi.ecobonus.push(r);
+    else if (r.agevolazione === 'conto-termico') gruppi['conto-termico'].push(r);
+    else gruppi.nessuna.push(r);
+  });
+
+  const sommaGruppo = (righe) => {
+    const imp = righe.reduce((s,r) => s + (r.imponibile||0), 0);
+    const iva = righe.reduce((s,r) => s + Math.round((r.imponibile||0) * (r.aliquotaIva||0)) / 100, 0);
+    const desc = righe.map(r => r.descrizione).filter(Boolean).join('; ');
+    return { imp, iva, tot: imp + iva, desc };
+  };
+
+  const blocchi = [];
+
+  if (gruppi.bonus50.length) {
+    const s = sommaGruppo(gruppi.bonus50);
+    const causale = `${LAW_REF_CAUSALE.bonus50} - ${s.desc || 'lavori di ristrutturazione'} - ${nFattura} - Immobile: ${IMMOBILE.indirizzo} - Beneficiario: ${fornitore} P.IVA/CF ${piva} - CF ordinante: ${IMMOBILE.cfOrdinante} - Importo: ${formatEur(s.tot)}`;
+    blocchi.push({ label: 'Bonus Ristrutturazione 50%', tipo: 'parlante', importo: s.tot, causale });
+  }
+  if (gruppi.ecobonus.length) {
+    const s = sommaGruppo(gruppi.ecobonus);
+    const causale = `${LAW_REF_CAUSALE.ecobonus} - ${s.desc || 'lavori di efficientamento energetico'} - ${nFattura} - Immobile: ${IMMOBILE.indirizzo} - Beneficiario: ${fornitore} P.IVA/CF ${piva} - CF ordinante: ${IMMOBILE.cfOrdinante} - Importo: ${formatEur(s.tot)}`;
+    blocchi.push({ label: 'Ecobonus', tipo: 'parlante', importo: s.tot, causale });
+  }
+  if (gruppi['conto-termico'].length) {
+    const s = sommaGruppo(gruppi['conto-termico']);
+    blocchi.push({
+      label: 'Conto Termico', tipo: 'gse', importo: s.tot, causale: null,
+      nota: 'Il Conto Termico è un incentivo GSE gestito separatamente, non tramite dichiarazione dei redditi — non richiede bonifico parlante. Paga con bonifico ordinario e conserva la pratica GSE.'
+    });
+  }
+  if (gruppi.nessuna.length) {
+    const s = sommaGruppo(gruppi.nessuna);
+    blocchi.push({
+      label: 'Non detraibile', tipo: 'ordinario', importo: s.tot, causale: null,
+      nota: 'Nessuna detrazione fiscale collegata a queste righe — bonifico ordinario, nessuna causale speciale necessaria.'
+    });
+  }
+
+  window._causaliCorrenti = blocchi;
+  renderCausaliBlocchi(blocchi);
 }
 
-function copiaCausale() {
-  const testo = document.getElementById('ff-causale').value;
-  if (!testo) { alert('Genera prima la causale.'); return; }
-  navigator.clipboard.writeText(testo).then(() => {
+function renderCausaliBlocchi(blocchi) {
+  const c = document.getElementById('ff-causali-container');
+  if (!c) return;
+  if (!blocchi || !blocchi.length) {
+    c.innerHTML = '<div style="font-size:12px;color:var(--text-3)">Aggiungi almeno una riga con descrizione e importo, poi clicca "Genera".</div>';
+    return;
+  }
+  c.innerHTML = blocchi.map((b, i) => {
+    if (b.tipo !== 'parlante') {
+      const colTipo = b.tipo === 'gse' ? 'var(--info)' : 'var(--text-3)';
+      const bgTipo = b.tipo === 'gse' ? 'var(--info-light)' : 'var(--surface-2)';
+      return `<div style="background:${bgTipo};border-radius:var(--radius);padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:600;color:${colTipo}">${b.label} — ${formatEur(b.importo)}</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:4px">${b.nota}</div>
+      </div>`;
+    }
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:12px;font-weight:600;color:var(--accent-text)">${b.label} — bonifico parlante di ${formatEur(b.importo)}</span>
+        <button class="btn btn-sm" onclick="copiaCausaleBlocco(${i})">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copia
+        </button>
+      </div>
+      <textarea id="ff-causale-${i}" readonly style="min-height:64px;font-size:11px;font-family:monospace;background:var(--surface-2);width:100%">${b.causale}</textarea>
+    </div>`;
+  }).join('');
+}
+
+function copiaCausaleBlocco(i) {
+  const b = (window._causaliCorrenti || [])[i];
+  if (!b || !b.causale) return;
+  navigator.clipboard.writeText(b.causale).then(() => {
     const btn = event.target.closest('button');
     const orig = btn.innerHTML;
-    btn.innerHTML = '✓ Copiata';
-    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+    btn.innerHTML = '✓ Copiato';
+    setTimeout(() => { btn.innerHTML = orig; }, 1500);
   });
 }
 
@@ -4173,13 +4286,32 @@ function apriDettaglioFattura(id) {
       ${f.dataPagamento ? `<span style="font-size:12px;color:var(--text-2)">Pagato il ${dataPagFmt}</span>` : ''}
       <span class="badge badge-gray">Int. ${f.intestatario||'A'}</span>
     </div>
-    ${f.causale ? `<div style="margin-bottom:10px">
+    ${(f.causaliBonifico && f.causaliBonifico.length) ? `<div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Causali bonifico parlante</div>
+      ${f.causaliBonifico.map((b, i) => {
+        if (b.tipo !== 'parlante') {
+          const colTipo = b.tipo === 'gse' ? 'var(--info)' : 'var(--text-3)';
+          const bgTipo = b.tipo === 'gse' ? 'var(--info-light)' : 'var(--surface-2)';
+          return `<div style="background:${bgTipo};border-radius:var(--radius);padding:10px 12px;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:600;color:${colTipo}">${b.label} — ${formatEur(b.importo)}</div>
+            <div style="font-size:11px;color:var(--text-2);margin-top:4px">${b.nota}</div>
+          </div>`;
+        }
+        return `<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--accent-text)">${b.label} — ${formatEur(b.importo)}</span>
+            <button class="btn btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(b.causale)})">Copia</button>
+          </div>
+          <div style="font-size:11px;font-family:monospace;background:var(--surface-2);padding:10px;border-radius:var(--radius);line-height:1.6">${escHtml(b.causale)}</div>
+        </div>`;
+      }).join('')}
+    </div>` : (f.causale ? `<div style="margin-bottom:10px">
       <div style="font-size:11px;color:var(--text-3);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Causale bonifico</div>
       <div style="font-size:11px;font-family:monospace;background:var(--surface-2);padding:10px;border-radius:var(--radius);line-height:1.6">${escHtml(f.causale)}</div>
       <div style="display:flex;justify-content:flex-end;margin-top:5px">
         <button class="btn btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(f.causale)})">Copia causale</button>
       </div>
-    </div>` : ''}
+    </div>` : '')}
     ${f.note ? `<div style="font-size:12px;color:var(--text-2);padding:8px 10px;background:var(--surface-2);border-radius:var(--radius)">${escHtml(f.note)}</div>` : ''}
   `;
   document.getElementById('modal-dettaglio-fattura').classList.add('open');
@@ -4340,33 +4472,30 @@ function salvaConfigAgev() {
 // ══════════════════════════════════════════
 //  AGEVOLAZIONI — CALCOLO PRINCIPALE
 // ══════════════════════════════════════════
-function ricalcolaAgevolazioni() {
-  salvaConfigAgev();
-
+// ══════════════════════════════════════════
+//  AGEVOLAZIONI — CALCOLO PURO ALLOCAZIONE VOCI
+//  (riutilizzato da ricalcolaAgevolazioni e da genera730)
+// ══════════════════════════════════════════
+function calcolaTotPerContenitore() {
   const tipoImmobile = document.getElementById('agev-tipo-immobile').value;
   const anno = document.getElementById('agev-anno').value;
   const redditoA = getRedditoValue('a');
   const redditoB = getRedditoValue('b');
   const figli = parseInt(document.getElementById('agev-figli').value) || 0;
-  const aliquotaKey = anno.replace('2028', '2028') + '-' + tipoImmobile;
+  const aliquotaKey = anno + '-' + tipoImmobile;
   const aliq = ALIQUOTE[aliquotaKey] || 0.50;
 
   const voci = state.voci || [];
   if (!agevState.split) agevState.split = state.agevSplit || {};
 
-  // Calcola totale imponibile+IVA per ogni voce
-  // Pro-quota: calcola proporzioni PRIMA di distribuire le spese generali
   const totPerContenitore = { br: 0, 'eco-iso': 0, 'eco-inf': 0, 'eco-pdc': 0 };
   const vociPerContenitore = { br: [], 'eco-iso': [], 'eco-inf': [], 'eco-pdc': [], 'pro-quota': [], 'non-detraibile': [] };
 
-  const _fs = fattoreScontoComputo(); // sconto a corpo distribuito pro-quota su tutte le voci
+  const _fs = fattoreScontoComputo();
   voci.forEach(v => {
     const baseIvaInclusa = v.imponibile * _fs * 1.10;
     const allocazione = agevState.allocazioni[v.id] || MAPPA_DEFAULT[v.numero] || 'br';
-
-    // Split percentuale: se la voce ha un override di split (es. quota PDC/ACS),
-    // dividila tra eco-pdc e l'allocazione base invece di assegnarla interamente
-    const splitPerc = agevState.split[v.id]; // 0-100, quota % verso eco-pdc
+    const splitPerc = agevState.split[v.id];
     if (splitPerc !== undefined && splitPerc > 0 && allocazione !== 'pro-quota' && allocazione !== 'non-detraibile') {
       const quotaPdc = baseIvaInclusa * (splitPerc / 100);
       const quotaResto = baseIvaInclusa - quotaPdc;
@@ -4383,7 +4512,6 @@ function ricalcolaAgevolazioni() {
     }
   });
 
-  // Distribuisci pro-quota proporzionalmente
   const totDetraibile = Object.values(totPerContenitore).reduce((s, v) => s + v, 0);
   const vociProQuota = vociPerContenitore['pro-quota'] || [];
   const totProQuota = vociProQuota.reduce((s, v) => s + v.baseIvaInclusa, 0);
@@ -4395,17 +4523,22 @@ function ricalcolaAgevolazioni() {
     });
   }
 
-  // Onorari tecnico — su imponibile netto di sconto (IVA 22% inclusa)
-  const totImponibileVoci = voci.reduce((s, v) => s + v.imponibile, 0) * fattoreScontoComputo();
-  const onorariNetti = totImponibileVoci * 0.08;
-  const onorariTotali = onorariNetti * 1.22; // IVA 22%
-  // Ripartisci pro-quota
+  const t = calcolaTotaliComputo(); // fonte unica: include Cassa Previdenziale
+  const onorariTotali = t.totOnorari;
   const totPerCalcOno = Object.values(totPerContenitore).reduce((s, v) => s + v, 0) || 1;
   const onorariPerCont = {};
   Object.keys(totPerContenitore).forEach(k => {
     onorariPerCont[k] = onorariTotali * (totPerContenitore[k] / totPerCalcOno);
     totPerContenitore[k] += onorariPerCont[k];
   });
+
+  return { totPerContenitore, vociPerContenitore, vociProQuota, onorariTotali, onorariPerCont, totPerCalcOno, aliq, redditoA, redditoB, figli, anno, voci };
+}
+
+function ricalcolaAgevolazioni() {
+  salvaConfigAgev();
+
+  const { totPerContenitore, vociPerContenitore, vociProQuota, onorariTotali, onorariPerCont, totPerCalcOno, aliq, redditoA, redditoB, figli, anno, voci } = calcolaTotPerContenitore();
 
   // Render massimali
   renderMassimali(totPerContenitore, aliq);
@@ -4714,11 +4847,15 @@ function renderAlert16ter(redditoA, redditoB, figli, totali, aliq, anno) {
 // ══════════════════════════════════════════
 //  AGEVOLAZIONI — PIANO 10 ANNI
 // ══════════════════════════════════════════
-function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
-  const body = document.getElementById('agev-piano-body');
+// ══════════════════════════════════════════
+//  AGEVOLAZIONI — CALCOLO PURO PIANO ANNUALE
+//  (riutilizzato sia dal render che dalla generazione estinzioni 730,
+//   così i due punti dell'app usano SEMPRE la stessa matematica)
+// ══════════════════════════════════════════
+function calcolaPianoAnnualeDetrazioni(totali, aliq, redditoA, redditoB, figli, anno, pianoInteressiOverride) {
   const annoInizio = parseInt(anno) || 2026;
 
-  // Totale detrazione spettante per ogni contenitore
+  // Totale detrazione spettante per ogni contenitore (fisso, non dipende dal mutuo)
   const detPerCont = {};
   let detTotale = 0;
   CONTENITORI.forEach(c => {
@@ -4728,53 +4865,60 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
   });
 
   const detAnnua = detTotale / 10;
-  const spesaAnnua = detAnnua / aliq;
   const limA = calcLimite16ter(redditoA, figli);
   const limB = calcLimite16ter(redditoB, figli);
   const spesaMaxA = limA === Infinity ? Infinity : limA;
   const spesaMaxB = limB === Infinity ? Infinity : limB;
-  const spesaMaxTot = spesaMaxA + spesaMaxB;
-
-  const colonneCont = CONTENITORI.map(c =>
-    `<th class="text-right" style="font-size:10px">${c.label.replace('Ecobonus ','Eco ').replace('Bonus Ristrutturazione','BR')}</th>`
-  ).join('');
 
   // Interessi passivi mutuo per anno solare (art.15: 19% × min(interessi, €4.000))
-  // Usa il piano EFFETTIVO (con estinzioni anticipate) se disponibile, non il piano base
-  const _pianoInt1 = (mutState.estinzioni?.length && mutState.pianoEff?.length) ? mutState.pianoEff : mutState.piano;
+  // Usa il piano passato esplicitamente, oppure il piano EFFETTIVO (con estinzioni) se disponibile
+  const pianoInt = pianoInteressiOverride || ((mutState.estinzioni?.length && mutState.pianoEff?.length) ? mutState.pianoEff : mutState.piano);
   const intPerAnno = {};
-  if (_pianoInt1.length) {
-    _pianoInt1.forEach(r => {
-      const a = parseInt(r.data.slice(0, 4));
-      intPerAnno[a] = (intPerAnno[a] || 0) + r.interessi;
-    });
-  }
+  (pianoInt || []).forEach(r => {
+    const a = parseInt(r.data.slice(0, 4));
+    intPerAnno[a] = (intPerAnno[a] || 0) + r.interessi;
+  });
   const detIntAnno = (a) => Math.min(intPerAnno[a] || 0, 4000) * 0.19;
   // Detrazioni pregresse attive in un dato anno
   const detPregrAnno = (a) => (state.detrPregresse || []).reduce((s, d) =>
     s + ((a >= d.annoInizio && a < d.annoInizio + d.rateResidue) ? d.rataAnnua : 0), 0);
 
-  let righe = '';
-  let righeCards = '';
+  const righeCalc = [];
   let cumTot = 0;
-  let sumInt = 0, sumPregr = 0, sumRiga = 0;
   for (let i = 0; i < 10; i++) {
     const annoR = annoInizio + i;
-    // Quota annua per contenitore
     const quoteCont = CONTENITORI.map(c => detPerCont[c.id] / 10);
-    // Detrazione annua per intestatario (50-50 di default)
     const detAnnuaA = detAnnua / 2;
     const detAnnuaB = detAnnua / 2;
-    // Applica limite 16-ter
     const detEffA = spesaMaxA === Infinity ? detAnnuaA : Math.min(detAnnuaA, spesaMaxA * aliq / 2);
     const detEffB = spesaMaxB === Infinity ? detAnnuaB : Math.min(detAnnuaB, spesaMaxB * aliq / 2);
     const detEffTot = detEffA + detEffB;
     const taglio = detAnnua - detEffTot;
-
     const intAnno = detIntAnno(annoR);
     const pregrAnno = detPregrAnno(annoR);
     const totRiga = detEffTot + intAnno + pregrAnno;
     cumTot += totRiga;
+    righeCalc.push({ anno: annoR, quoteCont, detEffTot, taglio, intAnno, pregrAnno, totRiga, cumTot });
+  }
+
+  return { righeCalc, detPerCont, detTotale, detAnnua, spesaMaxA, spesaMaxB };
+}
+
+function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
+  const body = document.getElementById('agev-piano-body');
+  const annoInizio = parseInt(anno) || 2026;
+
+  const { righeCalc, detPerCont, detTotale } = calcolaPianoAnnualeDetrazioni(totali, aliq, redditoA, redditoB, figli, anno);
+
+  const colonneCont = CONTENITORI.map(c =>
+    `<th class="text-right" style="font-size:10px">${c.label.replace('Ecobonus ','Eco ').replace('Bonus Ristrutturazione','BR')}</th>`
+  ).join('');
+
+  let righe = '';
+  let righeCards = '';
+  let sumInt = 0, sumPregr = 0, sumRiga = 0;
+  righeCalc.forEach(r => {
+    const { anno: annoR, quoteCont, totRiga, taglio, intAnno, pregrAnno, cumTot } = r;
     sumInt += intAnno; sumPregr += pregrAnno; sumRiga += totRiga;
 
     const colonneDet = quoteCont.map(q => `<td class="text-right text-mono" style="font-size:11px;color:var(--text-2)">${formatEur(q)}</td>`).join('');
@@ -4809,7 +4953,7 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
       </div>
       <div class="anno-card-cum"><span>Cumulato</span><strong>${formatEur(cumTot)}</strong></div>
     </div>`;
-  }
+  });
 
   // Riepilogo finale
   const eccedenzaBR = Math.max(0, (totali['br'] || 0) - 96000);
@@ -5548,31 +5692,41 @@ function renderEstinzioni() {
 //  MUTUO — GENERA PIANO 730
 // ══════════════════════════════════════════
 function genera730() {
-  const rimborso730 = getInputNum('mut-rimborso-730') || 0;
-  if (!rimborso730) { alert('Inserisci prima il rimborso 730 annuo previsto.'); return; }
   if (!mutState.params) { alert('Calcola prima il piano mutuo.'); return; }
+  if (!state.voci?.length) { alert('Carica prima il computo e configura le agevolazioni fiscali.'); return; }
 
   const p = mutState.params;
-  const [annoInizio] = p.dataInizio.split('-').map(Number);
 
   // Rimuovi le estinzioni 730 auto-generate precedenti (id che inizia con '730-')
   // ma mantieni quelle inserite manualmente
   const estManuali = mutState.estinzioni.filter(e => !e.id.startsWith('730-auto-'));
 
-  // Genera una estinzione per ogni dicembre per tutta la durata residua
+  // Calcola la detrazione REALE anno per anno (stessa matematica del tab Agevolazioni),
+  // usando il piano attuale (se ci sono già estinzioni da un giro precedente, le tiene conto —
+  // rigenerare più volte affina progressivamente il risultato)
+  const datiAgev = calcolaTotPerContenitore();
+  const pianoPerCalcolo = (mutState.estinzioni?.length && mutState.pianoEff?.length) ? mutState.pianoEff : mutState.piano;
+  const { righeCalc } = calcolaPianoAnnualeDetrazioni(
+    datiAgev.totPerContenitore, datiAgev.aliq, datiAgev.redditoA, datiAgev.redditoB, datiAgev.figli, datiAgev.anno, pianoPerCalcolo
+  );
+
+  if (!righeCalc.length) { alert('Impossibile calcolare le detrazioni. Verifica il computo e le agevolazioni.'); return; }
+
   // Le detrazioni durano 10 anni. Il rimborso arriva tipicamente a luglio
-  // dell'anno successivo a quello di pagamento delle fatture.
-  // Es. lavori pagati nel 2026 → rimborsi luglio 2027 … luglio 2036
-  const estAuto = [];
-  for (let a = annoInizio + 1; a <= annoInizio + 10; a++) {
-    estAuto.push({
-      id: `730-auto-${a}`,
-      data: `${a}-07`,
-      importo: rimborso730,
-      nota: `Rimborso 730/${a} (auto)`,
-      auto: true
-    });
-  }
+  // dell'anno successivo a quello di pagamento delle fatture (dichiarazione anno X → rimborso luglio X+1).
+  // Ogni estinzione usa l'importo VERO calcolato per quell'anno fiscale, non una media flat.
+  const estAuto = righeCalc.map(r => ({
+    id: `730-auto-${r.anno + 1}`,
+    data: `${r.anno + 1}-07`,
+    importo: Math.round(r.totRiga * 100) / 100,
+    nota: `Rimborso 730/${r.anno + 1} (auto — detrazione ${r.anno})`,
+    auto: true
+  }));
+
+  // Aggiorna anche il campo "rimborso 730 annuo previsto" con la media, solo come riferimento visivo
+  const media = righeCalc.reduce((s, r) => s + r.totRiga, 0) / righeCalc.length;
+  const elRimborso = document.getElementById('mut-rimborso-730');
+  if (elRimborso) { elRimborso.value = Math.round(media); formatInputNum(elRimborso, 0); }
 
   // Unisci: manuali prima, poi auto — ordina per data
   mutState.estinzioni = [...estManuali, ...estAuto]
@@ -5585,13 +5739,13 @@ function genera730() {
   const tipoEst = document.querySelector('input[name="mut-tipo-estinzione"]:checked')?.value || 'durata';
   const { piano } = calcolaAmmortamento(p.capitale, p.tasso, p.nRate, p.dataInizio, mutState.estinzioni, tipoEst);
   mutState.pianoEff = piano;
-  mutState.params.rimborso730 = rimborso730;
+  mutState.params.rimborso730 = Math.round(media);
   state.mutuo = { ...mutState.params, estinzioni: mutState.estinzioni };
   salvaStato();
 
-  // Aggiorna UI simulazione 730 (confronto box)
+  // Aggiorna UI simulazione 730 (confronto box) — usa la media come riferimento
   const totIntBase = mutState.piano.reduce((s, r) => s + r.interessi, 0);
-  simulazione730(p.capitale, p.tasso, p.nRate, p.dataInizio, rimborso730, totIntBase, p.rata);
+  simulazione730(p.capitale, p.tasso, p.nRate, p.dataInizio, Math.round(media), totIntBase, p.rata);
 
   renderEstinzioni();
   renderPianoAmmortamento();
@@ -6089,9 +6243,8 @@ function calcolaDetrazione730Annua() {
     });
   }
 
-  // Onorari tecnico pro-quota (su imponibile netto di sconto)
-  const totImp = state.voci.reduce((s, v) => s + v.imponibile, 0) * _fsd;
-  const onorari = totImp * 0.08 * 1.22;
+  // Onorari tecnico pro-quota — fonte unica: include Cassa Previdenziale
+  const onorari = calcolaTotaliComputo().totOnorari;
   const totConOno = Object.values(totPerContenitore).reduce((s, v) => s + v, 0) || 1;
   Object.keys(totPerContenitore).forEach(k => {
     totPerContenitore[k] += onorari * (totPerContenitore[k] / totConOno);
@@ -7888,54 +8041,120 @@ async function _buildExcelCommercialista() {
   const split = agevState.split || {};
   const LABEL_CONT = { 'br': 'Bonus Ristrutturazione', 'eco-iso': 'Ecobonus Isolamento', 'eco-inf': 'Ecobonus Infissi', 'eco-pdc': 'Ecobonus Climatizzazione', 'pro-quota': 'Pro-quota (spese generali)', 'non-detraibile': 'Non detraibile' };
 
-  // ── Calcoli (identici alla logica app) ──
+  // ── Calcoli (identici alla logica app, ma con righe ESPANSE invece di colonne nascoste:
+  //    ogni euro allocato ha una riga Excel propria e visibile, con nota che spiega il criterio) ──
+  const NOTE_ACCESSORIO = {
+    '6':  'Smontaggio infissi esistenti: opera preparatoria alla sostituzione, accessoria a Ecobonus Infissi.',
+    '20': 'Controsoffitto funzionale alle canalizzazioni dell\'impianto: accessorio a Ecobonus Isolamento.',
+    '21': 'Isolamento termico dell\'intradosso solaio: intervento diretto di Ecobonus Isolamento.',
+    '31': 'Soglie/davanzali in pietra: opera accessoria alla sostituzione infissi (Ecobonus Infissi).',
+    '32': 'Posa soglie/davanzali: opera accessoria alla sostituzione infissi (Ecobonus Infissi).',
+    '35': 'Infissi PVC a taglio termico: intervento diretto di riqualificazione energetica (Ecobonus Infissi).'
+  };
+  const CONTAINER_ORDER = ['br','eco-iso','eco-inf','eco-pdc'];
   const totCont = { br: 0, 'eco-iso': 0, 'eco-inf': 0, 'eco-pdc': 0 };
   const righeVoci = [];
-  let totPQ = 0;
+  const vociProQuotaRaw = [];
+
   state.voci.forEach(v => {
-    const impNetto = v.imponibile * fs;
-    const base = impNetto * 1.10;
+    const impNettoTot = v.imponibile * fs;
+    const baseTot = impNettoTot * 1.10;
     const alloc = allocazioni[v.id] || MAPPA_DEFAULT[v.numero] || 'br';
     const sp = split[v.id];
-    let quotaPdc = 0, quotaBase = base;
-    if (sp !== undefined && sp > 0 && alloc !== 'pro-quota' && alloc !== 'non-detraibile') {
-      quotaPdc = base * (sp / 100);
-      quotaBase = base - quotaPdc;
-      totCont['eco-pdc'] += quotaPdc;
-      if (totCont[alloc] !== undefined) totCont[alloc] += quotaBase;
-    } else if (alloc === 'pro-quota') {
-      totPQ += base;
-    } else if (totCont[alloc] !== undefined) {
-      totCont[alloc] += base;
+
+    if (alloc === 'pro-quota') {
+      vociProQuotaRaw.push({ v, baseTot, impNettoTot });
+      return; // espansa al passo successivo, quando le quote di riparto sono note
     }
-    righeVoci.push({
-      n: parseInt(v.numero) || 0, desc: v.descrizione,
-      impLordo: v.imponibile, impNetto, iva: impNetto * 0.10, base,
-      alloc: LABEL_CONT[alloc] || alloc, isPdcSplit: (sp || 0) > 0,
-      splitPerc: (sp || 0) / 100, quotaPdc, quotaResto: quotaBase
+    if (alloc === 'non-detraibile') {
+      righeVoci.push({ n: v.numero, desc: v.descrizione, impLordo: v.imponibile, impNetto: impNettoTot, iva: impNettoTot*0.10, base: baseTot, alloc: 'Non detraibile', nota: 'Spesa non riconducibile a nessuna agevolazione fiscale.', tipo: 'non-detraibile' });
+      return;
+    }
+
+    if (sp !== undefined && sp > 0) {
+      // Voce splittata: 2 righe distinte invece di colonne nascoste
+      const quotaPdcBase = baseTot * (sp/100);
+      const quotaRestoBase = baseTot - quotaPdcBase;
+      const quotaPdcLordo = v.imponibile * (sp/100);
+      const quotaRestoLordo = v.imponibile - quotaPdcLordo;
+      totCont['eco-pdc'] += quotaPdcBase;
+      if (totCont[alloc] !== undefined) totCont[alloc] += quotaRestoBase;
+
+      const notaSplit = v.numero === '36'
+        ? `Quota stimata dell'impianto elettrico dedicata all'alimentazione della pompa di calore (linea dedicata, magnetotermico). Il resto è impianto elettrico generale non specificamente legato alla PDC.`
+        : v.numero === '37'
+        ? `Quota stimata per tubazioni ACS, collettori, circolatori e coibentazioni della pompa di calore. Il resto è impianto idrico/fognario generico non specificamente legato alla PDC.`
+        : `Quota allocata a Ecobonus Climatizzazione secondo lo split configurato in app; il resto resta nell'allocazione base.`;
+
+      righeVoci.push({
+        n: v.numero, desc: `${v.descrizione} — quota ${(100-sp).toFixed(0)}% (${LABEL_CONT[alloc]||alloc})`,
+        impLordo: quotaRestoLordo, impNetto: quotaRestoLordo*fs, iva: quotaRestoLordo*fs*0.10, base: quotaRestoBase,
+        alloc: LABEL_CONT[alloc] || alloc, nota: notaSplit, tipo: 'split'
+      });
+      righeVoci.push({
+        n: v.numero, desc: `${v.descrizione} — quota ${sp}% (Ecobonus Climatizzazione)`,
+        impLordo: quotaPdcLordo, impNetto: quotaPdcLordo*fs, iva: quotaPdcLordo*fs*0.10, base: quotaPdcBase,
+        alloc: LABEL_CONT['eco-pdc'], nota: notaSplit, tipo: 'split'
+      });
+    } else {
+      if (totCont[alloc] !== undefined) totCont[alloc] += baseTot;
+      righeVoci.push({
+        n: v.numero, desc: v.descrizione, impLordo: v.imponibile, impNetto: impNettoTot, iva: impNettoTot*0.10, base: baseTot,
+        alloc: LABEL_CONT[alloc] || alloc, nota: NOTE_ACCESSORIO[v.numero] || '', tipo: 'normale'
+      });
+    }
+  });
+
+  // Quote di riparto pro-quota, calcolate PRIMA di aggiungere le spese generali (stesso criterio dell'app)
+  const totDetPrePQ = Object.values(totCont).reduce((s, x) => s + x, 0) || 1;
+  const ratioPQ = {};
+  CONTAINER_ORDER.forEach(k => { ratioPQ[k] = totCont[k] / totDetPrePQ; });
+
+  // Espandi ogni voce pro-quota (bagno cantiere, ponteggi, smaltimenti...) in una riga per contenitore
+  vociProQuotaRaw.forEach(({v, baseTot, impNettoTot}) => {
+    CONTAINER_ORDER.forEach(k => {
+      const quotaBase = baseTot * ratioPQ[k];
+      if (quotaBase < 0.01) return; // quote trascurabili non generano riga
+      totCont[k] += quotaBase;
+      const quotaLordo = v.imponibile * ratioPQ[k];
+      righeVoci.push({
+        n: v.numero, desc: `${v.descrizione} — quota ${LABEL_CONT[k]} (${(ratioPQ[k]*100).toFixed(1)}%)`,
+        impLordo: quotaLordo, impNetto: impNettoTot*ratioPQ[k], iva: impNettoTot*ratioPQ[k]*0.10, base: quotaBase,
+        alloc: LABEL_CONT[k],
+        nota: `Spesa generale di cantiere non riferibile a un intervento specifico (es. bagno chimico, ponteggi, smaltimenti). Ripartita in proporzione al peso di ciascun contenitore sul totale già allocato (${(ratioPQ[k]*100).toFixed(1)}% del totale ante-onorari va a ${LABEL_CONT[k]}).`,
+        tipo: 'pro-quota'
+      });
     });
   });
-  const totDetPrePQ = Object.values(totCont).reduce((s, x) => s + x, 0) || 1;
-  Object.keys(totCont).forEach(k => { totCont[k] += totPQ * (totCont[k] / totDetPrePQ); });
+
   const onorariTot = t.totOnorari;
   const totDetPreOno = Object.values(totCont).reduce((s, x) => s + x, 0) || 1;
   const quoteOno = {};
-  Object.keys(totCont).forEach(k => {
+  CONTAINER_ORDER.forEach(k => {
     quoteOno[k] = onorariTot * (totCont[k] / totDetPreOno);
     totCont[k] += quoteOno[k];
   });
   const MASSIMALI = { br: 96000, 'eco-iso': 120000, 'eco-inf': 120000, 'eco-pdc': 60000 };
 
-  let detIntTot = 0, detIntMedia = 0;
   const intPerAnnoS = {};
   // Usa il piano EFFETTIVO (con estinzioni anticipate) se disponibile
   const _pianoIntExcel = (mutState.estinzioni?.length && mutState.pianoEff?.length) ? mutState.pianoEff : mutState.piano;
   if (_pianoIntExcel.length) {
     _pianoIntExcel.forEach(r => { const a = parseInt(r.data.slice(0,4)); intPerAnnoS[a] = (intPerAnnoS[a]||0) + r.interessi; });
-    const anni = Object.keys(intPerAnnoS).sort();
-    detIntTot = anni.reduce((s,a) => s + Math.min(intPerAnnoS[a]||0, 4000)*0.19, 0);
-    detIntMedia = anni.slice(0,10).reduce((s,a) => s + Math.min(intPerAnnoS[a]||0, 4000)*0.19, 0) / 10;
   }
+  // Interesse deducibile (art.15) per ciascuno dei 10 anni del piano unificato — STESSA logica
+  // e STESSO anno di partenza usati per costruire il foglio "Piano 10 anni" più sotto,
+  // calcolata una sola volta qui per evitare che i due fogli mostrino numeri diversi.
+  const annoInizioIRPEF = parseInt(anno) || 2026;
+  const dIntPerAnnoArr = [];
+  for (let i = 0; i < 10; i++) {
+    const aR = annoInizioIRPEF + i;
+    dIntPerAnnoArr.push(Math.min(intPerAnnoS[aR] || 0, 4000) * 0.19);
+  }
+  const sIntPrimi10Anni = dIntPerAnnoArr.reduce((s,x) => s + x, 0);
+  // Riga della TOTALE nel foglio "Piano 10 anni": titolo(1)+sub(2)+vuota(3)+header(4)+10 righe dati(5-14)+TOTALE(15) — struttura fissa
+  const RIGA_TOT_PIANO10 = 15;
+
   const pregresse = state.detrPregresse || [];
   const detPregrAnnua = pregresse.reduce((s,d) => s + d.rataAnnua, 0);
   const detPregrTot = pregresse.reduce((s,d) => s + d.rataAnnua * d.rateResidue, 0);
@@ -7999,11 +8218,14 @@ async function _buildExcelCommercialista() {
       if (opts.totale) { c.fill = fill(COL.totalFill); c.font = { name: FONT, size: 10, bold: true, color: { argb: COL.darkTx } }; }
       if (opts.eur && opts.eur.includes(colN)) c.numFmt = EUR;
       if (opts.pct && opts.pct.includes(colN)) c.numFmt = PCT;
+      const isNumericish = typeof arr[colN-1] === 'number' || (arr[colN-1] && typeof arr[colN-1] === 'object' && 'formula' in arr[colN-1]);
       if (colN === 1 && !opts.centerFirst) c.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-      else c.alignment = { vertical: 'middle', horizontal: typeof arr[colN-1] === 'number' ? 'right' : 'left', wrapText: true };
+      else c.alignment = { vertical: 'middle', horizontal: isNumericish ? 'right' : 'left', wrapText: true };
     });
     return r;
   }
+  // Scorciatoia per costruire celle-formula con risultato precalcolato (mostrato finché Excel non ricalcola)
+  const F = (formula, result) => ({ formula, result });
 
   const nomi = [int.a?.nome, int.b?.nome].filter(Boolean).join(' e ') || 'Committente';
   const oggi = new Date().toLocaleDateString('it-IT');
@@ -8015,83 +8237,236 @@ async function _buildExcelCommercialista() {
   addSub(ws1, `${nomi}${int.indirizzo ? ' — ' + int.indirizzo : ''} · Computo v2 del 22/07/2026 · Generato il ${oggi}`, 6);
 
   addSezione(ws1, 'Parametri e basi di calcolo', 6);
-  const params = [
-    ['Anno pagamenti', anno],
-    ['Tipo immobile', tipoImm === 'prima-casa' ? 'Prima casa (abitazione principale)' : 'Seconda casa'],
-    ['Aliquota detrazione lavori', aliq],
-    ['Imponibile computo (lordo)', t.totImpLordo],
-    ['Sconto a corpo da contratto', -t.sconto],
-    ['Imponibile netto', t.totImp],
-    ['IVA 10% su lavori (detraibile)', t.totIva],
-    ['Onorari tecnico (8% su netto, IVA 22% incl.)', t.totOnorari]
-  ];
-  params.forEach((p, i) => {
-    const r = addData(ws1, p, { zebra: i % 2 === 1, eur: [2] });
-    if (p[0].startsWith('Aliquota')) r.getCell(2).numFmt = PCT;
-    if (typeof p[1] === 'string') r.getCell(2).numFmt = '';
-    r.getCell(2).alignment = { horizontal: 'right' };
-  });
-  addSub(ws1, 'Criterio: base detraibile = imponibile netto di sconto + IVA 10%. Onorari IVA 22% inclusa, ripartiti pro-quota. Spese generali (cantiere, ponteggi, smaltimenti) distribuite proporzionalmente.', 6);
+  addData(ws1, ['Anno pagamenti', anno], {}).getCell(2).alignment = { horizontal: 'right' };
+  addData(ws1, ['Tipo immobile', tipoImm === 'prima-casa' ? 'Prima casa (abitazione principale)' : 'Seconda casa'], { zebra: true }).getCell(2).alignment = { horizontal: 'right' };
+  const rAliq = addData(ws1, ['Aliquota detrazione lavori', aliq], { pct: [2] });
+  rAliq.getCell(2).alignment = { horizontal: 'right' };
+  const rLordo = addData(ws1, ['Imponibile computo (lordo)', t.totImpLordo], { zebra: true, eur: [2] });
+  const rSconto = addData(ws1, ['Sconto a corpo da contratto', t.sconto], { eur: [2] });
+  const rNetto = addData(ws1, ['Imponibile netto', F(`B${rLordo.number}-B${rSconto.number}`, t.totImp)], { zebra: true, eur: [2], bold: true });
+  addData(ws1, ['IVA 10% su lavori (detraibile)', F(`B${rNetto.number}*0.1`, t.totIva)], { eur: [2] });
+  addData(ws1, [`Onorari tecnico (8% + Cassa ${(t.cassaPct*100).toFixed(0)}% + IVA 22% incl.)`, F(`B${rNetto.number}*0.08*(1+${t.cassaPct})*1.22`, t.totOnorari)], { zebra: true, eur: [2] });
+  addSub(ws1, 'Criterio: base detraibile = imponibile netto di sconto + IVA 10%. Onorari IVA 22% inclusa, ripartiti pro-quota. Spese generali (cantiere, ponteggi, smaltimenti) distribuite proporzionalmente. Celle in colore = formule collegate, ricalcolano se modifichi un valore di input.', 6);
 
   addSezione(ws1, 'Detrazioni lavori per contenitore', 6);
   addHeader(ws1, ['Contenitore', 'Spesa allocata', 'Massimale', 'Spesa ammessa', 'Detrazione totale', 'Rata annua (10 anni)']);
   let detTotLavori = 0;
+  const contRowNums = [];
   ['br','eco-iso','eco-inf','eco-pdc'].forEach((k, i) => {
+    const rn = ws1.rowCount + 1;
     const ammessa = Math.min(totCont[k], MASSIMALI[k]);
     const det = ammessa * aliq;
     detTotLavori += det;
-    const r = addData(ws1, [LABEL_CONT[k], totCont[k], MASSIMALI[k], ammessa, det, det/10], { zebra: i % 2 === 1, eur: [2,3,4,5,6] });
+    const r = addData(ws1, [
+      LABEL_CONT[k],
+      totCont[k],
+      MASSIMALI[k],
+      F(`MIN(B${rn},C${rn})`, ammessa),
+      F(`D${rn}*$B$${rAliq.number}`, det),
+      F(`E${rn}/10`, det/10)
+    ], { zebra: i % 2 === 1, eur: [2,3,4,5,6] });
     if (totCont[k] > MASSIMALI[k]) r.getCell(2).font = { name: FONT, size: 10, color: { argb: 'FFB00020' } };
+    contRowNums.push(rn);
   });
-  addData(ws1, ['Totale lavori', Object.values(totCont).reduce((s,x)=>s+x,0), null, null, detTotLavori, detTotLavori/10], { totale: true, eur: [2,5,6] });
+  const rTotLavori = addData(ws1, [
+    'Totale lavori',
+    F(`SUM(B${contRowNums[0]}:B${contRowNums[3]})`, Object.values(totCont).reduce((s,x)=>s+x,0)),
+    null, null,
+    F(`SUM(E${contRowNums[0]}:E${contRowNums[3]})`, detTotLavori),
+    F(`SUM(F${contRowNums[0]}:F${contRowNums[3]})`, detTotLavori/10)
+  ], { totale: true, eur: [2,5,6] });
 
   addSezione(ws1, 'Altre detrazioni', 6);
   addHeader(ws1, ['Fonte', '', '', '', 'Totale residuo', 'Rata annua']);
-  if (detIntTot > 0) addData(ws1, ['Interessi passivi mutuo — art. 15 TUIR (19% su max € 4.000/anno, media primi 10 anni)', null, null, null, detIntTot, detIntMedia], { eur: [5,6] });
-  pregresse.forEach((d, i) => addData(ws1, [`${d.descrizione} (${d.rateResidue} rate residue dal ${d.annoInizio})`, null, null, null, d.rataAnnua * d.rateResidue, d.rataAnnua], { zebra: i % 2 === 0, eur: [5,6] }));
-  addData(ws1, ['TOTALE COMPLESSIVO', null, null, null, detTotLavori + detIntTot + detPregrTot, detTotLavori/10 + detIntMedia + detPregrAnnua], { totale: true, eur: [5,6] });
-
-  // ═══ FOGLIO 2 — VOCI E ALLOCAZIONI ═══
-  const ws2 = wb.addWorksheet('Voci e allocazioni', { views: [{ showGridLines: false, state: 'frozen', ySplit: 4 }] });
-  ws2.columns = [{ width: 5 }, { width: 55 }, { width: 14 }, { width: 14 }, { width: 12 }, { width: 15 }, { width: 24 }, { width: 10 }, { width: 14 }, { width: 15 }];
-  addTitolo(ws2, 'Voci computo e allocazione agevolazioni', 10);
-  addSub(ws2, `Sconto a corpo ${((1-fs)*100).toFixed(2).replace('.',',')}% ripartito proporzionalmente. Base detraibile = imponibile netto × 1,10 (IVA inclusa).`, 10);
-  ws2.addRow([]);
-  addHeader(ws2, ['N.', 'Descrizione', 'Imponibile lordo', 'Imponibile netto', 'IVA 10%', 'Base detraibile', 'Allocazione', 'Split PDC', 'Quota Eco Clima', 'Quota alloc. base']);
-  righeVoci.sort((a,b) => a.n - b.n).forEach((v, i) => {
-    const r = addData(ws2, [v.n, v.desc, v.impLordo, v.impNetto, v.iva, v.base, v.alloc,
-      v.isPdcSplit ? v.splitPerc : null, v.isPdcSplit ? v.quotaPdc : null, v.isPdcSplit ? v.quotaResto : null],
-      { zebra: i % 2 === 1, eur: [3,4,5,6,9,10], pct: [8], centerFirst: true });
-    r.getCell(1).alignment = { horizontal: 'center' };
-    if (v.isPdcSplit) r.getCell(9).font = { name: FONT, size: 10, color: { argb: COL.accentText }, bold: true };
-    if (v.alloc.startsWith('Pro-quota')) r.getCell(7).font = { name: FONT, size: 10, italic: true, color: { argb: COL.grayTx } };
+  let rIntEsiste = null;
+  if (sIntPrimi10Anni > 0) {
+    rIntEsiste = addData(ws1, [
+      'Interessi passivi mutuo — art. 15 TUIR (19% su max € 4.000/anno) — vedi foglio "Piano 10 anni"',
+      null, null, null,
+      F(`'Piano 10 anni'!F${RIGA_TOT_PIANO10}`, sIntPrimi10Anni),
+      F(`'Piano 10 anni'!F${RIGA_TOT_PIANO10}/10`, sIntPrimi10Anni/10)
+    ], { eur: [5,6] });
+  }
+  const rPregresseNums = pregresse.map((d, i) => {
+    const rn = ws1.rowCount + 1;
+    const r = addData(ws1, [
+      `${d.descrizione} (${d.rateResidue} rate residue dal ${d.annoInizio})`, null, null, null,
+      F(`F${rn}*${d.rateResidue}`, d.rataAnnua * d.rateResidue),
+      d.rataAnnua
+    ], { zebra: i % 2 === 0, eur: [5,6] });
+    return r.number;
   });
-  addData(ws2, [null, 'TOTALI', state.voci.reduce((s,v)=>s+v.imponibile,0), t.totImp, t.totIva, t.totImp*1.10, null, null, null, null], { totale: true, eur: [3,4,5,6] });
 
-  // ═══ FOGLIO 3 — ONORARI PRO-QUOTA ═══
+  const totaleColE = [`E${rTotLavori.number}`, rIntEsiste ? `E${rIntEsiste.number}` : null, ...rPregresseNums.map(n => `E${n}`)].filter(Boolean).join('+');
+  const totaleColF = [`F${rTotLavori.number}`, rIntEsiste ? `F${rIntEsiste.number}` : null, ...rPregresseNums.map(n => `F${n}`)].filter(Boolean).join('+');
+  addData(ws1, [
+    'TOTALE COMPLESSIVO', null, null, null,
+    F(totaleColE, detTotLavori + sIntPrimi10Anni + detPregrTot),
+    F(totaleColF, detTotLavori/10 + sIntPrimi10Anni/10 + detPregrAnnua)
+  ], { totale: true, eur: [5,6] });
+
+  // ═══ FOGLIO 2 — COMPUTO METRICO ═══
+  const ws2c = wb.addWorksheet('Computo', { views: [{ showGridLines: false, state: 'frozen', ySplit: 6 }] });
+  ws2c.columns = [
+    { width: 5 },  { width: 16 }, { width: 48 }, { width: 7 },
+    { width: 10 }, { width: 12 }, { width: 15 }, { width: 14 },
+    { width: 15 }, { width: 14 }, { width: 13 }
+  ];
+  addTitolo(ws2c, 'Computo metrico', 11);
+  addSub(ws2c, `Committente: ${nomi}${int.indirizzo ? ' — ' + int.indirizzo : ''} · Generato il ${oggi}`, 11);
+
+  addSezione(ws2c, 'Riepilogo economico', 11);
+  const rRiepC1 = ws2c.addRow(['Totale lavori (lordo)', null, null, null, null, null, t.totImpLordo]);
+  ws2c.mergeCells(rRiepC1.number, 1, rRiepC1.number, 6);
+  rRiepC1.font = { name: FONT, size: 10 };
+  rRiepC1.getCell(7).numFmt = EUR; rRiepC1.getCell(7).font = { name: FONT, size: 10 }; rRiepC1.getCell(7).alignment = { horizontal: 'right' };
+
+  const rRiepC2 = ws2c.addRow(['Sconto a corpo da contratto', null, null, null, null, null, t.sconto]);
+  ws2c.mergeCells(rRiepC2.number, 1, rRiepC2.number, 6);
+  rRiepC2.font = { name: FONT, size: 10, color: { argb: COL.accentText } };
+  rRiepC2.getCell(7).numFmt = EUR; rRiepC2.getCell(7).font = { name: FONT, size: 10, color: { argb: COL.accentText } }; rRiepC2.getCell(7).alignment = { horizontal: 'right' };
+
+  const rRiepC3 = ws2c.addRow(['Totale lavori (netto)', null, null, null, null, null, F(`G${rRiepC1.number}-G${rRiepC2.number}`, t.totImp)]);
+  ws2c.mergeCells(rRiepC3.number, 1, rRiepC3.number, 6);
+  rRiepC3.font = { name: FONT, size: 10, bold: true };
+  for (let i = 1; i <= 7; i++) rRiepC3.getCell(i).fill = fill(COL.totalFill);
+  rRiepC3.getCell(7).numFmt = EUR; rRiepC3.getCell(7).font = { name: FONT, size: 10, bold: true, color: { argb: COL.darkTx } }; rRiepC3.getCell(7).alignment = { horizontal: 'right' };
+
+  const rRiepC4 = ws2c.addRow(['IVA 10% sui lavori', null, null, null, null, null, F(`G${rRiepC3.number}*0.1`, t.totIva)]);
+  ws2c.mergeCells(rRiepC4.number, 1, rRiepC4.number, 6);
+  rRiepC4.font = { name: FONT, size: 10 };
+  rRiepC4.getCell(7).numFmt = EUR; rRiepC4.getCell(7).font = { name: FONT, size: 10 }; rRiepC4.getCell(7).alignment = { horizontal: 'right' };
+
+  const rRiepC5 = ws2c.addRow(['Onorari tecnico 8% (netto) + Cassa ' + (t.cassaPct*100).toFixed(0) + '% + IVA 22%', null, null, null, null, null, F(`G${rRiepC3.number}*0.08*(1+${t.cassaPct})*1.22`, t.totOnorari)]);
+  ws2c.mergeCells(rRiepC5.number, 1, rRiepC5.number, 6);
+  rRiepC5.font = { name: FONT, size: 10 };
+  rRiepC5.getCell(7).numFmt = EUR; rRiepC5.getCell(7).font = { name: FONT, size: 10 }; rRiepC5.getCell(7).alignment = { horizontal: 'right' };
+
+  const rRiepC6 = ws2c.addRow(['COSTO TOTALE INTERVENTO', null, null, null, null, null, F(`G${rRiepC3.number}+G${rRiepC4.number}+G${rRiepC5.number}`, t.totFinale)]);
+  ws2c.mergeCells(rRiepC6.number, 1, rRiepC6.number, 6);
+  for (let i = 1; i <= 7; i++) rRiepC6.getCell(i).fill = fill(COL.totalFill);
+  rRiepC6.getCell(7).numFmt = EUR; rRiepC6.getCell(7).font = { name: FONT, size: 11, bold: true, color: { argb: COL.darkTx } }; rRiepC6.getCell(7).alignment = { horizontal: 'right' };
+  rRiepC6.font = { name: FONT, size: 11, bold: true, color: { argb: COL.darkTx } };
+
+  addSezione(ws2c, `Dettaglio voci — sconto ${((1-fs)*100).toFixed(2).replace('.',',')}% ripartito proporzionalmente su ogni riga`, 11);
+  addHeader(ws2c, ['N.', 'Tariffa', 'Descrizione', 'U.M.', 'Quantità', 'Prezzo unit.', 'Importo lordo', 'Sconto ripartito', 'Importo netto', 'Categoria', 'Stato']);
+
+  const STATO_LABEL = { 'preventivo': 'Preventivo', 'appaltato': 'Appaltato', 'in-corso': 'In corso', 'completato': 'Completato' };
+  const vociOrd = [...state.voci].sort((a,b) => (parseInt(a.numero)||0) - (parseInt(b.numero)||0));
+  const primaRigaVoce = ws2c.rowCount + 1;
+  vociOrd.forEach((v, i) => {
+    const rn = ws2c.rowCount + 1;
+    const lordo = v.imponibile || 0;
+    const scontoRiga = lordo * (1 - fs);
+    const netto = lordo * fs;
+    const r = addData(ws2c, [
+      v.numero || '', v.tariffa || '', v.descrizione || '', v.um || '',
+      v.quantita || null, v.prezzoUnit || null, lordo,
+      F(`G${rn}*($G$${rRiepC2.number}/$G$${rRiepC1.number})`, scontoRiga),
+      F(`G${rn}-H${rn}`, netto),
+      v.categoria || '', STATO_LABEL[v.stato] || v.stato || ''
+    ], { zebra: i % 2 === 1, eur: [6,7,8,9], centerFirst: true });
+    r.getCell(1).alignment = { horizontal: 'center' };
+    r.getCell(2).font = { name: FONT, size: 9, color: { argb: COL.grayTx } };
+    r.getCell(8).font = { name: FONT, size: 10, color: { argb: COL.accentText } };
+    if (v.quantita) r.getCell(5).numFmt = '#,##0.00';
+  });
+  const ultimaRigaVoce = ws2c.rowCount;
+  const totLordoC = vociOrd.reduce((s,v) => s + (v.imponibile||0), 0);
+  const totScontoC = totLordoC * (1 - fs);
+  const totNettoC = totLordoC * fs;
+  addData(ws2c, [
+    null, null, 'TOTALI', null, null, null,
+    F(`SUM(G${primaRigaVoce}:G${ultimaRigaVoce})`, totLordoC),
+    F(`SUM(H${primaRigaVoce}:H${ultimaRigaVoce})`, totScontoC),
+    F(`SUM(I${primaRigaVoce}:I${ultimaRigaVoce})`, totNettoC),
+    null, null
+  ], { totale: true, eur: [7,8,9] });
+
+  addSub(ws2c, 'Colonna "Sconto ripartito" = Importo lordo × (Sconto totale contratto / Totale lordo). "Importo netto" = Lordo − Sconto ripartito; è la base usata per IVA, onorari e agevolazioni fiscali. Celle colorate = formule collegate al Riepilogo economico qui sopra.', 11);
+
+  // ═══ FOGLIO 3 — VOCI E ALLOCAZIONI ═══
+  const ws2 = wb.addWorksheet('Voci e allocazioni', { views: [{ showGridLines: false, state: 'frozen', ySplit: 4 }] });
+  ws2.columns = [{ width: 5 }, { width: 48 }, { width: 14 }, { width: 14 }, { width: 12 }, { width: 15 }, { width: 22 }, { width: 48 }];
+  addTitolo(ws2, 'Voci computo e allocazione agevolazioni', 8);
+  addSub(ws2, `Sconto a corpo ${((1-fs)*100).toFixed(2).replace('.',',')}% ripartito proporzionalmente. Base detraibile = imponibile netto × 1,10 (IVA inclusa). Le voci con più agevolazioni o spese generali pro-quota compaiono su più righe (stesso N°), una per ciascuna allocazione — vedi colonna Note per il criterio.`, 8);
+  ws2.addRow([]);
+  addHeader(ws2, ['N.', 'Descrizione', 'Imponibile lordo', 'Imponibile netto', 'IVA 10%', 'Base detraibile', 'Allocazione', 'Note — criterio di allocazione']);
+  const primaRigaAlloc = ws2.rowCount + 1;
+  righeVoci.sort((a,b) => (parseInt(a.n)||0) - (parseInt(b.n)||0));
+  righeVoci.forEach((v, i) => {
+    const rn = ws2.rowCount + 1;
+    const r = addData(ws2, [
+      v.n, v.desc, v.impLordo,
+      F(`C${rn}*(1-('Computo'!$G$${rRiepC2.number}/'Computo'!$G$${rRiepC1.number}))`, v.impNetto),
+      F(`D${rn}*0.1`, v.iva),
+      F(`D${rn}+E${rn}`, v.base),
+      v.alloc,
+      v.nota || ''
+    ], { zebra: i % 2 === 1, eur: [3,4,5,6], centerFirst: true });
+    r.getCell(1).alignment = { horizontal: 'center' };
+    r.getCell(8).font = { name: FONT, size: 9, italic: true, color: { argb: COL.grayTx } };
+    r.getCell(8).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+    if (v.tipo === 'pro-quota') {
+      r.getCell(2).font = { name: FONT, size: 10, italic: true, color: { argb: COL.grayTx } };
+      r.getCell(7).font = { name: FONT, size: 10, italic: true, color: { argb: COL.grayTx } };
+    }
+    if (v.tipo === 'split') {
+      r.getCell(7).font = { name: FONT, size: 10, color: { argb: COL.accentText }, bold: true };
+    }
+  });
+  const ultimaRigaAlloc = ws2.rowCount;
+  addData(ws2, [
+    null, 'TOTALI',
+    F(`SUM(C${primaRigaAlloc}:C${ultimaRigaAlloc})`, state.voci.reduce((s,v)=>s+v.imponibile,0)),
+    F(`SUM(D${primaRigaAlloc}:D${ultimaRigaAlloc})`, t.totImp),
+    F(`SUM(E${primaRigaAlloc}:E${ultimaRigaAlloc})`, t.totIva),
+    F(`SUM(F${primaRigaAlloc}:F${ultimaRigaAlloc})`, t.totImp*1.10),
+    null, null
+  ], { totale: true, eur: [3,4,5,6] });
+  addSub(ws2, 'Imponibile netto è collegato al foglio "Computo" (stesso sconto contrattuale ripartito). IVA e base detraibile sono formule sulla stessa riga. Righe in corsivo grigio = quote di spese generali pro-quota; righe verdi in grassetto = quote impianto PDC/ACS.', 8);
+
+  // ═══ FOGLIO 4 — ONORARI PRO-QUOTA ═══
   const ws3 = wb.addWorksheet('Onorari pro-quota', { views: [{ showGridLines: false }] });
   ws3.columns = [{ width: 34 }, { width: 26 }, { width: 13 }, { width: 22 }, { width: 22 }];
   addTitolo(ws3, 'Onorari tecnico — ripartizione pro-quota', 5);
-  addSub(ws3, 'Onorari = 8% su imponibile netto di sconto, + IVA 22%. Ripartiti in proporzione alla spesa allocata in ciascun contenitore.', 5);
   addSezione(ws3, 'Determinazione onorari', 5);
-  addData(ws3, ['Onorari netti (8%)', t.onorariNetti], { eur: [2] });
-  addData(ws3, ['IVA 22%', t.ivaOnorari], { zebra: true, eur: [2] });
-  addData(ws3, ['Totale onorari', t.totOnorari], { totale: true, eur: [2] });
+  addSub(ws3, `Onorari = 8% su imponibile netto di sconto (collegato al foglio "Computo"), + Cassa previdenziale ${(t.cassaPct*100).toFixed(0)}% (imponibile IVA), + IVA 22%.`, 5);
+  const rOnNetti = addData(ws3, ['Onorari netti (8%)', F(`'Computo'!$G$${rRiepC3.number}*0.08`, t.onorariNetti)], { eur: [2] });
+  const rOnCassa = addData(ws3, [`Cassa previdenziale (${(t.cassaPct*100).toFixed(0)}% su onorari netti)`, F(`B${rOnNetti.number}*${t.cassaPct}`, t.cassaPrevidenziale)], { zebra: true, eur: [2] });
+  const rOnImpIva = addData(ws3, ['Imponibile IVA (onorari + cassa)', F(`B${rOnNetti.number}+B${rOnCassa.number}`, t.imponibileOnorariIva)], { eur: [2] });
+  const rOnIva = addData(ws3, ['IVA 22%', F(`B${rOnImpIva.number}*0.22`, t.ivaOnorari)], { zebra: true, eur: [2] });
+  const rOnTot = addData(ws3, ['Totale onorari', F(`B${rOnImpIva.number}+B${rOnIva.number}`, t.totOnorari)], { totale: true, eur: [2] });
   addSezione(ws3, 'Ripartizione sui contenitori', 5);
   addHeader(ws3, ['Contenitore', 'Spesa allocata (ante onorari)', 'Incidenza', 'Quota onorari', 'Spesa finale']);
+  const primaRigaOn = ws3.rowCount + 1;
+  const totaleRigaOn = primaRigaOn + 4;
   ['br','eco-iso','eco-inf','eco-pdc'].forEach((k, i) => {
+    const rn = ws3.rowCount + 1;
     const ante = totCont[k] - quoteOno[k];
-    addData(ws3, [LABEL_CONT[k], ante, ante / totDetPreOno, quoteOno[k], totCont[k]], { zebra: i % 2 === 1, eur: [2,4,5], pct: [3] });
+    addData(ws3, [
+      LABEL_CONT[k],
+      ante,
+      F(`B${rn}/$B$${totaleRigaOn}`, ante / totDetPreOno),
+      F(`$B$${rOnTot.number}*C${rn}`, quoteOno[k]),
+      F(`B${rn}+D${rn}`, totCont[k])
+    ], { zebra: i % 2 === 1, eur: [2,4,5], pct: [3] });
   });
-  addData(ws3, ['TOTALE', totDetPreOno, 1, onorariTot, Object.values(totCont).reduce((s,x)=>s+x,0)], { totale: true, eur: [2,4,5], pct: [3] });
-  addSub(ws3, `Le spese generali pro-quota (bagno di cantiere, ponteggi, smaltimenti — tot. ${totPQ.toFixed(2).replace('.',',')} €) sono già distribuite proporzionalmente nei contenitori.`, 5);
+  const ultimaRigaOn = ws3.rowCount;
+  addData(ws3, [
+    'TOTALE',
+    F(`SUM(B${primaRigaOn}:B${ultimaRigaOn})`, totDetPreOno),
+    F(`SUM(C${primaRigaOn}:C${ultimaRigaOn})`, 1),
+    F(`SUM(D${primaRigaOn}:D${ultimaRigaOn})`, onorariTot),
+    F(`SUM(E${primaRigaOn}:E${ultimaRigaOn})`, Object.values(totCont).reduce((s,x)=>s+x,0))
+  ], { totale: true, eur: [2,4,5], pct: [3] });
+  addSub(ws3, `Le spese generali pro-quota (bagno di cantiere, ponteggi, smaltimenti — tot. ${vociProQuotaRaw.reduce((s,x)=>s+x.baseTot,0).toFixed(2).replace('.',',')} €, dettagliate riga per riga nel foglio "Voci e allocazioni") sono già distribuite proporzionalmente nei contenitori. "Onorari netti" è collegato al foglio "Computo".`, 5);
 
-  // ═══ FOGLIO 4 — PIANO 10 ANNI ═══
+  // ═══ FOGLIO 5 — PIANO 10 ANNI ═══
   const ws4 = wb.addWorksheet('Piano 10 anni', { views: [{ showGridLines: false, state: 'frozen', ySplit: 4 }] });
   ws4.columns = [{ width: 12 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 16 }, { width: 19 }, { width: 13 }, { width: 15 }, { width: 15 }];
   addTitolo(ws4, 'Piano detrazioni IRPEF — anno per anno', 9);
-  const annoInizio = parseInt(anno);
-  addSub(ws4, `Anno = anno dei redditi; il rimborso arriva l'anno successivo (redditi ${anno} → rimborso estate ${annoInizio+1}). Interessi mutuo e pregresse proseguono oltre i 10 anni dei lavori.`, 9);
+  addSub(ws4, `Anno = anno dei redditi; il rimborso arriva l'anno successivo (redditi ${anno} → rimborso estate ${annoInizioIRPEF+1}). Pregresse proseguono anche oltre i 10 anni dei lavori; gli interessi mutuo restano deducibili per tutta la durata residua del mutuo (non mostrata qui).`, 9);
   ws4.addRow([]);
   addHeader(ws4, ['Anno redditi', 'Bonus Ristrutt.', 'Eco Isolamento', 'Eco Infissi', 'Eco Climatizz.', 'Interessi mutuo (art.15)', 'Pregresse', 'TOTALE ANNO', 'Cumulato']);
   let cum = 0;
@@ -8099,18 +8474,41 @@ async function _buildExcelCommercialista() {
   const dIso = Math.min(totCont['eco-iso'], MASSIMALI['eco-iso']) * aliq / 10;
   const dInf = Math.min(totCont['eco-inf'], MASSIMALI['eco-inf']) * aliq / 10;
   const dPdc = Math.min(totCont['eco-pdc'], MASSIMALI['eco-pdc']) * aliq / 10;
-  let sInt = 0, sPre = 0, sTot = 0;
+  let sPre = 0, sTot = 0;
+  const primaRigaPiano = ws4.rowCount + 1;
   for (let i = 0; i < 10; i++) {
-    const aR = annoInizio + i;
-    const dInt = Math.min(intPerAnnoS[aR] || 0, 4000) * 0.19;
+    const rn = ws4.rowCount + 1;
+    const aR = annoInizioIRPEF + i;
+    const dInt = dIntPerAnnoArr[i]; // stessa fonte usata nel foglio Riepilogo — nessuna duplicazione di logica
     const dPre = pregresse.reduce((s,d) => s + ((aR >= d.annoInizio && aR < d.annoInizio + d.rateResidue) ? d.rataAnnua : 0), 0);
     const tot = dBr + dIso + dInf + dPdc + dInt + dPre;
-    cum += tot; sInt += dInt; sPre += dPre; sTot += tot;
-    const r = addData(ws4, [aR, dBr, dIso, dInf, dPdc, dInt, dPre, tot, cum], { zebra: i % 2 === 1, eur: [2,3,4,5,6,7,8,9], centerFirst: true });
+    cum += tot; sPre += dPre; sTot += tot;
+    const r = addData(ws4, [
+      aR,
+      F(`'Riepilogo'!$F$${contRowNums[0]}`, dBr),
+      F(`'Riepilogo'!$F$${contRowNums[1]}`, dIso),
+      F(`'Riepilogo'!$F$${contRowNums[2]}`, dInf),
+      F(`'Riepilogo'!$F$${contRowNums[3]}`, dPdc),
+      dInt, dPre,
+      F(`SUM(B${rn}:G${rn})`, tot),
+      i === 0 ? F(`H${rn}`, tot) : F(`I${rn-1}+H${rn}`, cum)
+    ], { zebra: i % 2 === 1, eur: [2,3,4,5,6,7,8,9], centerFirst: true });
     r.getCell(1).alignment = { horizontal: 'center' };
     r.getCell(8).font = { name: FONT, size: 10, bold: true };
   }
-  addData(ws4, ['TOTALE', dBr*10, dIso*10, dInf*10, dPdc*10, sInt, sPre, sTot, null], { totale: true, eur: [2,3,4,5,6,7,8] });
+  const ultimaRigaPiano = ws4.rowCount;
+  addData(ws4, [
+    'TOTALE',
+    F(`SUM(B${primaRigaPiano}:B${ultimaRigaPiano})`, dBr*10),
+    F(`SUM(C${primaRigaPiano}:C${ultimaRigaPiano})`, dIso*10),
+    F(`SUM(D${primaRigaPiano}:D${ultimaRigaPiano})`, dInf*10),
+    F(`SUM(E${primaRigaPiano}:E${ultimaRigaPiano})`, dPdc*10),
+    F(`SUM(F${primaRigaPiano}:F${ultimaRigaPiano})`, sIntPrimi10Anni),
+    F(`SUM(G${primaRigaPiano}:G${ultimaRigaPiano})`, sPre),
+    F(`SUM(H${primaRigaPiano}:H${ultimaRigaPiano})`, sTot),
+    null
+  ], { totale: true, eur: [2,3,4,5,6,7,8] });
+  addSub(ws4, 'Colonne BR/Eco collegate al foglio "Riepilogo" (rata annua per contenitore); la riga TOTALE degli interessi mutuo è a sua volta la fonte del foglio "Riepilogo" (collegamento bidirezionale, stesso numero ovunque). Pregresse derivano dalle detrazioni pregresse configurate in app. Totale anno e Cumulato sono formule sulla stessa colonna.', 9);
 
   // ── Download ──
   const buf = await wb.xlsx.writeBuffer();
