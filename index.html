@@ -527,8 +527,49 @@
     #tabella-computo { display: none !important; }
     .mobile-cards { display: flex !important; }
 
-    /* Metriche: 2 colonne */
+    /* Fatture, Mutuo, Agevolazioni, Cash flow, Simulatore: tabelle → liste/card */
+    #tabella-fatture { display: none !important; }
+    #mut-piano-body table, #mut-estinzioni-lista table,
+    #agev-allocazione-body table, #agev-onorari-body table,
+    #agev-piano-body table, #agev-pregresse-lista table,
+    #agev-recap-body table, #cf-tabella,
+    #dettaglio-body table, #caparre-lista table {
+      display: none !important;
+    }
+    .mobile-list { display: flex !important; }
+
+    /* Grid statici a 2 colonne → 1 colonna su schermi stretti */
+    #dash-riepilogo-grid, #intestatari-grid, #csv-format-grid {
+      grid-template-columns: 1fr !important;
+    }
+    #intestatari-grid { gap: 20px !important; }
+
+    /* Form riga fattura (dentro modal): 6 colonne → 1 colonna, piena larghezza */
+    .riga-fattura-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    /* Metriche: 2 colonne, font più compatto per stare meglio in card strette */
     .metrics-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .metric-card { padding: 12px 13px; }
+    .metric-label { font-size: 10px; }
+    .metric-value { font-size: 18px; }
+    .metric-sub { font-size: 10.5px; }
+
+    /* Testo secondario più compatto ovunque, per alleggerire le schermate dense */
+    .card-title { font-size: 13px; }
+    .totali-row { font-size: 12.5px; }
+    .badge { font-size: 10.5px; padding: 2px 7px; }
+
+    /* Simulatore: tabs al posto delle 3 tabelle affiancate */
+    .sim-tabs { display: flex !important; }
+    .sim-tab-panel { display: none; }
+    .sim-tab-panel.active { display: block; }
+    #sim-tabelle-grid {
+      grid-template-columns: 1fr !important;
+      min-width: 0 !important;
+    }
+    #sim-confronto-cards { grid-template-columns: 1fr !important; }
 
     /* Page header mobile */
     .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
@@ -732,6 +773,287 @@
     justify-content: center;
     font-size: 12px;
     padding: 9px 0;
+  }
+
+  /* ── LIST-ROW: pattern compatto per piani/ledger (mutuo, cash flow, simulatore) ── */
+  .mobile-list {
+    display: none;
+    flex-direction: column;
+  }
+  .list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row-left { flex: 1; min-width: 0; }
+  .list-row-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: monospace;
+  }
+  .list-row-sub {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+    font-family: monospace;
+  }
+  .list-row-tag {
+    font-size: 10px;
+    color: var(--accent-text);
+    margin-top: 3px;
+    font-weight: 600;
+  }
+  .list-row-right { text-align: right; flex-shrink: 0; }
+  .list-row-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    font-family: monospace;
+  }
+  .list-row-sub2 {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+    font-family: monospace;
+  }
+
+  /* ── CARD GENERICA: entità con azioni (fatture, estinzioni, pregresse) ── */
+  .entity-card {
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 13px 14px;
+  }
+  .entity-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .entity-card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .entity-card-sub {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+  .entity-card-value {
+    font-size: 16px;
+    font-weight: 600;
+    font-family: monospace;
+    color: var(--text);
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .entity-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .entity-card-badges .badge { font-size: 10px; }
+  .entity-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 0.5px solid var(--border);
+  }
+  .entity-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .entity-card-actions .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 12px;
+    padding: 8px 0;
+  }
+
+  /* ── CARD ALLOCAZIONE (Agevolazioni): controlli interattivi a piena larghezza ── */
+  .alloc-card {
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 13px 14px;
+  }
+  .alloc-card-top {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .alloc-card-num {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--text-3);
+    padding-top: 2px;
+  }
+  .alloc-card-desc {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.35;
+  }
+  .alloc-card-importo {
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: monospace;
+    color: var(--text);
+  }
+  .alloc-card-field { margin-top: 10px; }
+  .alloc-card-field label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .alloc-card-field select {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 14px;
+  }
+  .alloc-card-split {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .alloc-card-split input {
+    width: 70px;
+    padding: 8px 10px;
+    text-align: right;
+  }
+  .alloc-card-split-info {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .alloc-card-split-info strong { color: var(--accent-text); }
+
+  /* ── CARD ANNO (Piano IRPEF unificato) ── */
+  .anno-card {
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 13px 14px;
+  }
+  .anno-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .anno-card-anno {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .anno-card-tot {
+    font-size: 16px;
+    font-weight: 600;
+    font-family: monospace;
+    color: var(--accent-text);
+  }
+  .anno-card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 0.5px solid var(--border);
+  }
+  .anno-card-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .anno-card-item span:first-child { color: var(--text-3); }
+  .anno-card-item span:last-child { font-family: monospace; color: var(--text-2); }
+  .anno-card-cum {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .anno-card-cum strong { font-family: monospace; color: var(--text-2); }
+
+  /* ── CARD DETRAZIONE (Recap unificato) ── */
+  .detr-card {
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 13px 14px;
+  }
+  .detr-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .detr-card-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .detr-card-rata {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .detr-card-rata-val {
+    font-size: 16px;
+    font-weight: 600;
+    font-family: monospace;
+  }
+  .detr-card-rata-lbl {
+    font-size: 9px;
+    color: var(--text-3);
+    text-transform: uppercase;
+  }
+  .detr-card-meta {
+    display: flex;
+    gap: 14px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .detr-card-meta strong { color: var(--text-2); font-family: monospace; }
+
+  /* ── SIMULATORE MOBILE: tabs invece di 3 colonne affiancate ── */
+  .sim-tabs {
+    display: none;
+    gap: 8px;
+    padding: 12px 14px 0;
+  }
+  .sim-tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .sim-tab-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
   }
 </style>
 </head>
@@ -941,7 +1263,7 @@
     <div class="card">
       <div class="card-header"><span class="card-title">Riepilogo finanziario</span></div>
       <div class="card-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div id="dash-riepilogo-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
           <div>
             <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Uscite totali stimate</div>
             <div id="dash-uscite-detail"></div>
@@ -968,7 +1290,7 @@
     <div class="card" style="margin-bottom:20px">
       <div class="card-header"><span class="card-title">Intestatari</span></div>
       <div class="card-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div id="intestatari-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
           <!-- Intestatario A -->
           <div>
             <div style="font-size:12px;font-weight:600;color:var(--accent-text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:14px;background:var(--accent-light);padding:6px 10px;border-radius:var(--radius)">Intestatario A</div>
@@ -1411,6 +1733,7 @@
           </thead>
           <tbody id="tbody-fatture"></tbody>
         </table>
+        <div id="cards-fatture" class="mobile-cards"></div>
       </div>
     </div>
   </div>
@@ -1912,6 +2235,11 @@
           <span class="card-title">Piano anno per anno (anni 0-10) — riduzione rata</span>
           <span style="font-size:11px;color:var(--text-3)">Cifre cumulate dall'inizio</span>
         </div>
+        <div class="sim-tabs" id="sim-tabs">
+          <div class="sim-tab-btn active" data-durata="20" onclick="mostraSimTab(20)">20 anni</div>
+          <div class="sim-tab-btn" data-durata="25" onclick="mostraSimTab(25)">25 anni</div>
+          <div class="sim-tab-btn" data-durata="30" onclick="mostraSimTab(30)">30 anni</div>
+        </div>
         <div style="overflow-x:auto;padding:0 0 12px">
           <div id="sim-tabelle-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;min-width:900px"></div>
         </div>
@@ -2062,10 +2390,9 @@
           </thead>
           <tbody id="cf-tabella-body"></tbody>
         </table>
+        <div id="cf-lista-mobile" class="mobile-list" style="gap:10px;padding:10px"></div>
       </div>
     </div>
-
-    <!-- USCITE PREVISIONALI MANUALI -->
     <div class="card" style="margin-bottom:20px">
       <div class="card-header">
         <span class="card-title">Uscite previsionali manuali</span>
@@ -2415,7 +2742,7 @@
       <p style="font-size:13px; color:var(--text-2); margin-bottom:12px;">
         Accetta due formati:
       </p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px" id="csv-format-grid">
         <div style="background:var(--surface-2);border-radius:var(--radius);padding:10px 12px">
           <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Formato completo (xlsx/csv)</div>
           <code style="font-size:11px;color:var(--text-2);line-height:1.8">N°; Tariffa; Descrizione; U.M.; Quantità; Prezzo unit.; Importo; Categoria; Stato; Note</code>
@@ -3369,7 +3696,11 @@ function rigaHTML(r, idx) {
     ['conto-termico','C.Termico'],['nessuna','Nessuna']
   ].map(([v,l]) => `<option value="${v}"${r.agevolazione===v?' selected':''}>${l}</option>`).join('');
   return `<div class="riga-fattura" data-idx="${idx}" style="background:var(--surface-2);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px">
-    <div style="display:grid;grid-template-columns:3fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em">Riga ${idx+1}</span>
+      <button class="btn btn-sm btn-danger" onclick="rimuoviRigaFattura(${idx})">✕</button>
+    </div>
+    <div class="riga-fattura-grid" style="display:grid;grid-template-columns:3fr 1fr 1fr 1fr 1fr;gap:8px;align-items:end">
       <div class="form-group" style="margin:0">
         <label style="font-size:10px">Descrizione riga *</label>
         <input type="text" value="${escHtml(r.descrizione||'')}" placeholder="es. Saldo pavimentazione zona giorno"
@@ -3399,7 +3730,6 @@ function rigaHTML(r, idx) {
         <select id="agev-riga-${idx}" onchange="righeCorrente[${idx}].agevolazione=this.value"
           style="font-size:12px;padding:6px 8px">${agevOpts}</select>
       </div>
-      <button class="btn btn-sm btn-danger" onclick="rimuoviRigaFattura(${idx})" style="margin-bottom:1px;padding:5px 8px">✕</button>
     </div>
   </div>`;
 }
@@ -3478,8 +3808,10 @@ function renderTabelleFatture() {
   const empty = document.getElementById('empty-fatture');
   const table = document.getElementById('tabella-fatture');
   const tbody = document.getElementById('tbody-fatture');
+  const cards = document.getElementById('cards-fatture');
   if (!fatture.length) {
     empty.style.display = 'block'; table.style.display = 'none';
+    if (cards) cards.innerHTML = '';
     aggiornaMetricheFatture(); return;
   }
   empty.style.display = 'none'; table.style.display = 'table';
@@ -3516,6 +3848,43 @@ function renderTabelleFatture() {
       </td>
     </tr>`;
   }).join('');
+
+  // ── Card mobile ──
+  if (cards) {
+    cards.innerHTML = sorted.map(f => {
+      const [sc,sl] = BADGE_STATO_PAG[f.statoPagamento] || ['badge-gray', f.statoPagamento];
+      const dataFmt = f.data ? new Date(f.data).toLocaleDateString('it-IT') : '—';
+      const dataPagFmt = f.dataPagamento ? new Date(f.dataPagamento).toLocaleDateString('it-IT') : '';
+      const righe = f.righe || [];
+      const cats = [...new Set(righe.map(r=>r.categoria))];
+      const catBadges = cats.slice(0,3).map(c => `<span class="badge badge-gray">${c}</span>`).join('') +
+        (cats.length>3 ? `<span style="font-size:10px;color:var(--text-3);align-self:center">+${cats.length-3}</span>` : '');
+      return `<div class="voce-card" onclick="apriDettaglioFattura('${f.id}')" style="cursor:pointer">
+        <div class="voce-card-top">
+          <div class="voce-card-main">
+            <div class="voce-card-desc">${escHtml(f.fornitore||'')}</div>
+            <div class="voce-card-tariffa">${escHtml(f.numero||'—')} · ${dataFmt}${righe.length > 1 ? ' · ' + righe.length + ' righe' : ''}</div>
+          </div>
+        </div>
+        <div class="voce-card-badges">
+          ${catBadges}
+          <span class="badge ${sc}">${sl}</span>
+        </div>
+        <div class="voce-card-bottom">
+          <div class="voce-card-qta">${dataPagFmt ? 'Pagata il ' + dataPagFmt : ''}</div>
+          <div class="voce-card-totali">
+            <div class="voce-card-imponibile">${formatEur(f.totaleFattura||0)}</div>
+            <div class="voce-card-iva">imp. ${formatEur(f.totaleImponibile||0)} + IVA ${formatEur(f.totaleIva||0)}</div>
+          </div>
+        </div>
+        <div class="voce-card-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-sm" onclick="apriModalFattura('${f.id}')">✏️ Modifica</button>
+          <button class="btn btn-sm btn-danger" onclick="eliminaFattura('${f.id}')">✕ Elimina</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
   aggiornaMetricheFatture();
 }
 
@@ -3761,6 +4130,24 @@ function apriDettaglioFattura(id) {
     </tr>`;
   }).join('');
 
+  const righeCardsHTML = (f.righe||[]).map(r => {
+    const agev = BADGE_AGEV[r.agevolazione];
+    const iva = Math.round(r.imponibile*(r.aliquotaIva||0))/100;
+    return `<div class="list-row">
+      <div class="list-row-left">
+        <div class="list-row-title" style="font-family:var(--font);font-weight:500;font-size:13px">${escHtml(r.descrizione)}</div>
+        <div class="entity-card-badges" style="margin-top:6px">
+          <span class="badge badge-gray">${r.categoria}</span>
+          ${agev?`<span class="badge ${agev[0]}">${agev[1]}</span>`:''}
+        </div>
+      </div>
+      <div class="list-row-right">
+        <div class="list-row-value">${formatEur(r.imponibile)}</div>
+        <div class="list-row-sub2">+ IVA ${formatEur(iva)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
   document.getElementById('dettaglio-body').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
       <div><div style="font-size:11px;color:var(--text-3);margin-bottom:3px">Data</div><div style="font-weight:500">${dataFmt}</div></div>
@@ -3775,7 +4162,8 @@ function apriDettaglioFattura(id) {
       </tr></thead>
       <tbody>${righeHTML}</tbody>
     </table>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+    <div class="mobile-list" style="margin-bottom:14px;border:0.5px solid var(--border);border-radius:var(--radius-lg)">${righeCardsHTML}</div>
+    <div class="metrics-grid" style="margin-bottom:14px">
       <div class="metric-card"><div class="metric-label">Imponibile</div><div style="font-size:15px;font-weight:600">${formatEur(f.totaleImponibile||0)}</div></div>
       <div class="metric-card"><div class="metric-label">IVA</div><div style="font-size:15px;font-weight:600">${formatEur(f.totaleIva||0)}</div></div>
       <div class="metric-card accent"><div class="metric-label">Totale</div><div style="font-size:15px;font-weight:600">${formatEur(f.totaleFattura||0)}</div></div>
@@ -4173,7 +4561,39 @@ function renderAllocazioneVoci(voci, vociPerCont, vociProQuota) {
       <th style="width:16%">Quota PDC/ACS</th>
     </tr></thead>
     <tbody>${righe}</tbody>
-  </table>`;
+  </table>
+  <div class="mobile-list" style="padding:10px;gap:10px">
+    ${voci.map(v => {
+      const baseIvaInclusa = v.imponibile * _fsr * 1.10;
+      const allocCorrente = agevState.allocazioni[v.id] || MAPPA_DEFAULT[v.numero] || 'br';
+      const isFiltrata = filtroContenitore && allocCorrente !== filtroContenitore;
+      const opacita = isFiltrata ? 'opacity:0.4;' : '';
+      const opts = opzioniAlloc.map(o =>
+        `<option value="${o.value}"${allocCorrente === o.value ? ' selected' : ''}>${o.label}</option>`
+      ).join('');
+      const splitVal = agevState.split[v.id] || 0;
+      const splitImporto = splitVal > 0 ? baseIvaInclusa * (splitVal/100) : 0;
+      return `<div class="alloc-card" style="${opacita}">
+        <div class="alloc-card-top">
+          <span class="alloc-card-num">${escHtml(v.numero||'')}</span>
+          <span class="alloc-card-desc">${escHtml(v.descrizione)}</span>
+          <span class="alloc-card-importo">${formatEur(baseIvaInclusa)}</span>
+        </div>
+        <div class="alloc-card-field">
+          <label>Contenitore agevolazione</label>
+          <select onchange="cambiaAllocazione('${v.id}',this.value)">${opts}</select>
+        </div>
+        <div class="alloc-card-field">
+          <label>Quota PDC/ACS</label>
+          <div class="alloc-card-split">
+            <input type="number" min="0" max="100" step="5" value="${splitVal || ''}" placeholder="0"
+              onchange="cambiaSplit('${v.id}',this.value)">
+            <span class="alloc-card-split-info">% → ${splitVal > 0 ? `<strong>${formatEur(splitImporto)}</strong> in Eco Climatizzazione` : 'nessuno spostamento'}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 
 function cambiaSplit(voceid, valore) {
@@ -4219,7 +4639,22 @@ function renderOnorari(totOnorari, perCont, totLavori) {
     <table>
       <thead><tr><th>Contenitore</th><th class="text-right">Quota onorari</th><th>%</th></tr></thead>
       <tbody>${righe}</tbody>
-    </table>`;
+    </table>
+    <div class="mobile-list">
+      ${CONTENITORI.map(c => {
+        const q = perCont[c.id] || 0;
+        const perc = totOnorari > 0 ? (q / totOnorari * 100) : 0;
+        return `<div class="list-row">
+          <div class="list-row-left">
+            <div class="list-row-title" style="font-family:var(--font)">${c.label}</div>
+          </div>
+          <div class="list-row-right">
+            <div class="list-row-value">${formatEur(q)}</div>
+            <div class="list-row-sub2">${perc.toFixed(1)}%</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 // ══════════════════════════════════════════
@@ -4320,6 +4755,7 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
     s + ((a >= d.annoInizio && a < d.annoInizio + d.rateResidue) ? d.rataAnnua : 0), 0);
 
   let righe = '';
+  let righeCards = '';
   let cumTot = 0;
   let sumInt = 0, sumPregr = 0, sumRiga = 0;
   for (let i = 0; i < 10; i++) {
@@ -4352,6 +4788,27 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
       <td class="text-right text-mono" style="font-weight:500">${formatEur(totRiga)}${rigaTaglio}</td>
       <td class="text-right text-mono" style="font-size:11px;color:var(--text-3)">${formatEur(cumTot)}</td>
     </tr>`;
+
+    // Card mobile per anno
+    const itemsCont = CONTENITORI.map((c, idx) => {
+      const v = quoteCont[idx];
+      if (v < 0.01) return '';
+      const lbl = c.label.replace('Ecobonus ','Eco ').replace('Bonus Ristrutturazione','BR');
+      return `<div class="anno-card-item"><span>${lbl}</span><span>${formatEur(v)}</span></div>`;
+    }).join('');
+    righeCards += `<div class="anno-card">
+      <div class="anno-card-top">
+        <span class="anno-card-anno">${annoR}</span>
+        <span class="anno-card-tot">${formatEur(totRiga)}</span>
+      </div>
+      ${taglio > 0.01 ? `<div style="font-size:10px;color:var(--danger);margin-top:2px">-${formatEur(taglio)} art.16-ter</div>` : ''}
+      <div class="anno-card-grid">
+        ${itemsCont}
+        ${intAnno > 0.01 ? `<div class="anno-card-item"><span>Interessi mutuo</span><span style="color:var(--info)">${formatEur(intAnno)}</span></div>` : ''}
+        ${pregrAnno > 0.01 ? `<div class="anno-card-item"><span>Pregresse</span><span style="color:var(--warning)">${formatEur(pregrAnno)}</span></div>` : ''}
+      </div>
+      <div class="anno-card-cum"><span>Cumulato</span><strong>${formatEur(cumTot)}</strong></div>
+    </div>`;
   }
 
   // Riepilogo finale
@@ -4385,6 +4842,7 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
       </tr></tfoot>
     </table>
     </div>
+    <div class="mobile-list" style="padding:10px;gap:10px">${righeCards}</div>
     <div style="padding:8px 18px;font-size:11px;color:var(--text-3);border-top:0.5px solid var(--border)">
       Interessi mutuo (art.15) e pregresse continuano anche oltre i 10 anni dei lavori — vedi il riepilogo in alto. Il ${annoInizio} può mostrare interessi ridotti se il mutuo parte in corso d'anno.
     </div>`;
@@ -5063,7 +5521,27 @@ function renderEstinzioni() {
           </td>
         </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>
+    <div class="mobile-cards" style="padding:10px">
+      ${mutState.estinzioni.map(e => `<div class="entity-card">
+        <div class="entity-card-top">
+          <div>
+            <div class="entity-card-title">${e.data}</div>
+            <div class="entity-card-sub">${escHtml(e.nota||'—')}</div>
+          </div>
+          <div class="entity-card-value">${formatEur(e.importo)}</div>
+        </div>
+        <div class="entity-card-badges">
+          ${e.auto
+            ? '<span class="badge badge-accent">730 auto</span>'
+            : '<span class="badge badge-gray">manuale</span>'}
+        </div>
+        <div class="entity-card-actions">
+          <button class="btn btn-sm" onclick="apriModalEstinzione('${e.id}')">✏️ Modifica</button>
+          <button class="btn btn-sm btn-danger" onclick="eliminaEstinzione('${e.id}')">✕ Elimina</button>
+        </div>
+      </div>`).join('')}
+    </div>`;
 }
 
 // ══════════════════════════════════════════
@@ -5219,6 +5697,36 @@ function renderPianoAmmortamento() {
       }).join('')}
     </tbody>
   </table>
+  <div class="mobile-list">
+    ${righe.map(r => {
+      const isEst = r.estinzione > 0;
+      const isUltima = r.saldo < 0.01;
+      const bg = isEst ? 'background:var(--accent-light);' : isUltima ? 'background:var(--success-light);' : '';
+      let extraLine = '';
+      if (confrontaBase && hasEst) {
+        const saldoB = saldoBasePerData[r.data];
+        if (saldoB !== undefined) {
+          const diff = saldoB - r.saldo;
+          const colDiff = diff > 0 ? 'var(--success)' : diff < 0 ? 'var(--danger)' : 'var(--text-3)';
+          extraLine = `<div class="list-row-sub" style="color:${colDiff}">Diff. vs base: ${diff > 0 ? '-' : ''}${formatEur(Math.abs(diff))}</div>`;
+        } else {
+          extraLine = `<div class="list-row-sub" style="color:var(--success)">Già estinto (vs piano base)</div>`;
+        }
+      }
+      return `<div class="list-row" style="${bg}">
+        <div class="list-row-left">
+          <div class="list-row-title">#${r.numero} · ${r.data}</div>
+          <div class="list-row-sub">Cap. ${formatEur(r.capitale)} · Int. ${formatEur(r.interessi)}</div>
+          ${isEst ? `<div class="list-row-tag">↓ Estinzione ${formatEur(r.estinzione)}</div>` : ''}
+          ${extraLine}
+        </div>
+        <div class="list-row-right">
+          <div class="list-row-value">${formatEur(r.rata)}</div>
+          <div class="list-row-sub2">Saldo ${formatEur(r.saldo)}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
   <div style="padding:10px 18px;font-size:11px;color:var(--text-3);border-top:0.5px solid var(--border)">
     ${!mostraTutti ? 'Visualizzazione compatta: giugno, dicembre e rate con estinzioni. ' : ''}
     ${confrontaBase && hasEst ? '"Differenza" = quanto il tuo saldo è già inferiore rispetto al piano senza estinzioni.' : ''}
@@ -5758,6 +6266,32 @@ function renderTabellaCF(dati, mesi, mostra) {
       <td class="text-right text-mono" style="font-weight:600;font-size:12px;color:${d.cumPrev >= 0 ? 'var(--text)' : 'var(--danger)'}">${formatEur(d.cumPrev)}</td>
     </tr>`;
   }).join('');
+
+  // ── Lista mobile — adatta i campi mostrati al filtro "mostra" ──
+  const mobileList = document.getElementById('cf-lista-mobile');
+  if (mobileList) {
+    mobileList.innerHTML = mesi.map(m => {
+      const d = dati[m];
+      const [a, mm] = m.split('-');
+      const isCritico = d.cumPrev < 0;
+      const bg = isCritico ? 'background:var(--danger-light);' : '';
+      const showPrev = mostra !== 'eff';
+      const showEff = mostra !== 'prev';
+      const cellsPrev = showPrev ? `
+        <div class="anno-card-item"><span>Uscite prev.</span><span style="color:var(--danger)">${d.outPrev > 0 ? formatEur(d.outPrev) : '—'}</span></div>
+        <div class="anno-card-item"><span>Entrate prev.</span><span style="color:var(--success)">${d.inPrev > 0 ? formatEur(d.inPrev) : '—'}</span></div>` : '';
+      const cellsEff = showEff ? `
+        <div class="anno-card-item"><span>Uscite eff.</span><span style="color:var(--danger)">${d.outEff > 0 ? formatEur(d.outEff) : '—'}</span></div>
+        <div class="anno-card-item"><span>Entrate eff.</span><span style="color:var(--success)">${d.inEff > 0 ? formatEur(d.inEff) : '—'}</span></div>` : '';
+      return `<div class="anno-card" style="${bg}">
+        <div class="anno-card-top">
+          <span class="anno-card-anno" style="font-size:13px">${nomiMese[parseInt(mm)]} ${a}</span>
+          <span class="anno-card-tot" style="color:${d.cumPrev >= 0 ? 'var(--text)' : 'var(--danger)'}">${formatEur(d.cumPrev)}</span>
+        </div>
+        <div class="anno-card-grid">${cellsPrev}${cellsEff}</div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ══════════════════════════════════════════
@@ -6532,7 +7066,22 @@ function renderCaparre() {
         <button class="btn btn-sm" onclick="apriModalCaparra('${c.id}')">✏️</button>
         <button class="btn btn-sm btn-danger" onclick="eliminaCaparra('${c.id}')">✕</button>
       </div></td>
-    </tr>`).join('')}</tbody></table>`;
+    </tr>`).join('')}</tbody></table>
+    <div class="mobile-cards">
+      ${caparre.map(c => `<div class="entity-card">
+        <div class="entity-card-top">
+          <div>
+            <div class="entity-card-title">${escHtml(c.descrizione||'—')}</div>
+            <div class="entity-card-sub">${c.data ? new Date(c.data).toLocaleDateString('it-IT') : '—'}</div>
+          </div>
+          <div class="entity-card-value" style="color:var(--success)">${formatEur(c.importo)}</div>
+        </div>
+        <div class="entity-card-actions">
+          <button class="btn btn-sm" onclick="apriModalCaparra('${c.id}')">✏️ Modifica</button>
+          <button class="btn btn-sm btn-danger" onclick="eliminaCaparra('${c.id}')">✕ Elimina</button>
+        </div>
+      </div>`).join('')}
+    </div>`;
 }
 
 // ══════════════════════════════════════════
@@ -6794,7 +7343,31 @@ function renderDetrPregresse() {
         <button class="btn btn-sm" onclick="apriModalDetrazionePregr('${d.id}')">✏️</button>
         <button class="btn btn-sm btn-danger" onclick="eliminaDetrPregr('${d.id}')">✕</button>
       </div></td>
-    </tr>`).join('')}</tbody></table>`;
+    </tr>`).join('')}</tbody></table>
+    <div class="mobile-cards" style="padding:10px">
+      ${detr.map(d => `<div class="entity-card">
+        <div class="entity-card-top">
+          <div>
+            <div class="entity-card-title">${escHtml(d.descrizione)}</div>
+            <div class="entity-card-sub">Dal ${d.annoInizio} per ${d.rateResidue} anni</div>
+          </div>
+        </div>
+        <div class="entity-card-bottom">
+          <div>
+            <div style="font-size:10px;color:var(--text-3)">Rata annua</div>
+            <div style="font-size:14px;font-weight:600;color:var(--accent-text);font-family:monospace">${formatEur(d.rataAnnua)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--text-3)">Totale residuo</div>
+            <div style="font-size:14px;font-weight:600;font-family:monospace">${formatEur(d.rataAnnua * d.rateResidue)}</div>
+          </div>
+        </div>
+        <div class="entity-card-actions">
+          <button class="btn btn-sm" onclick="apriModalDetrazionePregr('${d.id}')">✏️ Modifica</button>
+          <button class="btn btn-sm btn-danger" onclick="eliminaDetrPregr('${d.id}')">✕ Elimina</button>
+        </div>
+      </div>`).join('')}
+    </div>`;
 }
 
 // ══════════════════════════════════════════
@@ -6878,6 +7451,38 @@ function renderRecapUnificato(totPerContenitore, aliq) {
         </tr>` : ''}
       </tfoot>
     </table>
+    <div class="mobile-list" style="padding:10px;gap:10px">
+      ${tutte.map(r => `<div class="detr-card">
+        <div class="detr-card-top">
+          <div class="detr-card-label">${escHtml(r.label)}${badgeRiga(r.tipo)}</div>
+          <div class="detr-card-rata">
+            <div class="detr-card-rata-val" style="color:${coloreRiga(r.tipo)}">${formatEur(r.annua)}</div>
+            <div class="detr-card-rata-lbl">rata annua</div>
+          </div>
+        </div>
+        <div class="detr-card-meta">
+          ${r.base !== null ? `<span>Base <strong>${formatEur(r.base)}</strong></span>` : ''}
+          <span>Aliq. <strong>${r.aliq}</strong></span>
+          <span>${r.durata} anni</span>
+          <span>Tot. <strong>${formatEur(r.totale)}</strong></span>
+        </div>
+      </div>`).join('')}
+      <div class="detr-card" style="background:var(--accent-light);border-color:var(--accent)">
+        <div class="detr-card-top">
+          <div class="detr-card-label" style="font-weight:700">TOTALE ANNUO (primi 10 anni)</div>
+          <div class="detr-card-rata">
+            <div class="detr-card-rata-val" style="color:var(--accent-text);font-size:18px">${formatEur(totAnnuaPrimi10)}</div>
+          </div>
+        </div>
+        <div class="detr-card-meta"><span>Totale assoluto <strong>${formatEur(totAssoluto)}</strong></span></div>
+      </div>
+      ${totAnnuaDopo10 > 0 ? `<div class="detr-card">
+        <div class="detr-card-top">
+          <div class="detr-card-label" style="font-size:12px;color:var(--text-2)">Dopo i 10 anni lavori (solo mutuo/pregresse)</div>
+          <div class="detr-card-rata"><div class="detr-card-rata-val" style="font-size:13px;color:var(--text-2)">${formatEur(totAnnuaDopo10)}</div></div>
+        </div>
+      </div>` : ''}
+    </div>
     <div style="padding:10px 18px;font-size:11px;color:var(--text-3);border-top:0.5px solid var(--border)">
       Il totale annuo dei primi 10 anni (${formatEur(totAnnuaPrimi10)}) viene usato automaticamente come rimborso 730 nel modulo Mutuo.
     </div>`;
@@ -7136,7 +7741,7 @@ function renderTabelleSimulatore() {
       <td class="text-right text-mono" style="font-size:11px;padding:6px 8px;font-weight:600">${formatEur(r.saldo)}</td>
     </tr>`).join('');
 
-    return `<div style="${borderLeft}">
+    return `<div class="sim-tab-panel${idx===0?' active':''}" data-durata="${durata}" style="${borderLeft}">
       <div style="background:var(--surface-2);padding:8px 10px;font-size:12px;font-weight:600;text-align:center">${durata} anni</div>
       <table style="font-size:11px">
         <thead><tr>
@@ -7151,6 +7756,15 @@ function renderTabelleSimulatore() {
       </table>
     </div>`;
   }).join('');
+}
+
+function mostraSimTab(durata) {
+  document.querySelectorAll('.sim-tab-panel').forEach(p => {
+    p.classList.toggle('active', p.dataset.durata === String(durata));
+  });
+  document.querySelectorAll('.sim-tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.durata === String(durata));
+  });
 }
 
 // ══════════════════════════════════════════
