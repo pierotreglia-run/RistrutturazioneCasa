@@ -796,7 +796,7 @@
   .voce-card-tariffa {
     font-size: 10px;
     color: var(--text-3);
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
     margin-top: 3px;
   }
   .voce-card-note {
@@ -822,19 +822,19 @@
   .voce-card-qta {
     font-size: 12px;
     color: var(--text-2);
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
   }
   .voce-card-totali { text-align: right; }
   .voce-card-imponibile {
     font-size: 16px;
     font-weight: 600;
     color: var(--text);
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
   }
   .voce-card-iva {
     font-size: 11px;
     color: var(--text-3);
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
     margin-top: 1px;
   }
   .voce-card-actions {
@@ -868,13 +868,13 @@
     font-size: 13px;
     font-weight: 500;
     color: var(--text);
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
   }
   .list-row-sub {
     font-size: 11px;
     color: var(--text-3);
     margin-top: 2px;
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
   }
   .list-row-tag {
     font-size: 10px;
@@ -887,13 +887,13 @@
     font-size: 14px;
     font-weight: 600;
     color: var(--text);
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
   }
   .list-row-sub2 {
     font-size: 11px;
     color: var(--text-3);
     margin-top: 2px;
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ── CARD GENERICA: entità con azioni (fatture, estinzioni, pregresse) ── */
@@ -3608,6 +3608,10 @@ async function caricaStatoConAttesa() {
 //  NAVIGAZIONE
 // ══════════════════════════════════════════
 function goTo(page) {
+  // Riporta sempre in cima alla nuova pagina: senza questo, cambiando sezione
+  // lo scroll restava fermo al punto in cui si era arrivati nella pagina precedente,
+  // mostrando contenuto a metà invece di partire dall'inizio della nuova pagina.
+  window.scrollTo(0, 0);
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
