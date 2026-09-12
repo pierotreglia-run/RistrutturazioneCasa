@@ -576,6 +576,33 @@
     .pagamento-riga-grid {
       grid-template-columns: 1fr !important;
     }
+    /* Riga "categoria extra" in Impostazioni: Nome + Preventivo + elimina, che su
+       schermo stretto con 2fr/1fr/auto diventano troppo stretti per essere usabili. */
+    .budget-extra-riga-grid {
+      grid-template-columns: 1fr auto !important;
+    }
+    .budget-extra-riga-grid > .form-group:first-child {
+      grid-column: 1 / -1;
+    }
+    /* Riga "voce liquidità" in Cash Flow: stesso problema, il campo importo a
+       larghezza fissa 160px lascia troppo poco spazio al nome su schermo stretto. */
+    .liquidita-riga-grid {
+      grid-template-columns: 1fr auto !important;
+    }
+    .liquidita-riga-grid > input:first-child {
+      grid-column: 1 / -1;
+    }
+    /* Confronto surroga mutuo (Prima/Dopo, Variazione rata/Interessi risparmiati):
+       due colonne fisse diventano troppo strette su mobile con contenuto testuale
+       su più righe — meglio impilarle una sopra l'altra. */
+    .surroga-confronto-grid {
+      grid-template-columns: 1fr !important;
+    }
+    /* Metriche interessi passivi mutuo (3 metric-card): come le altre metrics-grid,
+       2 colonne su mobile invece di 3 troppo strette. */
+    .interessi-passivi-metrics-grid {
+      grid-template-columns: 1fr 1fr !important;
+    }
 
     /* Metriche: 2 colonne, font più compatto per stare meglio in card strette */
     .metrics-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -602,6 +629,14 @@
     /* Page header mobile */
     .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
     .page-header .flex-gap { flex-wrap: wrap; }
+
+    /* Card-header con controlli extra (select ordina/filtra, contatori, pulsanti):
+       su schermo stretto vanno impilati sotto il titolo invece di restare sulla
+       stessa riga, dove finivano schiacciati o in overflow orizzontale. */
+    .card-header { flex-wrap: wrap; row-gap: 10px; }
+    .card-header .flex-gap { flex-wrap: wrap; width: 100%; }
+    .card-header select { flex: 1 1 140px; min-width: 0; }
+    .card-header .text-muted { flex-basis: 100%; text-align: left; }
 
     /* Modal fullscreen su mobile, rispetta notch e home indicator */
     .modal-overlay { padding: 0; align-items: flex-end; }
@@ -633,6 +668,17 @@
     button, .btn, .nav-link, .bnav-item, select, input[type="checkbox"], input[type="radio"] {
       touch-action: manipulation; /* elimina il ritardo di 300ms sui tap */
     }
+
+    /* Riepilogo "Versato / Previsto totale" nel Quadro generale: su schermo
+       stretto due numeri lunghi affiancati si strizzano — meglio impilarli. */
+    #dash-quadro-generale-card .card-body > div:first-child > div:last-child {
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Etichette lunghe pensate per desktop: nascondi la parte accessoria su mobile,
+       mantenendo il testo principale del bottone/etichetta. */
+    .hide-mobile { display: none; }
 
     /* Confronto 2 colonne → 1 colonna */
     #mut-sim-730 .card-body > div[style*="grid-template-columns:1fr 1fr"] {
@@ -1095,13 +1141,13 @@
   </div>
   <div class="nav-links">
     <div class="nav-section-label">Panoramica</div>
-    <div class="nav-link" data-page="dashboard" onclick="goTo('dashboard')">
+    <div class="nav-link active" data-page="dashboard" onclick="goTo('dashboard')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Dashboard
     </div>
 
     <div class="nav-section-label">Lavori</div>
-    <div class="nav-link active" data-page="computo" onclick="goTo('computo')">
+    <div class="nav-link" data-page="computo" onclick="goTo('computo')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
       Computo metrico
       <span class="nav-badge" id="nav-badge-computo">0</span>
@@ -1173,23 +1219,23 @@
 
 <!-- More menu -->
 <div id="mobile-more-menu">
-  <div class="more-menu-item" onclick="goTo('fatture');toggleMoreMenu()">
+  <div class="more-menu-item" onclick="goTo('fatture')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     Fatture e pagamenti
   </div>
-  <div class="more-menu-item" onclick="goTo('documenti');toggleMoreMenu()">
+  <div class="more-menu-item" onclick="goTo('documenti')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
     Documenti
   </div>
-  <div class="more-menu-item" onclick="goTo('cashflow');toggleMoreMenu()">
+  <div class="more-menu-item" onclick="goTo('cashflow')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Cash flow
   </div>
-  <div class="more-menu-item" onclick="goTo('checklist');toggleMoreMenu()">
+  <div class="more-menu-item" onclick="goTo('checklist')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     Checklist tecnico
   </div>
-  <div class="more-menu-item" onclick="goTo('impostazioni');toggleMoreMenu()">
+  <div class="more-menu-item" onclick="goTo('impostazioni')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06-.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     Impostazioni
   </div>
@@ -1197,7 +1243,7 @@
 <main>
 
   <!-- ── DASHBOARD ── -->
-  <div class="page" id="page-dashboard">
+  <div class="page active" id="page-dashboard">
     <div class="page-header">
       <div>
         <div class="page-title">Dashboard</div>
@@ -1443,7 +1489,7 @@
       </div>
       <div class="card-body">
         <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">
-          Categorie di spesa non previste nel computo metrico (es. cucina, mobilia, elettrodomestici, trasloco…). Imposta un preventivo per ciascuna per monitorarne lo sforamento; poi, quando carichi una fattura, scegli la categoria corrispondente nel gruppo "Altre spese (extra)".
+          Categorie di spesa non previste nel computo metrico (es. cucina, mobilia, elettrodomestici, trasloco…). Imposta un preventivo per ciascuna per monitorarne lo sforamento; poi, quando carichi una fattura, scegli la categoria corrispondente nel gruppo "Altre spese (extra)". <strong>Diverso dal flag "Fuori computo"</strong> sulla fattura (usato per spese come agenzia/notaio, senza un budget dedicato): questo serve per spese con un proprio tetto di spesa da monitorare.
         </div>
         <div id="budget-extra-container"></div>
       </div>
@@ -1495,8 +1541,15 @@
               onfocus="this.value=getInputNum('acq-1-rendita')||'';this.select()"
               onblur="formatInputNum(this,2);aggiornaValoreCatastale('1');aggiornaImposteRogito()">
           </div>
+          <div class="form-group">
+            <label>Agevolazione prima casa</label>
+            <select id="acq-1-agev-prima-casa" onchange="aggiornaValoreCatastale('1');aggiornaImposteRogito()">
+              <option value="si">Sì (coeff. 115,5)</option>
+              <option value="no">No (coeff. 126)</option>
+            </select>
+          </div>
           <div class="form-group" id="fg-val-catastale">
-            <label>Valore catastale (€) <span style="font-size:10px;color:var(--text-3)">rendita × 115,5 — base imposta registro</span></label>
+            <label>Valore catastale (€) <span style="font-size:10px;color:var(--text-3)" id="fg-val-catastale-sub">rendita × 115,5 — base imposta registro</span></label>
             <input type="text" id="acq-val-catastale" readonly style="background:var(--surface-2);cursor:default" placeholder="calcolato dalla rendita">
           </div>
           <div class="form-group">
@@ -1529,8 +1582,15 @@
               onfocus="this.value=getInputNum('acq-2-rendita')||'';this.select()"
               onblur="formatInputNum(this,2);aggiornaValoreCatastale('2');aggiornaImposteRogito()">
           </div>
+          <div class="form-group">
+            <label>Agevolazione prima casa</label>
+            <select id="acq-2-agev-prima-casa" onchange="aggiornaValoreCatastale('2');aggiornaImposteRogito()">
+              <option value="si">Sì (coeff. 115,5)</option>
+              <option value="no">No (coeff. 126)</option>
+            </select>
+          </div>
           <div class="form-group" id="fg-2-val-catastale">
-            <label>Valore catastale (€) <span style="font-size:10px;color:var(--text-3)">rendita × 115,5 — base imposta registro</span></label>
+            <label>Valore catastale (€) <span style="font-size:10px;color:var(--text-3)" id="fg-2-val-catastale-sub">rendita × 115,5 — base imposta registro</span></label>
             <input type="text" id="acq-2-val-catastale" readonly style="background:var(--surface-2);cursor:default" placeholder="calcolato dalla rendita">
           </div>
           <div class="form-group">
@@ -1680,7 +1740,7 @@
   </div>
 
   <!-- ── COMPUTO METRICO ── -->
-  <div class="page active" id="page-computo">
+  <div class="page" id="page-computo">
     <div class="page-header">
       <div>
         <div class="page-title">Computo metrico</div>
@@ -1906,9 +1966,10 @@
       <div class="card-header">
         <span class="card-title">Registro fatture</span>
         <div class="flex-gap" style="align-items:center;gap:10px">
+          <input type="text" id="ricerca-registro" placeholder="🔍 Cerca fornitore, descrizione o note…" oninput="renderTabelleFatture()" style="font-size:12px;padding:5px 8px;min-width:180px">
           <select id="ordine-registro" onchange="renderTabelleFatture()" style="font-size:12px;padding:5px 8px">
-            <option value="data-desc">Data (più recenti prima)</option>
             <option value="data-asc">Data (meno recenti prima)</option>
+            <option value="data-desc">Data (più recenti prima)</option>
             <option value="fornitore-asc">Fornitore (A→Z)</option>
             <option value="fornitore-desc">Fornitore (Z→A)</option>
           </select>
@@ -1954,10 +2015,16 @@
         <div class="page-title">Documenti</div>
         <div class="page-subtitle">Registro documentazione — cosa hai, cosa manca, dove si trova</div>
       </div>
-      <button class="btn btn-primary" onclick="apriModalDocumento()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Nuovo documento
-      </button>
+      <div class="flex-gap" style="gap:8px">
+        <button class="btn" id="btn-esporta-zip-documenti" onclick="apriPreviewZipDocumenti()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+          Esporta zip<span class="hide-mobile"> (per commercialista/tecnico)</span>
+        </button>
+        <button class="btn btn-primary" onclick="apriModalDocumento()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuovo documento
+        </button>
+      </div>
     </div>
 
     <div class="metrics-grid">
@@ -2996,6 +3063,15 @@
             </label>
           </div>
         </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+            <input type="checkbox" id="cap-sospesa" style="width:16px;height:16px;margin:0" onchange="aggiornaAvvisoSospesa('cap')">
+            <span>Segna come "da rivedere" (es. sospetto errore di inserimento)</span>
+          </label>
+          <div id="cap-sospesa-hint" style="display:none;font-size:11px;color:var(--warning);margin-top:6px;padding:8px 10px;background:var(--warning-light);border-radius:var(--radius)">
+            Questa voce resta visibile nel registro con un badge "Da rivedere", ma viene esclusa da tutti i totali finché non togli la spunta.
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -3341,7 +3417,16 @@
             <span>Fattura fuori computo (spesa non legata ai lavori/detrazioni, es. agenzia immobiliare, notaio…)</span>
           </label>
           <div id="ff-fuori-computo-hint" style="display:none;font-size:11px;color:var(--text-3);margin-top:6px;padding:8px 10px;background:var(--surface-2);border-radius:var(--radius)">
-            Questa fattura non verrà segnalata tra quelle "da collegare al computo" nella dashboard. Serve solo per tenerne traccia (es. spese di intermediazione, notarili, ecc.).
+            Questa fattura non verrà segnalata tra quelle "da collegare al computo" nella dashboard. Serve solo per tenerne traccia (es. spese di intermediazione, notarili, ecc.). <strong>Diverso dalla categoria "Extra"</strong> (Cucina, Mobilio…) sulle singole righe: quella serve per il budget delle spese fuori computo, questo flag serve solo a evitare l'alert "da collegare".
+          </div>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+            <input type="checkbox" id="ff-sospesa" style="width:16px;height:16px;margin:0" onchange="aggiornaAvvisoSospesa('ff')">
+            <span>Segna come "da rivedere" (es. sospetto errore di inserimento)</span>
+          </label>
+          <div id="ff-sospesa-hint" style="display:none;font-size:11px;color:var(--warning);margin-top:6px;padding:8px 10px;background:var(--warning-light);border-radius:var(--radius)">
+            Questa fattura resta visibile nel registro con un badge "Da rivedere", ma viene esclusa da tutti i totali (fatturato, pagato, dashboard) finché non togli la spunta. Utile per segnalare un possibile errore senza doverla eliminare o modificare subito.
           </div>
         </div>
       </div>
@@ -4856,7 +4941,7 @@ function renderBudgetExtra() {
   }
   c.innerHTML = lista.map(b => {
     const spesoInfo = calcolaSpesoExtra(b.nome);
-    return `<div style="display:grid;grid-template-columns:2fr 1fr auto;gap:8px;align-items:end;background:var(--surface-2);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px">
+    return `<div class="budget-extra-riga-grid" style="display:grid;grid-template-columns:2fr 1fr auto;gap:8px;align-items:end;background:var(--surface-2);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px">
       <div class="form-group" style="margin:0">
         <label style="font-size:10px">Nome categoria</label>
         <input type="text" value="${escHtml(b.nome||'')}" placeholder="es. Cucina" style="font-size:13px;padding:6px 8px"
@@ -4877,7 +4962,7 @@ function renderBudgetExtra() {
 // (non l'intera fattura, così una fattura "mista" conta solo per la quota pertinente).
 function calcolaSpesoExtra(nomeCategoria) {
   let speso = 0, imponibile = 0;
-  (state.fatture||[]).forEach(f => {
+  fattureAttive().forEach(f => {
     (f.righe||[]).forEach(r => {
       if (r.categoria === nomeCategoria) {
         const imp = r.imponibile || 0;
@@ -5018,6 +5103,17 @@ function calcolaStatoPagamento(pagamenti, totaleFattura) {
   if (versato <= 0.005) return 'da-pagare';
   if (versato >= (totaleFattura||0) - 0.005) return 'pagato';
   return 'parziale';
+}
+
+// Fatture e caparre "attive": escludono quelle marcate come "da rivedere" (sospesa),
+// che restano visibili nel registro con un badge ma non devono influenzare nessun
+// totale — dashboard, metriche, fattibilità finanziaria. Usata come fonte unica per
+// tutti i calcoli aggregati, così una sola marcatura corregge automaticamente ogni numero.
+function fattureAttive() {
+  return (state.fatture || []).filter(f => !f.sospesa);
+}
+function caparreAttive() {
+  return (state.acquisto?.caparre || []).filter(c => !c.sospesa);
 }
 
 function calcolaPagatoResiduoFatture(fatture) {
@@ -5170,9 +5266,12 @@ function renderPagamentiRiepilogo() {
 function aggiornaMetricheFatture() {
   const fatture = state.fatture || [];
   const caparre = state.acquisto?.caparre || [];
-  const totImponibile = fatture.reduce((s,f) => s + (f.totaleImponibile||0), 0);
-  const totIva = fatture.reduce((s,f) => s + (f.totaleIva||0), 0);
-  const { totPagato, totDaPagare } = calcolaPagatoResiduoFatture(fatture);
+  // I totali monetari escludono le voci "sospese" (da rivedere): il contatore invece
+  // conta tutto ciò che è visibile nel registro, sospese incluse, perché restano lì.
+  const fattureAttiveP = fatture.filter(f => !f.sospesa);
+  const totImponibile = fattureAttiveP.reduce((s,f) => s + (f.totaleImponibile||0), 0);
+  const totIva = fattureAttiveP.reduce((s,f) => s + (f.totaleIva||0), 0);
+  const { totPagato, totDaPagare } = calcolaPagatoResiduoFatture(fattureAttiveP);
   document.getElementById('mf-fatturato').textContent = formatEurK(totImponibile);
   document.getElementById('mf-iva').textContent = formatEurK(totIva);
   document.getElementById('mf-pagato').textContent = formatEurK(totPagato);
@@ -5217,20 +5316,30 @@ function renderTabelleFatture() {
   const tbody = document.getElementById('tbody-fatture');
   const cards = document.getElementById('cards-fatture');
   const filtro = document.getElementById('filtro-tipo-registro')?.value || 'tutti';
-  const ordine = document.getElementById('ordine-registro')?.value || 'data-desc';
+  const ordine = document.getElementById('ordine-registro')?.value || 'data-asc';
+  const ricerca = (document.getElementById('ricerca-registro')?.value || '').trim().toLowerCase();
 
   // Righe unificate: fatture vere + acconti/caparre sull'acquisto immobile.
-  // Ogni riga porta un campo "tipo" per distinguerle in fase di render, e un campo
-  // "nome" unico (fornitore per le fatture, descrizione per le caparre) per l'ordinamento.
+  // Ogni riga porta un campo "tipo" per distinguerle in fase di render, un campo
+  // "nome" unico (fornitore per le fatture, descrizione per le caparre) per l'ordinamento,
+  // e un campo "testoRicerca" che raccoglie tutto ciò in cui la ricerca può trovare
+  // corrispondenza — comprese le note, altrimenti irraggiungibili senza aprire ogni voce.
   let voci = [
-    ...fatture.map(f => ({ tipo: 'fattura', data: f.data, nome: f.fornitore || '', obj: f })),
-    ...caparre.map(c => ({ tipo: 'caparra', data: c.data, nome: c.descrizione || '', obj: c }))
+    ...fatture.map(f => ({
+      tipo: 'fattura', data: f.data, nome: f.fornitore || '', obj: f,
+      testoRicerca: [f.fornitore, f.numero, f.note, ...(f.righe||[]).map(r=>r.descrizione)].filter(Boolean).join(' ').toLowerCase()
+    })),
+    ...caparre.map(c => ({
+      tipo: 'caparra', data: c.data, nome: c.descrizione || '', obj: c,
+      testoRicerca: [c.descrizione].filter(Boolean).join(' ').toLowerCase()
+    }))
   ];
   if (filtro !== 'tutti') voci = voci.filter(v => v.tipo === filtro);
+  if (ricerca) voci = voci.filter(v => v.testoRicerca.includes(ricerca));
 
   switch (ordine) {
-    case 'data-asc':
-      voci.sort((a,b) => (a.data||'').localeCompare(b.data||''));
+    case 'data-desc':
+      voci.sort((a,b) => (b.data||'').localeCompare(a.data||''));
       break;
     case 'fornitore-asc':
       voci.sort((a,b) => a.nome.localeCompare(b.nome, 'it', { sensitivity: 'base' }));
@@ -5238,14 +5347,16 @@ function renderTabelleFatture() {
     case 'fornitore-desc':
       voci.sort((a,b) => b.nome.localeCompare(a.nome, 'it', { sensitivity: 'base' }));
       break;
-    case 'data-desc':
+    case 'data-asc':
     default:
-      voci.sort((a,b) => (b.data||'').localeCompare(a.data||''));
+      voci.sort((a,b) => (a.data||'').localeCompare(b.data||''));
   }
 
   if (!voci.length) {
     empty.style.display = 'block'; table.style.display = 'none';
-    empty.querySelector('p').innerHTML = (fatture.length || caparre.length)
+    empty.querySelector('p').innerHTML = ricerca
+      ? `Nessuna voce trova corrispondenza per "${escHtml(ricerca)}".`
+      : (fatture.length || caparre.length)
       ? 'Nessuna voce corrisponde al filtro selezionato.'
       : 'Nessuna fattura registrata.<br>Aggiungi manualmente o carica un PDF per l\'analisi AI.';
     if (cards) cards.innerHTML = '';
@@ -5285,14 +5396,15 @@ function rigaFatturaHTML(f) {
     (cats.length>3 ? `<span style="font-size:10px;color:var(--text-3)">+${cats.length-3}</span>` : '');
   const nRighe = righe.length > 1 ? `<div style="font-size:11px;color:var(--text-3);margin-top:3px">${righe.length} righe</div>` : '';
   const badgeMista = fatturaHaAmbitiMisti(f) ? '<span class="badge" style="font-size:9px;background:var(--info-light);color:var(--info)" title="Righe su più ambiti: lavori/acquisto/extra">Mista</span>' : '';
-  return `<tr style="cursor:pointer" onclick="apriDettaglioFattura('${f.id}')">
+  const badgeSospesa = f.sospesa ? '<span class="badge" style="font-size:9px;background:var(--warning-light);color:var(--warning)" title="Esclusa da tutti i totali finché non togli la spunta">⚠ Da rivedere</span>' : '';
+  return `<tr style="cursor:pointer${f.sospesa?';opacity:0.6':''}" onclick="apriDettaglioFattura('${f.id}')">
       <td style="font-size:12px">${dataFmt}</td>
       <td style="font-size:12px;font-family:monospace;color:var(--text-2)">${escHtml(f.numero||'—')}</td>
       <td>
         <div style="font-weight:500;font-size:13px">${escHtml(f.fornitore||'')}${f.fileDocId?` <a href="#" onclick="event.stopPropagation();visualizzaFileDaFirestore('${f.fileDocId}','${nomeFileFattura(f)}');return false;" title="Visualizza PDF fattura" style="text-decoration:none">👁</a>`:''}${(f.fileDocId||getPagamenti(f).some(p=>p.fileDocId))?` <a href="#" onclick="event.stopPropagation();scaricaFatturaConPagamenti('${f.id}');return false;" title="Scarica fattura e contabili di pagamento" style="text-decoration:none">📎</a>`:''}</div>
         ${f.piva ? `<div style="font-size:11px;color:var(--text-3)">${escHtml(f.piva)}</div>` : ''}
       </td>
-      <td>${badgeMista}${catBadges}${f.fuoriComputo?'<span class="badge badge-gray" style="font-size:9px">Fuori computo</span>':''}${nRighe}</td>
+      <td>${badgeSospesa}${badgeMista}${catBadges}${f.fuoriComputo?'<span class="badge badge-gray" style="font-size:9px">Fuori computo</span>':''}${nRighe}</td>
       <td class="text-right text-mono">${formatEur(f.totaleImponibile||0)}</td>
       <td class="text-right text-mono" style="color:var(--text-2)">${formatEur(f.totaleIva||0)}</td>
       <td class="text-right text-mono" style="font-weight:500">${formatEur(f.totaleFattura||0)}</td>
@@ -5315,11 +5427,12 @@ function cardFatturaHTML(f) {
   const catBadges = cats.slice(0,3).map(c => `<span class="badge badge-gray">${c}</span>`).join('') +
     (cats.length>3 ? `<span style="font-size:10px;color:var(--text-3);align-self:center">+${cats.length-3}</span>` : '');
   const badgeMista = fatturaHaAmbitiMisti(f) ? '<span class="badge" style="background:var(--info-light);color:var(--info)" title="Righe su più ambiti: lavori/acquisto/extra">Mista</span>' : '';
+  const badgeSospesa = f.sospesa ? '<span class="badge" style="background:var(--warning-light);color:var(--warning)" title="Esclusa da tutti i totali finché non togli la spunta">⚠ Da rivedere</span>' : '';
   let sottotitoloPag = '';
   if (info.stato === 'pagato') sottotitoloPag = info.ultimaDataFmt ? `Pagata il ${info.ultimaDataFmt}` : 'Pagata';
   else if (info.stato === 'parziale') sottotitoloPag = `Versato ${formatEur(info.versato)} · residuo ${formatEur(info.residuo)}`;
   if (info.nPagamenti > 1) sottotitoloPag += ` (${info.nPagamenti} pag.)`;
-  return `<div class="voce-card" onclick="apriDettaglioFattura('${f.id}')" style="cursor:pointer">
+  return `<div class="voce-card" onclick="apriDettaglioFattura('${f.id}')" style="cursor:pointer${f.sospesa?';opacity:0.6':''}">
         <div class="voce-card-top">
           <div class="voce-card-main">
             <div class="voce-card-desc">${escHtml(f.fornitore||'')}${f.fileDocId?` <a href="#" onclick="event.stopPropagation();visualizzaFileDaFirestore('${f.fileDocId}','${nomeFileFattura(f)}');return false;" style="text-decoration:none">👁</a>`:''}${(f.fileDocId||getPagamenti(f).some(p=>p.fileDocId))?` <a href="#" onclick="event.stopPropagation();scaricaFatturaConPagamenti('${f.id}');return false;" style="text-decoration:none">📎</a>`:''}</div>
@@ -5327,6 +5440,7 @@ function cardFatturaHTML(f) {
           </div>
         </div>
         <div class="voce-card-badges">
+          ${badgeSospesa}
           ${badgeMista}
           ${catBadges}
           ${f.fuoriComputo?'<span class="badge badge-gray">Fuori computo</span>':''}
@@ -5351,11 +5465,11 @@ function cardFatturaHTML(f) {
 function rigaCaparraHTML(c) {
   const dataFmt = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '—';
   const modLabel = (MODALITA_PAGAMENTO.find(([v]) => v === (c.modalita||'bonifico'))||[,'Bonifico'])[1];
-  return `<tr style="cursor:pointer" onclick="apriModalCaparra('${c.id}')">
+  return `<tr style="cursor:pointer${c.sospesa?';opacity:0.6':''}" onclick="apriModalCaparra('${c.id}')">
       <td style="font-size:12px">${dataFmt}</td>
       <td style="font-size:12px;color:var(--text-3)">—</td>
       <td>
-        <div style="font-weight:500;font-size:13px">${escHtml(c.descrizione||'Acconto acquisto')}${c.fileDocId?` <a href="#" onclick="event.stopPropagation();visualizzaFileDaFirestore('${c.fileDocId}','${nomeFileCaparra(c)}');return false;" title="Visualizza contabile" style="text-decoration:none">👁</a> <a href="#" onclick="event.stopPropagation();apriFileDaFirestore('${c.fileDocId}','${nomeFileCaparra(c)}');return false;" title="Scarica contabile" style="text-decoration:none">📎</a>`:''}</div>
+        <div style="font-weight:500;font-size:13px">${c.sospesa?'<span class="badge" style="font-size:9px;background:var(--warning-light);color:var(--warning);margin-right:4px" title="Esclusa da tutti i totali finché non togli la spunta">⚠ Da rivedere</span>':''}${escHtml(c.descrizione||'Acconto acquisto')}${c.fileDocId?` <a href="#" onclick="event.stopPropagation();visualizzaFileDaFirestore('${c.fileDocId}','${nomeFileCaparra(c)}');return false;" title="Visualizza contabile" style="text-decoration:none">👁</a> <a href="#" onclick="event.stopPropagation();apriFileDaFirestore('${c.fileDocId}','${nomeFileCaparra(c)}');return false;" title="Scarica contabile" style="text-decoration:none">📎</a>`:''}</div>
         <div style="font-size:11px;color:var(--text-3)">${modLabel}</div>
       </td>
       <td><span class="badge badge-blue" style="font-size:9px">${c.tipo==='saldo'?'Saldo acquisto':'Acconto acquisto'}</span></td>
@@ -5376,7 +5490,7 @@ function rigaCaparraHTML(c) {
 function cardCaparraHTML(c) {
   const dataFmt = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '—';
   const modLabel = (MODALITA_PAGAMENTO.find(([v]) => v === (c.modalita||'bonifico'))||[,'Bonifico'])[1];
-  return `<div class="voce-card" onclick="apriModalCaparra('${c.id}')" style="cursor:pointer">
+  return `<div class="voce-card" onclick="apriModalCaparra('${c.id}')" style="cursor:pointer${c.sospesa?';opacity:0.6':''}">
         <div class="voce-card-top">
           <div class="voce-card-main">
             <div class="voce-card-desc">${escHtml(c.descrizione||'Acconto acquisto')}${c.fileDocId?` <a href="#" onclick="event.stopPropagation();visualizzaFileDaFirestore('${c.fileDocId}','${nomeFileCaparra(c)}');return false;" style="text-decoration:none">👁</a> <a href="#" onclick="event.stopPropagation();apriFileDaFirestore('${c.fileDocId}','${nomeFileCaparra(c)}');return false;" style="text-decoration:none">📎</a>`:''}</div>
@@ -5384,6 +5498,7 @@ function cardCaparraHTML(c) {
           </div>
         </div>
         <div class="voce-card-badges">
+          ${c.sospesa?'<span class="badge" style="background:var(--warning-light);color:var(--warning)" title="Esclusa da tutti i totali finché non togli la spunta">⚠ Da rivedere</span>':''}
           <span class="badge badge-blue">${c.tipo==='saldo'?'Saldo acquisto':'Acconto acquisto'}</span>
           <span class="badge badge-green">Versato</span>
         </div>
@@ -5430,6 +5545,8 @@ function apriModalFattura(id) {
     document.getElementById('ff-note').value = f.note||'';
     document.getElementById('ff-fuori-computo').checked = !!f.fuoriComputo;
     aggiornaAvvisoFuoriComputo();
+    document.getElementById('ff-sospesa').checked = !!f.sospesa;
+    aggiornaAvvisoSospesa('ff');
     pagamentiCorrente = getPagamenti(f).map(p => ({...p, id: p.id === 'legacy' ? uid() : p.id}));
     if (f.causaliBonifico && f.causaliBonifico.length) {
       // Formato nuovo: blocchi multipli già salvati
@@ -5460,6 +5577,8 @@ function apriModalFattura(id) {
     document.getElementById('ff-note').value = '';
     document.getElementById('ff-fuori-computo').checked = false;
     aggiornaAvvisoFuoriComputo();
+    document.getElementById('ff-sospesa').checked = false;
+    aggiornaAvvisoSospesa('ff');
     pagamentiCorrente = [];
     righeCorrente = [{id: uid(), descrizione:'', imponibile:0, aliquotaIva:10, categoria:'Finiture', agevolazione:'bonus50'}];
     fileBox.style.display = 'none';
@@ -5472,6 +5591,14 @@ function apriModalFattura(id) {
 function aggiornaAvvisoFuoriComputo() {
   const chk = document.getElementById('ff-fuori-computo');
   const hint = document.getElementById('ff-fuori-computo-hint');
+  if (hint) hint.style.display = chk && chk.checked ? 'block' : 'none';
+}
+
+// Mostra/nasconde l'avviso per il checkbox "da rivedere", condiviso da fatture (prefisso
+// 'ff') e caparre (prefisso 'cap'). La voce marcata così resta visibile ma esce dai totali.
+function aggiornaAvvisoSospesa(prefisso) {
+  const chk = document.getElementById(`${prefisso}-sospesa`);
+  const hint = document.getElementById(`${prefisso}-sospesa-hint`);
   if (hint) hint.style.display = chk && chk.checked ? 'block' : 'none';
 }
 
@@ -5559,6 +5686,7 @@ async function salvaFattura() {
     intestatario: document.getElementById('ff-intestatario').value,
     note: document.getElementById('ff-note').value.trim(),
     fuoriComputo: document.getElementById('ff-fuori-computo').checked,
+    sospesa: document.getElementById('ff-sospesa').checked,
     causaliBonifico: window._causaliCorrenti || [],
     // Retrocompatibilità: riepilogo testuale piatto, usato solo se causaliBonifico non presente
     causale: (window._causaliCorrenti || []).filter(b => b.causale).map(b => `[${b.label}] ${b.causale}`).join('\n\n'),
@@ -8918,7 +9046,7 @@ function aggiornaDashboard() {
   }
 
   // ── FATTURE ──
-  const fatture = state.fatture || [];
+  const fatture = fattureAttive();
   const fatturato = fatture.reduce((s, f) => s + (f.totaleFattura || 0), 0);
   const { totPagato: pagato } = calcolaPagatoResiduoFatture(fatture);
   document.getElementById('dash-fatturato').textContent = fatturato > 0 ? formatEurK(fatturato) : '—';
@@ -9053,7 +9181,7 @@ function renderAvanzamentoExtra() {
 // sulla stima manuale inserita in Impostazioni. Così una fattura caricata con
 // pagamento tracciato sostituisce automaticamente la stima, senza doverlo dire due volte.
 function calcolaVoceAcquisto(categoria, stimaManuale) {
-  const fatture = (state.fatture || []).filter(f => (f.righe||[]).some(r => r.categoria === categoria));
+  const fatture = fattureAttive().filter(f => (f.righe||[]).some(r => r.categoria === categoria));
   if (!fatture.length) {
     return { previsto: stimaManuale || 0, versato: 0, fonte: 'stima' };
   }
@@ -9075,7 +9203,7 @@ function calcolaVociLavoriPerCategoria() {
   const voci = state.voci || [];
   if (!voci.length) return [];
   const fsav = fattoreScontoComputo();
-  const fatture = state.fatture || [];
+  const fatture = fattureAttive();
   const previstoPerCat = {};
   voci.forEach(v => {
     if (CAT_OPTIONS_ACQUISTO.includes(v.categoria) || isCategoriaExtra(v.categoria)) return;
@@ -9109,11 +9237,11 @@ function calcolaPrevistoTotaleExtra() {
 
 function calcolaQuadroGenerale(costoLavori) {
   const acq = state.acquisto || {};
-  const fatture = state.fatture || [];
+  const fatture = fattureAttive();
 
   // ── Acquisto immobile: scomposto in sotto-voci ──
   const prezzo = acq.prezzo || 0;
-  const caparre = acq.caparre || [];
+  const caparre = caparreAttive();
   const totVersatoPrezzo = caparre.reduce((s, c) => s + (c.importo||0), 0);
   const voceImmobile = { nome: 'Costo immobile', previsto: prezzo, versato: totVersatoPrezzo, fonte: 'caparre' };
   const voceAgenzia = { nome: 'Agenzia immobiliare', ...calcolaVoceAcquisto('Agenzia immobiliare', acq.agenzia) };
@@ -9128,7 +9256,7 @@ function calcolaQuadroGenerale(costoLavori) {
     fonte: voceNotaioOnorario.fonte
   };
   // Se è stato registrato il saldo del rogito, le imposte sono per definizione già versate a quel punto.
-  if ((acq.caparre||[]).some(c => c.tipo === 'saldo')) voceNotaio.versato += (acq.imposte||0);
+  if (caparre.some(c => c.tipo === 'saldo')) voceNotaio.versato += (acq.imposte||0);
   const voceIntermediario = { nome: 'Intermediario finanziario', ...calcolaVoceAcquisto('Intermediazione mutuo', acq.intermediario) };
   const vociAcquisto = [voceImmobile, voceAgenzia, voceNotaio, voceIntermediario].filter(v => v.previsto > 0 || v.versato > 0);
   if ((acq.perizia||0) > 0) vociAcquisto.push({ nome: 'Perizia bancaria', previsto: acq.perizia, versato: 0, fonte: 'stima' });
@@ -9352,7 +9480,7 @@ function renderRiepilogoFinanziario(costoLavoriPiuExtra, mutNetto, liquidita, en
   const agenzia = acq.agenzia || 0;
   const intermediario = acq.intermediario || 0;
   const perizia = acq.perizia || 0;
-  const caparre = (acq.caparre || []).reduce((s, c) => s + (c.importo||0), 0);
+  const caparre = caparreAttive().reduce((s, c) => s + (c.importo||0), 0);
   const polizzaAnno = acq.polizza || 0;
   const { fabbisogno: fabbisognoAcquisto, haSaldo } = calcolaFabbisognoAcquisto(acq);
   const t = calcolaTotaliComputo();
@@ -9436,7 +9564,7 @@ function toggleDettaglioLiquidita() {
 function calcolaFabbisognoAcquisto(acq) {
   acq = acq || state.acquisto || {};
   const prezzo = acq.prezzo || 0;
-  const caparre = acq.caparre || [];
+  const caparre = (acq.caparre || []).filter(c => !c.sospesa);
   const haSaldo = caparre.some(c => c.tipo === 'saldo');
   const totAcconti = caparre.filter(c => c.tipo !== 'saldo').reduce((s,c) => s + (c.importo||0), 0);
   const speseAccessorie = (acq.imposte || 0) + (acq.notaio || 0) + (acq.perizia || 0) + (acq.intermediario || 0);
@@ -9448,19 +9576,26 @@ function calcolaFabbisognoAcquisto(acq) {
   };
 }
 
-// Moltiplicatore per derivare il valore catastale dalla rendita (visura) quando l'immobile
-// beneficia dell'agevolazione prima casa. Il coefficiente include già la rivalutazione del
-// 5% della rendita, quindi non va applicata di nuovo: valore = rendita × 115,5.
+// Moltiplicatori per derivare il valore catastale dalla rendita (visura). Entrambi
+// includono già la rivalutazione del 5% della rendita, quindi non va applicata di nuovo.
+// 115,5 per abitazioni con agevolazione prima casa; 126 per le altre abitazioni
+// (categorie A e C, escluse A/10 e C/1) — fonti concordi (AdE, guide tecniche).
 const MOLTIPLICATORE_CATASTALE_PRIMA_CASA = 115.5;
+const MOLTIPLICATORE_CATASTALE_SENZA_AGEVOLAZIONE = 126;
 
 // Calcola e mostra il valore catastale (sola lettura) a partire dalla rendita inserita,
-// per l'immobile 1 o 2. Chiamata ogni volta che la rendita cambia.
+// per l'immobile 1 o 2, usando il coefficiente giusto in base all'agevolazione prima
+// casa selezionata per quell'immobile. Chiamata ogni volta che rendita o agevolazione cambiano.
 function aggiornaValoreCatastale(numero) {
   const rendita = getInputNum(`acq-${numero}-rendita`) || 0;
   const campoValore = document.getElementById(numero === '1' ? 'acq-val-catastale' : 'acq-2-val-catastale');
+  const campoSub = document.getElementById(numero === '1' ? 'fg-val-catastale-sub' : 'fg-2-val-catastale-sub');
+  const haAgevolazione = document.getElementById(`acq-${numero}-agev-prima-casa`)?.value !== 'no';
+  const moltiplicatore = haAgevolazione ? MOLTIPLICATORE_CATASTALE_PRIMA_CASA : MOLTIPLICATORE_CATASTALE_SENZA_AGEVOLAZIONE;
+  if (campoSub) campoSub.textContent = `rendita × ${moltiplicatore.toString().replace('.',',')} — base imposta registro`;
   if (!campoValore) return;
   if (rendita <= 0) { campoValore.value = ''; return; }
-  const valore = rendita * MOLTIPLICATORE_CATASTALE_PRIMA_CASA;
+  const valore = rendita * moltiplicatore;
   campoValore.value = valore.toLocaleString('it-IT', { maximumFractionDigits: 0 });
 }
 
@@ -9589,12 +9724,14 @@ function salvaAcquisto() {
   const polizza = getInputNum('acq-polizza') || 0;
   const immobile1 = {
     prezzo: prezzo1, catastale: catastale1, rendita: getInputNum('acq-1-rendita') || 0,
+    agevolazionePrimaCasa: document.getElementById('acq-1-agev-prima-casa')?.value !== 'no',
     foglio: document.getElementById('acq-1-foglio')?.value.trim() || '',
     particella: document.getElementById('acq-1-particella')?.value.trim() || '',
     sub: document.getElementById('acq-1-sub')?.value.trim() || ''
   };
   const immobile2 = {
     prezzo: prezzo2, catastale: catastale2, rendita: getInputNum('acq-2-rendita') || 0,
+    agevolazionePrimaCasa: document.getElementById('acq-2-agev-prima-casa')?.value !== 'no',
     foglio: document.getElementById('acq-2-foglio')?.value.trim() || '',
     particella: document.getElementById('acq-2-particella')?.value.trim() || '',
     sub: document.getElementById('acq-2-sub')?.value.trim() || ''
@@ -9685,6 +9822,10 @@ function caricaAcquisto() {
       formatInputNum(document.getElementById(id), id.includes('rendita') ? 2 : 0);
     }
   });
+  // Ripristina l'agevolazione prima casa per ciascun immobile (default "sì" per
+  // retrocompatibilità con progetti salvati prima di questa opzione).
+  document.getElementById('acq-1-agev-prima-casa').value = i1.agevolazionePrimaCasa === false ? 'no' : 'si';
+  document.getElementById('acq-2-agev-prima-casa').value = i2.agevolazionePrimaCasa === false ? 'no' : 'si';
   // Il valore catastale è sempre ricalcolato dalla rendita (campo readonly); se il
   // progetto era stato salvato prima di questa modifica e ha solo il vecchio valore
   // catastale manuale senza rendita, lo mostro com'era per non perdere il dato.
@@ -9729,6 +9870,8 @@ function apriModalCaparra(id) {
     document.getElementById('cap-data').value = c.data || '';
     document.getElementById('cap-importo').value = c.importo || '';
     document.getElementById('cap-modalita').value = c.modalita || 'bonifico';
+    document.getElementById('cap-sospesa').checked = !!c.sospesa;
+    aggiornaAvvisoSospesa('cap');
     if (c.fileDocId) {
       fileBox.style.display = 'flex';
       fileLink.dataset.fileId = c.fileDocId;
@@ -9744,6 +9887,8 @@ function apriModalCaparra(id) {
     document.getElementById('cap-data').value = new Date().toISOString().slice(0,10);
     document.getElementById('cap-importo').value = '';
     document.getElementById('cap-modalita').value = 'bonifico';
+    document.getElementById('cap-sospesa').checked = false;
+    aggiornaAvvisoSospesa('cap');
     fileBox.style.display = 'none';
   }
   aggiornaHintTipoCaparra();
@@ -9807,6 +9952,7 @@ async function salvaCaparra() {
   const data = document.getElementById('cap-data').value;
   const importo = parseFloat(document.getElementById('cap-importo').value) || 0;
   const modalita = document.getElementById('cap-modalita').value;
+  const sospesa = document.getElementById('cap-sospesa').checked;
   if (importo <= 0) { alert('Inserisci un importo valido.'); return; }
 
   if (!state.acquisto) state.acquisto = {};
@@ -9829,7 +9975,7 @@ async function salvaCaparra() {
     if (btn) { btn.disabled = false; btn.textContent = testoOriginale; }
   }
 
-  const cap = { id: editingCaparraId || uid(), tipo, descrizione: desc, data, importo, modalita, fileDocId, fileName };
+  const cap = { id: editingCaparraId || uid(), tipo, descrizione: desc, data, importo, modalita, sospesa, fileDocId, fileName };
   if (editingCaparraId) {
     const idx = state.acquisto.caparre.findIndex(c => c.id === editingCaparraId);
     if (idx !== -1) state.acquisto.caparre[idx] = cap;
@@ -9914,7 +10060,7 @@ function renderLiquiditaVoci() {
   const el = document.getElementById('cf-liquidita-righe');
   if (!el) return;
   el.innerHTML = liquiditaVoci.map(v => `
-    <div style="display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center">
+    <div class="liquidita-riga-grid" style="display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center">
       <input type="text" value="${escHtml(v.nome||'')}" placeholder="es. Disponibilità c/c"
         oninput="aggiornaVoceLiquidita('${v.id}','nome',this.value)" onblur="salvaCfConfig()" style="font-size:13px">
       <input type="text" value="${v.importo ? v.importo.toLocaleString('it-IT') : ''}" placeholder="0" inputmode="numeric"
@@ -10067,7 +10213,7 @@ function renderInteressiPassivi() {
   const intPrimiAnni = anni.slice(0, 10).reduce((s, a) => s + (perAnno[a] || 0), 0);
 
   el.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+    <div class="interessi-passivi-metrics-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
       <div class="metric-card">
         <div class="metric-label">Interessi anno 1</div>
         <div style="font-size:16px;font-weight:600">${formatEur(perAnno[anni[0]] || 0)}</div>
@@ -10916,7 +11062,7 @@ function calcolaSurroga() {
   const annoEstinzioneCompleta = annoSurroga + nuovaDurata;
 
   el.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
+    <div class="surroga-confronto-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
       <div style="background:var(--surface-2);border-radius:var(--radius-lg);padding:14px 16px">
         <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;margin-bottom:10px">Prima della surroga (anno ${annoSurroga})</div>
         <div style="margin-bottom:8px"><div style="font-size:11px;color:var(--text-3)">Debito residuo</div><div style="font-size:16px;font-weight:600">${formatEur(debitoResiduo)}</div></div>
@@ -10931,7 +11077,7 @@ function calcolaSurroga() {
       </div>
     </div>
     <div style="background:var(--success-light);border-radius:var(--radius-lg);padding:14px 16px">
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+      <div class="surroga-confronto-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
         <div>
           <div style="font-size:11px;color:var(--text-3)">Variazione rata mensile</div>
           <div style="font-size:18px;font-weight:600;color:${risparmioRata >= 0 ? 'var(--success)' : 'var(--danger)'}">${risparmioRata >= 0 ? '↓' : '↑'} ${formatEur(Math.abs(risparmioRata))}/mese</div>
@@ -11483,7 +11629,8 @@ async function _buildExcelCommercialista() {
 }
 
 function esportaFattureExcel() {
-  if (!state.fatture?.length) { alert('Nessuna fattura registrata.'); return; }
+  const nCaparre = (state.acquisto?.caparre || []).length;
+  if (!state.fatture?.length && !nCaparre) { alert('Nessuna fattura o caparra registrata.'); return; }
   if (!window.ExcelJS) {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
@@ -11511,13 +11658,21 @@ async function _scaricaExcelFatture() {
 // sia incluso nello zip completo (scaricaTutteFattureZip).
 async function _costruisciWorkbookFatture() {
   const oggi = new Date().toLocaleDateString('it-IT');
-  const fatture = [...state.fatture].sort((a,b) => (a.data||'').localeCompare(b.data||''));
+  // Il Registro mostra TUTTE le righe (comprese quelle "da rivedere"), coerentemente
+  // con l'app dove restano visibili con un badge; ma tutti i TOTALI (Indice, righe
+  // TOTALI del Registro, Dettaglio righe) usano solo le voci attive, esattamente come
+  // in dashboard — altrimenti l'Excel e l'app racconterebbero due numeri diversi.
+  const tutteLeFatture = [...(state.fatture||[])].sort((a,b) => (a.data||'').localeCompare(b.data||''));
+  const tutteLeCaparre = [...(state.acquisto?.caparre||[])].sort((a,b) => (a.data||'').localeCompare(b.data||''));
+  const fatture = tutteLeFatture.filter(f => !f.sospesa);
+  const caparre = tutteLeCaparre.filter(c => !c.sospesa);
 
   const FONT = 'Calibri';
   const COL = {
     slate: 'FF44546A', slateLight: 'FFE9EDF4', zebra: 'FFF6F7F9',
     totalFill: 'FFDCE4F0', accentText: 'FF2E6B4F', darkTx: 'FF2B3A55',
-    grayTx: 'FF7A7A7A', border: 'FFD5DAE2', warnBg: 'FFFBF0E4', warnTx: 'FF8A6D3B'
+    grayTx: 'FF7A7A7A', border: 'FFD5DAE2', warnBg: 'FFFBF0E4', warnTx: 'FF8A6D3B',
+    okTx: 'FF2E6B4F', capTx: 'FF1F5C8A'
   };
   const EUR = '#,##0.00 "€"';
   const thin = { style: 'thin', color: { argb: COL.border } };
@@ -11557,7 +11712,7 @@ async function _costruisciWorkbookFatture() {
       c.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
       c.border = B;
     });
-    r.height = 24;
+    r.height = 26;
     return r;
   }
   function addData(ws, arr, opts) {
@@ -11567,26 +11722,34 @@ async function _costruisciWorkbookFatture() {
       c.font = { name: FONT, size: 10, bold: !!opts.bold, color: { argb: opts.color || 'FF000000' } };
       c.border = B;
       if (opts.zebra) c.fill = fill(COL.zebra);
+      if (opts.rowFill) c.fill = fill(opts.rowFill);
       if (opts.totale) { c.fill = fill(COL.totalFill); c.font = { name: FONT, size: 10, bold: true, color: { argb: COL.darkTx } }; }
       if (opts.eur && opts.eur.includes(colN)) c.numFmt = EUR;
       const isNumericish = typeof arr[colN-1] === 'number' || (arr[colN-1] && typeof arr[colN-1] === 'object' && 'formula' in arr[colN-1]);
       if (colN === 1 && !opts.centerFirst) c.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
       else c.alignment = { vertical: 'middle', horizontal: isNumericish ? 'right' : 'left', wrapText: true };
     });
+    if (opts.cellColors) {
+      Object.entries(opts.cellColors).forEach(([colN, argb]) => {
+        r.getCell(Number(colN)).font = { name: FONT, size: 10, bold: !!opts.bold, color: { argb } };
+      });
+    }
     return r;
   }
   const F = (formula, result) => ({ formula, result });
+  const MOD_LABEL = { bonifico: 'Bonifico', contanti: 'Contanti', assegno: 'Assegno', altro: 'Altro' };
 
-  const STATO_LABEL = { 'pagato': 'Pagato', 'da-pagare': 'Da pagare', 'parziale': 'Pagamento parziale' };
+  const STATO_LABEL = { 'pagato': 'Pagato', 'da-pagare': 'Da pagare', 'parziale': 'Parziale' };
   const totImponibile = fatture.reduce((s,f) => s + (f.totaleImponibile||0), 0);
   const totIva = fatture.reduce((s,f) => s + (f.totaleIva||0), 0);
   const totFatturato = fatture.reduce((s,f) => s + (f.totaleFattura||0), 0);
   const { totPagato, totDaPagare } = calcolaPagatoResiduoFatture(fatture);
+  const totCaparre = caparre.reduce((s,c) => s + (c.importo||0), 0);
   const nBonifici = fatture.reduce((s,f) => s + (f.causaliBonifico||[]).filter(b=>b.tipo==='parlante').length, 0);
 
   // Ambito di spesa: Ristrutturazione (voci di computo/lavori) vs Acquisto immobile
-  // (agenzia, notaio, intermediazione mutuo) vs Altre spese (extra fuori computo,
-  // es. mobilia, cucina) — per dare una vista d'insieme separata.
+  // (agenzia, notaio, intermediazione mutuo, e ora anche le caparre) vs Altre spese
+  // (extra fuori computo, es. mobilia, cucina) — per dare una vista d'insieme separata.
   function ambitoRiga(categoria) {
     if (typeof isCategoriaExtra === 'function' && isCategoriaExtra(categoria)) return 'Altre spese';
     return (typeof CAT_OPTIONS_ACQUISTO !== 'undefined' && CAT_OPTIONS_ACQUISTO.includes(categoria))
@@ -11599,24 +11762,25 @@ async function _costruisciWorkbookFatture() {
     return [...ambiti][0];
   }
   const totRistrutt = fatture.filter(f => ambitoFattura(f) === 'Ristrutturazione').reduce((s,f)=>s+(f.totaleFattura||0),0);
-  const totAcquisto = fatture.filter(f => ambitoFattura(f) === 'Acquisto immobile').reduce((s,f)=>s+(f.totaleFattura||0),0);
+  const totAcquistoF = fatture.filter(f => ambitoFattura(f) === 'Acquisto immobile').reduce((s,f)=>s+(f.totaleFattura||0),0);
+  const totExtra = fatture.filter(f => ambitoFattura(f) === 'Altre spese').reduce((s,f)=>s+(f.totaleFattura||0),0);
   const totMisto = fatture.filter(f => ambitoFattura(f) === 'Misto').reduce((s,f)=>s+(f.totaleFattura||0),0);
   const nRistrutt = fatture.filter(f => ambitoFattura(f) === 'Ristrutturazione').length;
-  const nAcquisto = fatture.filter(f => ambitoFattura(f) === 'Acquisto immobile').length;
+  const nAcquistoF = fatture.filter(f => ambitoFattura(f) === 'Acquisto immobile').length;
+  const nExtra = fatture.filter(f => ambitoFattura(f) === 'Altre spese').length;
   const nMisto = fatture.filter(f => ambitoFattura(f) === 'Misto').length;
+  const totAcquistoComplessivo = totAcquistoF + totCaparre; // fatture di ambito acquisto + acconti/saldo
 
   // ═══ FOGLIO 1 — INDICE E RIEPILOGO ═══
   const ws1 = wb.addWorksheet('Indice', { views: [{ showGridLines: false }] });
-  ws1.columns = [{ width: 38 }, { width: 20 }];
+  ws1.columns = [{ width: 40 }, { width: 20 }];
   addTitolo(ws1, 'Fatture e pagamenti — indice', 2);
-  addSub(ws1, `Generato il ${oggi} · ${fatture.length} fatture registrate`, 2);
+  addSub(ws1, `Generato il ${oggi} · ${fatture.length} fatture · ${caparre.length} acconti/saldo acquisto`, 2);
 
   addSezione(ws1, 'Contenuto del file', 2);
   const schedeInfo = [
-    ['Fatture', 'Una riga per fattura: fornitore, importi, stato pagamento'],
-    ['Dettaglio righe', 'Ogni voce di spesa, con categoria e ambito'],
-    ['Pagamenti', 'Ogni movimento (acconto, saldo…) con data e importo'],
-    ['Bonifici', 'Causali bonifico parlante generate, per categoria fiscale']
+    ['Registro', 'Ogni riga è una fattura o un acconto acquisto, con dati di pagamento in colonna'],
+    ['Dettaglio righe', 'Ogni voce di spesa delle fatture, con categoria e ambito']
   ];
   schedeInfo.forEach(([nome, desc], i) => {
     const r = ws1.addRow([nome, desc]);
@@ -11627,64 +11791,139 @@ async function _costruisciWorkbookFatture() {
     ws1.mergeCells(r.number, 2, r.number, 2);
   });
 
-  addSezione(ws1, 'Totali', 2);
+  addSezione(ws1, 'Fatture — totali', 2);
   addData(ws1, ['Numero fatture', fatture.length], {});
   addData(ws1, ['Imponibile totale', totImponibile], { zebra: true, eur: [2] });
   addData(ws1, ['IVA totale', totIva], { eur: [2] });
   addData(ws1, ['Totale fatturato', totFatturato], { zebra: true, bold: true, eur: [2] });
 
-  addSezione(ws1, 'Stato pagamenti', 2);
-  addData(ws1, ['Pagato', totPagato], { eur: [2] });
+  addSezione(ws1, 'Stato pagamenti fatture', 2);
+  addData(ws1, ['Pagato', totPagato], { eur: [2], color: COL.okTx });
   addData(ws1, ['Da pagare', totDaPagare], { zebra: true, eur: [2], color: totDaPagare > 0 ? COL.warnTx : undefined });
   addData(ws1, ['Bonifici parlanti generati', nBonifici], {});
 
-  addSezione(ws1, 'Ripartizione per ambito', 2);
+  addSezione(ws1, 'Acconti e saldo acquisto immobile', 2);
+  addData(ws1, ['Numero movimenti', caparre.length], {});
+  addData(ws1, ['Totale versato', totCaparre], { zebra: true, eur: [2], color: COL.capTx, bold: true });
+
+  addSezione(ws1, 'Ripartizione per ambito (fatture + acconti)', 2);
   addData(ws1, [`Ristrutturazione (${nRistrutt} fatture)`, totRistrutt], { zebra: true, eur: [2] });
-  addData(ws1, [`Acquisto immobile (${nAcquisto} fatture)`, totAcquisto], { eur: [2] });
-  if (nMisto > 0) addData(ws1, [`Miste — più ambiti nella stessa fattura (${nMisto})`, totMisto], { zebra: true, eur: [2] });
+  addData(ws1, [`Acquisto immobile (${nAcquistoF} fatture + ${caparre.length} acconti)`, totAcquistoComplessivo], { eur: [2] });
+  if (nExtra > 0) addData(ws1, [`Altre spese extra (${nExtra} fatture)`, totExtra], { zebra: true, eur: [2] });
+  if (nMisto > 0) addData(ws1, [`Miste — più ambiti nella stessa fattura (${nMisto})`, totMisto], {});
 
-  addSub(ws1, 'Dettaglio fatture nel foglio "Fatture", righe di spesa nel foglio "Dettaglio righe", movimenti nel foglio "Pagamenti", causali bonifico nel foglio "Bonifici". Clicca i link sopra per saltare direttamente a ciascun foglio.', 2);
+  addSub(ws1, 'Il foglio "Registro" contiene fatture e acconti insieme, sempre ordinati per data (indipendentemente dall\'ordinamento scelto in app, che vale solo per la visualizzazione a schermo), con le colonne di pagamento (data, importo, modalità) direttamente in riga. Il foglio "Dettaglio righe" scende al livello di singola voce di spesa. Usa i filtri di Excel sull\'intestazione per riordinare o filtrare a piacere.', 2);
 
-  // ═══ FOGLIO 2 — FATTURE ═══
-  const ws2 = wb.addWorksheet('Fatture', { views: [{ showGridLines: false, state: 'frozen', ySplit: 1 }] });
+  // ═══ FOGLIO 2 — REGISTRO (fatture + caparre unificate, con pagamenti in colonna) ═══
+  const ws2 = wb.addWorksheet('Registro', { views: [{ showGridLines: false, state: 'frozen', ySplit: 1, xSplit: 3 }] });
   ws2.columns = [
-    { width: 11 }, { width: 14 }, { width: 26 }, { width: 16 }, { width: 16 }, { width: 42 },
-    { width: 13 }, { width: 11 }, { width: 13 }, { width: 14 }, { width: 13 },
-    { width: 13 }, { width: 12 }, { width: 26 }
+    { width: 11 },  // Data
+    { width: 9 },   // Tipo
+    { width: 26 },  // Fornitore/Descrizione
+    { width: 16 },  // Ambito
+    { width: 34 },  // Descrizione righe / voce
+    { width: 13 },  // Imponibile
+    { width: 11 },  // IVA
+    { width: 13 },  // Totale
+    { width: 12 },  // Stato pag.
+    { width: 13 },  // Versato
+    { width: 13 },  // Residuo
+    { width: 13 },  // Data ultimo pag.
+    { width: 12 },  // Modalità
+    { width: 12 },  // N. pagamenti
+    { width: 26 }   // Note
   ];
-  addHeader(ws2, ['Data', 'N° doc.', 'Fornitore', 'Ambito', 'P.IVA/CF', 'Descrizione', 'Imponibile', 'IVA', 'Totale', 'Stato pag.', 'Versato', 'Residuo', 'Intestatario', 'Note']);
-  const primaF = ws2.rowCount + 1;
-  fatture.forEach((f, i) => {
-    const rn = ws2.rowCount + 1;
-    const dataFmt = f.data ? new Date(f.data).toLocaleDateString('it-IT') : '';
-    const desc = (f.righe||[]).map(r => r.descrizione).filter(Boolean).join('; ');
-    const pagamenti = getPagamenti(f);
-    const versato = Math.min(pagamenti.reduce((s,p)=>s+(p.importo||0),0), f.totaleFattura||0);
-    const stato = calcolaStatoPagamento(pagamenti, f.totaleFattura);
-    const ambito = ambitoFattura(f);
-    const r = addData(ws2, [
-      dataFmt, f.numero || '', f.fornitore || '', ambito, f.piva || '', desc,
-      f.totaleImponibile || 0, f.totaleIva || 0,
-      F(`G${rn}+H${rn}`, (f.totaleImponibile||0) + (f.totaleIva||0)),
-      STATO_LABEL[stato] || stato || '',
-      versato,
-      F(`I${rn}-K${rn}`, Math.max(0, (f.totaleFattura||0) - versato)),
-      f.intestatario || '', f.note || ''
-    ], { zebra: i % 2 === 1, eur: [7,8,9,11,12] });
-    if (ambito === 'Acquisto immobile') r.getCell(4).font = { name: FONT, size: 10, color: { argb: COL.accentText } };
-    if (stato === 'da-pagare') r.getCell(10).font = { name: FONT, size: 10, color: { argb: COL.warnTx }, bold: true };
-    if (stato === 'parziale') r.getCell(10).font = { name: FONT, size: 10, color: { argb: COL.warnTx } };
-  });
-  const ultimaF = ws2.rowCount;
-  addData(ws2, [
-    '', '', '', '', '', 'TOTALI',
-    F(`SUM(G${primaF}:G${ultimaF})`, totImponibile),
-    F(`SUM(H${primaF}:H${ultimaF})`, totIva),
-    F(`SUM(I${primaF}:I${ultimaF})`, totFatturato),
-    '', F(`SUM(K${primaF}:K${ultimaF})`, totPagato), F(`SUM(L${primaF}:L${ultimaF})`, totDaPagare), '', ''
-  ], { totale: true, eur: [7,8,9,11,12] });
+  addHeader(ws2, ['Data', 'Tipo', 'Fornitore / Descrizione', 'Ambito', 'Righe / voce', 'Imponibile', 'IVA', 'Totale', 'Stato pag.', 'Versato', 'Residuo', 'Ultimo pag.', 'Modalità', 'N. pag.', 'Note']);
+  const primaReg = ws2.rowCount + 1;
 
-  // ═══ FOGLIO 3 — DETTAGLIO RIGHE ═══
+  // Righe unificate fatture + caparre, ordinate per data, ciascuna con un campo "tipo"
+  // per distinguerle e un blocco di dati di pagamento sempre nelle stesse colonne —
+  // così una fattura e un acconto si leggono allo stesso modo, riga per riga. Il Registro
+  // mostra anche le voci "da rivedere" (per coerenza con l'app), segnalate in colonna Note;
+  // sono escluse solo dalla riga TOTALI più sotto, che usa fatture/caparre già filtrate.
+  const righeRegistro = [
+    ...tutteLeFatture.map(f => ({ tipo: 'fattura', data: f.data || '', obj: f })),
+    ...tutteLeCaparre.map(c => ({ tipo: 'caparra', data: c.data || '', obj: c }))
+  ].sort((a,b) => a.data.localeCompare(b.data));
+
+  let ziReg = 0;
+  righeRegistro.forEach(voce => {
+    const rn = ws2.rowCount + 1;
+    const dataFmt = voce.data ? new Date(voce.data).toLocaleDateString('it-IT') : '';
+    const zebra = ziReg % 2 === 1;
+    ziReg++;
+
+    if (voce.tipo === 'fattura') {
+      const f = voce.obj;
+      const desc = (f.righe||[]).map(r => r.descrizione).filter(Boolean).join('; ');
+      const pagamenti = getPagamenti(f);
+      const versato = Math.min(pagamenti.reduce((s,p)=>s+(p.importo||0),0), f.totaleFattura||0);
+      const stato = calcolaStatoPagamento(pagamenti, f.totaleFattura);
+      const ambito = ambitoFattura(f);
+      const ultimoPag = pagamenti.length ? [...pagamenti].sort((a,b)=>(a.data||'').localeCompare(b.data||'')).slice(-1)[0] : null;
+      const modalitaLabel = ultimoPag ? (MOD_LABEL[ultimoPag.modalita] || 'Bonifico') : '';
+      const ultimoPagFmt = ultimoPag?.data ? new Date(ultimoPag.data).toLocaleDateString('it-IT') : '';
+      const fornitoreDesc = `${f.numero ? f.numero + ' — ' : ''}${f.fornitore || ''}${f.fuoriComputo ? ' (fuori computo)' : ''}${f.sospesa ? ' ⚠ DA RIVEDERE' : ''}`;
+      const noteConAvviso = f.sospesa ? `[Esclusa dai totali] ${f.note || ''}`.trim() : (f.note || '');
+
+      const statoColore = stato === 'pagato' ? COL.okTx : stato === 'parziale' ? COL.warnTx : COL.warnTx;
+      const r = addData(ws2, [
+        dataFmt, 'Fattura', fornitoreDesc, ambito, desc,
+        f.totaleImponibile || 0, f.totaleIva || 0,
+        F(`F${rn}+G${rn}`, (f.totaleImponibile||0) + (f.totaleIva||0)),
+        STATO_LABEL[stato] || stato || '',
+        versato,
+        F(`H${rn}-J${rn}`, Math.max(0, (f.totaleFattura||0) - versato)),
+        ultimoPagFmt, modalitaLabel, pagamenti.length || 0,
+        noteConAvviso
+      ], { zebra, eur: [6,7,8,10,11], cellColors: { 9: statoColore, 3: f.sospesa ? COL.warnTx : undefined } });
+      if (ambito === 'Acquisto immobile') r.getCell(4).font = { name: FONT, size: 10, color: { argb: COL.accentText } };
+      if (stato === 'da-pagare' || stato === 'parziale') r.getCell(9).font = { name: FONT, size: 10, bold: stato === 'da-pagare', color: { argb: COL.warnTx } };
+      if (f.sospesa) r.eachCell({ includeEmpty: true }, c2 => { c2.fill = fill(COL.warnBg); });
+    } else {
+      const c = voce.obj;
+      const tipoLabel = c.tipo === 'saldo' ? 'Saldo rogito' : 'Acconto';
+      const modalitaLabel = MOD_LABEL[c.modalita] || 'Bonifico';
+      const descLabel = `${tipoLabel}${c.sospesa ? ' ⚠ DA RIVEDERE' : ''}`;
+      const rCap = addData(ws2, [
+        dataFmt, 'Acconto', `${c.descrizione || 'Acconto acquisto'}${c.sospesa ? ' ⚠ DA RIVEDERE' : ''}`, 'Acquisto immobile', descLabel,
+        '', '', c.importo || 0, 'Versato', c.importo || 0, 0, dataFmt, modalitaLabel, 1, c.sospesa ? '[Esclusa dai totali]' : ''
+      ], { zebra, eur: [8,10,11], cellColors: { 9: COL.capTx } });
+      if (c.sospesa) { rCap.eachCell({ includeEmpty: true }, c2 => { c2.fill = fill(COL.warnBg); }); }
+      // Colora l'intera riga caparra con un blu leggero, per distinguerla a colpo d'occhio dalle fatture
+      const rowObj = ws2.getRow(rn);
+      rowObj.eachCell({ includeEmpty: true }, c2 => { if (!zebra) c2.fill = fill('FFF0F5FA'); else c2.fill = fill('FFE7EFF6'); });
+      rowObj.getCell(3).font = { name: FONT, size: 10, color: { argb: COL.capTx }, bold: true };
+      rowObj.getCell(9).font = { name: FONT, size: 10, color: { argb: COL.capTx }, bold: true };
+    }
+  });
+  const ultimaReg = ws2.rowCount;
+  const totaleGenerale = totFatturato + totCaparre;
+  const totVersatoGenerale = totPagato + totCaparre;
+  const ciSonoSospese = tutteLeFatture.some(f => f.sospesa) || tutteLeCaparre.some(c => c.sospesa);
+  // Se ci sono righe "da rivedere" nel range, evito le formule SUM sull'intero
+  // intervallo: sommerebbero anche le righe sospese, disallineandosi dal valore
+  // mostrato (che le esclude) al primo ricalcolo manuale in Excel (F9).
+  const cellaOValore = (formula, valore) => ciSonoSospese ? valore : F(formula, valore);
+  addData(ws2, [
+    '', '', ciSonoSospese ? 'TOTALI (esclude voci "da rivedere")' : 'TOTALI (fatture + acconti)', '', '',
+    cellaOValore(`SUM(F${primaReg}:F${ultimaReg})`, totImponibile),
+    cellaOValore(`SUM(G${primaReg}:G${ultimaReg})`, totIva),
+    cellaOValore(`SUM(H${primaReg}:H${ultimaReg})`, totaleGenerale),
+    '',
+    cellaOValore(`SUM(J${primaReg}:J${ultimaReg})`, totVersatoGenerale),
+    cellaOValore(`SUM(K${primaReg}:K${ultimaReg})`, totDaPagare),
+    '', '', '', ''
+  ], { totale: true, eur: [6,7,8,10,11] });
+
+  addSub(ws2, 'Legenda: righe con sfondo azzurro = acconti/saldo sull\'acquisto immobile (nessuna fattura collegata). Righe con sfondo giallo = voci "da rivedere", escluse dai totali. Righe bianche/grigie = fatture. "Ultimo pag." e "Modalità" si riferiscono al pagamento più recente registrato su quella riga; "N. pag." conta quanti movimenti compongono il versato totale.', 15);
+
+  // Autofiltro sull'intestazione: permette di riordinare o filtrare il Registro
+  // direttamente in Excel (per data, fornitore, stato, ecc.), senza dover rifare
+  // l'export per un ordinamento diverso da quello scelto in app.
+  ws2.autoFilter = { from: { row: primaReg - 1, column: 1 }, to: { row: ultimaReg, column: 15 } };
+
+  // ═══ FOGLIO 3 — DETTAGLIO RIGHE (solo fatture, scende a livello di singola voce) ═══
   const ws3 = wb.addWorksheet('Dettaglio righe', { views: [{ showGridLines: false, state: 'frozen', ySplit: 1 }] });
   ws3.columns = [{ width: 11 }, { width: 14 }, { width: 26 }, { width: 40 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 12 }, { width: 8 }, { width: 12 }];
   addHeader(ws3, ['Data', 'N° doc.', 'Fornitore', 'Descrizione riga', 'Categoria', 'Ambito', 'Agevolazione', 'Imponibile', 'IVA %', 'IVA']);
@@ -11695,7 +11934,7 @@ async function _costruisciWorkbookFatture() {
     (f.righe||[]).forEach(r => {
       const rn = ws3.rowCount + 1;
       const iva = Math.round((r.imponibile||0) * (r.aliquotaIva||0)) / 100;
-      const rigaR = addData(ws3, [
+      addData(ws3, [
         dataFmt, f.numero || '', f.fornitore || '', r.descrizione || '',
         r.categoria || '', ambitoRiga(r.categoria), BADGE_AGEV[r.agevolazione]?.[1] || r.agevolazione || '',
         r.imponibile || 0, (r.aliquotaIva||0)/100, iva
@@ -11711,62 +11950,8 @@ async function _costruisciWorkbookFatture() {
       F(`SUM(H${primaR}:H${ultimaR})`, totImponibile), '',
       F(`SUM(J${primaR}:J${ultimaR})`, totIva)
     ], { totale: true, eur: [8,10] });
-  }
-
-  // ═══ FOGLIO 4 — PAGAMENTI ═══
-  const ws4p = wb.addWorksheet('Pagamenti', { views: [{ showGridLines: false, state: 'frozen', ySplit: 1 }] });
-  ws4p.columns = [{ width: 11 }, { width: 14 }, { width: 26 }, { width: 13 }, { width: 14 }, { width: 24 }];
-  addHeader(ws4p, ['Data pagamento', 'N° doc.', 'Fornitore', 'Importo', 'Totale fattura', 'Nota']);
-  const primaP = ws4p.rowCount + 1;
-  let totVersato = 0, zp = 0;
-  fatture.forEach(f => {
-    getPagamenti(f).forEach(p => {
-      const dataFmt = p.data ? new Date(p.data).toLocaleDateString('it-IT') : '';
-      totVersato += p.importo || 0;
-      addData(ws4p, [
-        dataFmt, f.numero || '', f.fornitore || '', p.importo || 0, f.totaleFattura || 0, p.nota || ''
-      ], { zebra: zp % 2 === 1, eur: [4,5] });
-      zp++;
-    });
-  });
-  const ultimaP = ws4p.rowCount;
-  if (ultimaP >= primaP) {
-    addData(ws4p, ['', '', 'TOTALE VERSATO', F(`SUM(D${primaP}:D${ultimaP})`, totVersato), '', ''], { totale: true, eur: [4] });
   } else {
-    addSub(ws4p, 'Nessun pagamento ancora registrato.', 6);
-  }
-
-  // ═══ FOGLIO 5 — BONIFICI ═══
-  const ws4 = wb.addWorksheet('Bonifici', { views: [{ showGridLines: false, state: 'frozen', ySplit: 1 }] });
-  ws4.columns = [{ width: 11 }, { width: 14 }, { width: 26 }, { width: 22 }, { width: 14 }, { width: 14 }, { width: 60 }];
-  addHeader(ws4, ['Data fattura', 'N° doc.', 'Fornitore', 'Categoria', 'Tipo', 'Importo', 'Causale / nota']);
-  const primaB = ws4.rowCount + 1;
-  let totBonifici = 0, zb = 0;
-  fatture.forEach(f => {
-    const dataFmt = f.data ? new Date(f.data).toLocaleDateString('it-IT') : '';
-    (f.causaliBonifico||[]).forEach(b => {
-      const isParlante = b.tipo === 'parlante';
-      const tipoLabel = isParlante ? 'Bonifico parlante' : b.tipo === 'gse' ? 'Conto Termico (GSE)' : 'Bonifico ordinario';
-      totBonifici += b.importo || 0;
-      const r = addData(ws4, [
-        dataFmt, f.numero || '', f.fornitore || '', b.label || '',
-        tipoLabel, b.importo || 0, b.causale || b.nota || ''
-      ], { zebra: zb % 2 === 1, eur: [6] });
-      if (!isParlante) {
-        r.getCell(5).font = { name: FONT, size: 10, italic: true, color: { argb: COL.grayTx } };
-        r.getCell(7).font = { name: FONT, size: 9, italic: true, color: { argb: COL.grayTx } };
-      } else {
-        r.getCell(7).font = { name: FONT, size: 9, color: { argb: COL.grayTx } };
-      }
-      r.getCell(7).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-      zb++;
-    });
-  });
-  const ultimaB = ws4.rowCount;
-  if (ultimaB >= primaB) {
-    addData(ws4, ['', '', '', '', 'TOTALE', F(`SUM(F${primaB}:F${ultimaB})`, totBonifici), ''], { totale: true, eur: [6] });
-  } else {
-    addSub(ws4, 'Nessuna causale bonifico generata. Nel modal di ogni fattura, clicca "Genera" per crearle.', 7);
+    addSub(ws3, 'Nessuna riga di dettaglio disponibile.', 10);
   }
 
   // ── Buffer finale (il download è gestito dal chiamante: _scaricaExcelFatture o lo zip) ──
@@ -11784,7 +11969,8 @@ async function _costruisciWorkbookFatture() {
 // cosa sta per scaricare senza dover aspettare l'intero processo per scoprirlo.
 function apriPreviewZipTutteFatture() {
   const fatture = state.fatture || [];
-  if (!fatture.length) { alert('Nessuna fattura registrata.'); return; }
+  const caparre = state.acquisto?.caparre || [];
+  if (!fatture.length && !caparre.length) { alert('Nessuna fattura o caparra registrata.'); return; }
 
   const sorted = [...fatture].sort((a,b) => (a.data||'').localeCompare(b.data||''));
   const righe = [];
@@ -11809,13 +11995,25 @@ function apriPreviewZipTutteFatture() {
     </div>`);
   });
 
+  let nContabiliCaparre = 0;
+  [...caparre].sort((a,b) => (a.data||'').localeCompare(b.data||'')).forEach(c => {
+    if (!c.fileDocId) return;
+    nContabiliCaparre++;
+    const dataFmt = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '—';
+    righe.push(`<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:0.5px solid var(--border);font-size:12px">
+      <span>${escHtml(c.descrizione||'Acconto acquisto')} <span style="color:var(--text-3)">· ${dataFmt}</span></span>
+      <span style="color:var(--text-3)">Contabile</span>
+    </div>`);
+  });
+
   document.getElementById('preview-zip-riepilogo').innerHTML =
-    `Lo zip includerà il riepilogo Excel completo, <strong>${nPdfFattura}</strong> PDF di fattura e <strong>${nContabili}</strong> contabile${nContabili===1?'':'i'} di pagamento` +
+    `Lo zip includerà il riepilogo Excel completo, <strong>${nPdfFattura}</strong> PDF di fattura, <strong>${nContabili}</strong> contabile${nContabili===1?'':'i'} di pagamento` +
+    (nContabiliCaparre ? ` e <strong>${nContabiliCaparre}</strong> contabile${nContabiliCaparre===1?'':'i'} di acconto acquisto` : '') +
     (nSenzaAllegati ? `. ${nSenzaAllegati} fattur${nSenzaAllegati===1?'a':'e'} senza allegati non ${nSenzaAllegati===1?'compare':'compaiono'} nell'elenco sotto.` : '.');
 
   document.getElementById('preview-zip-lista').innerHTML = righe.length
     ? righe.join('')
-    : '<div style="padding:14px;font-size:12px;color:var(--text-3);text-align:center">Nessuna fattura ha allegati — lo zip conterrà solo il riepilogo Excel.</div>';
+    : '<div style="padding:14px;font-size:12px;color:var(--text-3);text-align:center">Nessun allegato trovato — lo zip conterrà solo il riepilogo Excel.</div>';
 
   document.getElementById('preview-zip-btn-conferma').onclick = () => {
     chiudiPreviewZip();
@@ -11829,9 +12027,221 @@ function chiudiPreviewZip() {
   document.getElementById('modal-preview-zip').classList.remove('open');
 }
 
+// ══════════════════════════════════════════
+//  DOCUMENTI — ESPORTA ZIP (per condivisione con commercialista/tecnico)
+//  Pacchetto pensato per essere inoltrato così com'è: un indice Excel con tutti
+//  i metadati (tipo, numero, date, stato verifica, dove si trova) più una cartella
+//  per tipo documento con i file effettivamente caricati.
+// ══════════════════════════════════════════
+function apriPreviewZipDocumenti() {
+  const documenti = state.documenti || [];
+  if (!documenti.length) { alert('Nessun documento registrato.'); return; }
+
+  const sorted = [...documenti].sort((a,b) => (a.tipo||'').localeCompare(b.tipo||'') || (a.data||'').localeCompare(b.data||''));
+  const conFile = sorted.filter(d => d.fileDocId);
+  const senzaFile = sorted.length - conFile.length;
+
+  const righe = conFile.map(d => `<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:0.5px solid var(--border);font-size:12px">
+      <span>${escHtml(d.nome||'—')} <span style="color:var(--text-3)">· ${escHtml(TIPI_DOCUMENTO[d.tipo]||d.tipo||'')}</span></span>
+      <span style="color:var(--text-3)">${d.data ? new Date(d.data).toLocaleDateString('it-IT') : ''}</span>
+    </div>`);
+
+  document.getElementById('preview-zip-titolo').textContent = 'Contenuto dello zip documenti';
+  document.getElementById('preview-zip-riepilogo').innerHTML =
+    `Lo zip includerà un indice Excel con tutti i ${documenti.length} documenti registrati (anche quelli senza file allegato) e <strong>${conFile.length}</strong> file effettivamente caricat${conFile.length===1?'o':'i'}, organizzati in cartelle per tipo.` +
+    (senzaFile ? ` ${senzaFile} document${senzaFile===1?'o è registrato':'i sono registrati'} senza un file allegato (compaiono comunque nell'indice, per completezza).` : '');
+
+  document.getElementById('preview-zip-lista').innerHTML = righe.length
+    ? righe.join('')
+    : '<div style="padding:14px;font-size:12px;color:var(--text-3);text-align:center">Nessun documento ha un file allegato — lo zip conterrà solo l\'indice Excel.</div>';
+
+  document.getElementById('preview-zip-btn-conferma').onclick = () => {
+    chiudiPreviewZip();
+    confermaScaricaZipDocumenti();
+  };
+
+  document.getElementById('modal-preview-zip').classList.add('open');
+}
+
+// Costruisce l'indice Excel del registro documentale: una riga per documento con
+// tutti i metadati utili a chi deve orientarsi senza aprire ogni file (commercialista,
+// tecnico, ecc.), più un rimando al nome del file dentro la cartella corrispondente.
+async function _costruisciWorkbookIndiceDocumenti() {
+  const oggi = new Date().toLocaleDateString('it-IT');
+  const documenti = [...(state.documenti||[])].sort((a,b) => (a.tipo||'').localeCompare(b.tipo||'') || (a.data||'').localeCompare(b.data||''));
+
+  const FONT = 'Calibri';
+  const COL = {
+    slate: 'FF44546A', slateLight: 'FFE9EDF4', zebra: 'FFF6F7F9',
+    darkTx: 'FF2B3A55', grayTx: 'FF7A7A7A', border: 'FFD5DAE2',
+    okTx: 'FF2E6B4F', warnTx: 'FF8A6D3B', dangerTx: 'FFB00020'
+  };
+  const thin = { style: 'thin', color: { argb: COL.border } };
+  const B = { top: thin, bottom: thin, left: thin, right: thin };
+  const fill = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Casa — Gestione Ristrutturazione';
+
+  function addTitolo(ws, text, span) {
+    const r = ws.addRow([text]);
+    r.font = { name: FONT, size: 15, bold: true, color: { argb: COL.darkTx } };
+    r.height = 24;
+    ws.mergeCells(r.number, 1, r.number, span);
+    return r;
+  }
+  function addSub(ws, text, span) {
+    const r = ws.addRow([text]);
+    r.font = { name: FONT, size: 9, italic: true, color: { argb: COL.grayTx } };
+    ws.mergeCells(r.number, 1, r.number, span);
+    return r;
+  }
+  function addHeader(ws, arr) {
+    const r = ws.addRow(arr);
+    r.eachCell(c => {
+      c.font = { name: FONT, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      c.fill = fill(COL.slate);
+      c.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      c.border = B;
+    });
+    r.height = 26;
+    return r;
+  }
+  function addData(ws, arr, opts) {
+    opts = opts || {};
+    const r = ws.addRow(arr);
+    r.eachCell({ includeEmpty: true }, (c, colN) => {
+      c.font = { name: FONT, size: 10, bold: !!opts.bold, color: { argb: opts.color || 'FF000000' } };
+      c.border = B;
+      if (opts.zebra) c.fill = fill(COL.zebra);
+      c.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+    });
+    if (opts.cellColors) {
+      Object.entries(opts.cellColors).forEach(([colN, argb]) => {
+        r.getCell(Number(colN)).font = { name: FONT, size: 10, bold: !!opts.bold, color: { argb } };
+      });
+    }
+    return r;
+  }
+
+  const STATO_LABEL = { verificato: 'Verificato', 'da-verificare': 'Da verificare', mancante: 'Mancante' };
+  const STATO_COLORE = { verificato: COL.okTx, 'da-verificare': COL.warnTx, mancante: COL.dangerTx };
+
+  const ws1 = wb.addWorksheet('Indice documenti', { views: [{ showGridLines: false, state: 'frozen', ySplit: 3 }] });
+  ws1.columns = [
+    { width: 22 }, // Tipo
+    { width: 30 }, // Nome
+    { width: 16 }, // Numero/protocollo
+    { width: 12 }, // Data
+    { width: 12 }, // Scadenza
+    { width: 14 }, // Stato verifica
+    { width: 16 }, // Verificato da
+    { width: 10 }, // File presente
+    { width: 40 }, // Nome file (dentro la cartella)
+    { width: 26 }, // Dove si trova (se non caricato)
+    { width: 30 }  // Note
+  ];
+  addTitolo(ws1, 'Indice documenti — archivio progetto casa', 11);
+  addSub(ws1, `Generato il ${oggi} · ${documenti.length} documenti registrati · per ogni riga con "File presente = Sì", il file si trova nella cartella del tipo corrispondente dentro questo zip.`, 11);
+  addHeader(ws1, ['Tipo documento', 'Nome / descrizione', 'Numero / protocollo', 'Data', 'Scadenza', 'Stato verifica', 'Verificato da', 'File presente', 'Nome file nello zip', 'Dove si trova', 'Note']);
+
+  documenti.forEach((d, i) => {
+    const dataFmt = d.data ? new Date(d.data).toLocaleDateString('it-IT') : '';
+    const scadenzaFmt = d.scadenza ? new Date(d.scadenza).toLocaleDateString('it-IT') : '';
+    const stato = d.statoVerifica || 'mancante';
+    const nomeCartella = sanitizzaNomeFile(TIPI_DOCUMENTO[d.tipo] || d.tipo || 'Altro');
+    const nomeFileZip = d.fileDocId ? `${nomeCartella}/${nomeFileDocumento(d)}.*` : '';
+    addData(ws1, [
+      TIPI_DOCUMENTO[d.tipo] || d.tipo || '', d.nome || '', d.numero || '',
+      dataFmt, scadenzaFmt, STATO_LABEL[stato] || stato, d.verificatoDa || '',
+      d.fileDocId ? 'Sì' : 'No', nomeFileZip, d.fileDocId ? '' : (d.posizione || ''), d.note || ''
+    ], { zebra: i % 2 === 1, cellColors: { 6: STATO_COLORE[stato], 8: d.fileDocId ? COL.okTx : COL.dangerTx } });
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  return buf;
+}
+
+async function confermaScaricaZipDocumenti() {
+  const documenti = state.documenti || [];
+  if (!documenti.length) { alert('Nessun documento registrato.'); return; }
+
+  const btn = document.getElementById('btn-esporta-zip-documenti');
+  const testoOriginale = btn ? btn.innerHTML : '';
+  const setStatoBtn = (testo) => { if (btn) { btn.disabled = true; btn.textContent = testo; } };
+
+  try {
+    setStatoBtn('Preparazione…');
+    if (!window.ExcelJS) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Impossibile caricare la libreria Excel.'));
+        document.head.appendChild(script);
+      });
+    }
+    await caricaJSZip();
+    const zip = new window.JSZip();
+
+    // 1. Indice Excel con tutti i metadati
+    setStatoBtn('Indice Excel…');
+    const bufIndice = await _costruisciWorkbookIndiceDocumenti();
+    zip.file(`Indice_documenti_${new Date().toISOString().slice(0,10)}.xlsx`, bufIndice);
+
+    // 2. Un file per documento, organizzato in cartelle per tipo (una cartella per
+    // ciascun TIPI_DOCUMENTO), così chi riceve lo zip trova subito ciò che cerca
+    // senza dover aprire l'indice per ogni singolo file.
+    const sorted = [...documenti].sort((a,b) => (a.tipo||'').localeCompare(b.tipo||''));
+    const conFile = sorted.filter(d => d.fileDocId);
+    const nomiUsati = {};
+    let contatore = 0, nSaltati = 0;
+    for (const d of conFile) {
+      contatore++;
+      setStatoBtn(`File documento ${contatore}/${conFile.length}…`);
+      const nomeCartella = sanitizzaNomeFile(TIPI_DOCUMENTO[d.tipo] || d.tipo || 'Altro');
+      let nomeFile = sanitizzaNomeFile(nomeFileDocumento(d)) || `documento-${contatore}`;
+      const chiave = `${nomeCartella}/${nomeFile}`;
+      if (nomiUsati[chiave] != null) {
+        nomiUsati[chiave]++;
+        nomeFile = `${nomeFile}-${nomiUsati[chiave]}`;
+      } else {
+        nomiUsati[chiave] = 0;
+      }
+      try {
+        const res = await recuperaBytesFileFirestore(d.fileDocId);
+        if (res) zip.file(`${nomeCartella}/${nomeFile}.${res.estensione}`, res.bytes);
+      } catch (e) {
+        nSaltati++;
+        console.warn(`Documento ${d.nome||d.id}: errore recupero file — ${e.message}`);
+      }
+    }
+
+    setStatoBtn('Compressione…');
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `documenti-progetto-casa-${new Date().toISOString().slice(0,10)}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+    if (nSaltati > 0) {
+      alert(`Zip creato, ma ${nSaltati} document${nSaltati===1?'o ha avuto un problema nel recupero del suo':'i hanno avuto problemi nel recupero dei loro'} file (vedi console). Il resto è incluso regolarmente.`);
+    }
+  } catch (e) {
+    alert('Impossibile creare lo zip: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = testoOriginale; }
+  }
+}
+
 async function confermaScaricaZipTutteFatture() {
   const fatture = state.fatture || [];
-  if (!fatture.length) { alert('Nessuna fattura registrata.'); return; }
+  const caparre = state.acquisto?.caparre || [];
+  if (!fatture.length && !caparre.length) { alert('Nessuna fattura o caparra registrata.'); return; }
 
   const btn = document.getElementById('btn-scarica-tutto-zip');
   const testoOriginale = btn ? btn.innerHTML : '';
@@ -11887,6 +12297,20 @@ async function confermaScaricaZipTutteFatture() {
       } catch (e) {
         nSaltati++;
         console.warn(`Fattura ${f.numero||f.id}: errore recupero allegati — ${e.message}`);
+      }
+    }
+
+    // 3. Contabili degli acconti/saldo acquisto, in una cartella dedicata
+    const caparreOrdinate = [...caparre].sort((a,b) => (a.data||'').localeCompare(b.data||''));
+    const caparreConFile = caparreOrdinate.filter(c => c.fileDocId);
+    for (const c of caparreConFile) {
+      setStatoBtn(`Contabile acconto acquisto…`);
+      try {
+        const res = await recuperaBytesFileFirestore(c.fileDocId);
+        if (res) zip.file(`Acconti-acquisto/${nomeFileCaparra(c)}.${res.estensione}`, res.bytes);
+      } catch (e) {
+        nSaltati++;
+        console.warn(`Caparra ${c.id}: errore recupero contabile — ${e.message}`);
       }
     }
 
