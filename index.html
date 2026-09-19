@@ -64,7 +64,6 @@
         renderTabella();
         aggiornaMetricheComputo();
         renderTabelleFatture();
-        renderListeExtra();
         renderCaparre();
         if (document.getElementById('page-dashboard')?.classList.contains('active')) aggiornaDashboard();
         console.log('🔄 Dati sincronizzati da Firebase');
@@ -1184,10 +1183,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.1-2.7-2.7L7 14.3"/></svg>
       Simulatore scenari
     </div>
-    <div class="nav-link" data-page="cashflow" onclick="goTo('cashflow')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      Cash flow
-    </div>
 
     <div class="nav-section-label">Sistema</div>
     <div class="nav-link" data-page="impostazioni" onclick="goTo('impostazioni')">
@@ -1230,10 +1225,6 @@
   <div class="more-menu-item" onclick="goTo('documenti')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
     Documenti
-  </div>
-  <div class="more-menu-item" onclick="goTo('cashflow')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Cash flow
   </div>
   <div class="more-menu-item" onclick="goTo('checklist')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1285,11 +1276,6 @@
             <div class="metric-label">Liquidità disponibile</div>
             <div class="metric-value" id="dash-liquidita">—</div>
             <div class="metric-sub">Risparmi al via lavori</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Entrate extra previste</div>
-            <div class="metric-value" id="dash-entrate-extra">—</div>
-            <div class="metric-sub">Contributi, TFR, altro</div>
           </div>
         </div>
         <!-- Barra fattibilità -->
@@ -1637,8 +1623,14 @@
           </div>
         </div>
 
-        <!-- Imposte rogito (calcolate automaticamente) -->
-        <div style="background:var(--surface-2);border-radius:var(--radius);padding:14px 16px;margin:16px 0">
+        <!-- Imposte rogito (calcolate automaticamente, salvo preventivo definitivo notaio) -->
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+            <input type="checkbox" id="acq-notaio-forfait" style="width:16px;height:16px;margin:0" onchange="toggleNotaioForfait()">
+            <span>Ho un preventivo definitivo del notaio (onorario + imposte in un unico totale)</span>
+          </label>
+        </div>
+        <div id="acq-imposte-box" style="background:var(--surface-2);border-radius:var(--radius);padding:14px 16px;margin:16px 0">
           <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Imposte al rogito (stima)</div>
           <div id="acq-imposte-detail">
             <div style="font-size:12px;color:var(--text-3)">Inserisci il prezzo rogito per calcolare.</div>
@@ -1648,9 +1640,18 @@
             <span id="acq-imposte-tot">€ 0,00</span>
           </div>
         </div>
+        <div id="acq-notaio-forfait-box" style="display:none;background:var(--surface-2);border-radius:var(--radius);padding:14px 16px;margin:16px 0">
+          <div class="form-group" style="margin:0">
+            <label>Totale notaio + imposte da preventivo (€)</label>
+            <input type="text" id="acq-notaio-tot-forfait" placeholder="es. 4.900" inputmode="numeric"
+              onfocus="this.value=getInputNum('acq-notaio-tot-forfait')||'';this.select()"
+              onblur="formatInputNum(this,0);aggiornaImposteRogito()">
+            <div style="font-size:10px;color:var(--text-3);margin-top:4px">Sostituisce il calcolo automatico di onorario e imposte qui sotto — usa questo quando hai un preventivo/parcella definitiva dal notaio.</div>
+          </div>
+        </div>
 
         <!-- Notaio -->
-        <div class="form-grid">
+        <div class="form-grid" id="acq-notaio-riga">
           <div class="form-group">
             <label>Onorario notaio (€) <span style="font-size:10px;color:var(--text-3)">modificabile</span></label>
             <input type="text" id="acq-notaio" value="2.500" inputmode="numeric"
@@ -2671,183 +2672,6 @@
     </div>
   </div>
 
-  <!-- ── CASH FLOW ── -->
-  <div class="page" id="page-cashflow">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Cash flow</div>
-        <div class="page-subtitle">Settembre 2026 – Dicembre 2027 · Previsionale vs Effettivo</div>
-      </div>
-      <div class="flex-gap">
-        <button class="btn" onclick="apriModalCashIn()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Aggiungi entrata
-        </button>
-        <button class="btn" onclick="apriModalCashOutPrev()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Aggiungi uscita prevista
-        </button>
-        <button class="btn btn-primary" onclick="ricalcolaCashFlow()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-          Aggiorna
-        </button>
-      </div>
-    </div>
-
-    <!-- CONFIGURAZIONE -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header"><span class="card-title">Configurazione</span></div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-group" style="grid-column:1/-1">
-            <label>Liquidità disponibile al 01/09/2026 (€)</label>
-            <div id="cf-liquidita-righe" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
-            <button type="button" class="btn btn-sm" onclick="aggiungiVoceLiquidita()">+ Aggiungi voce</button>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
-              <span style="font-size:13px;font-weight:600">Totale liquidità disponibile</span>
-              <span style="font-size:16px;font-weight:600;color:var(--accent-text)" id="cf-liquidita-totale">€ 0,00</span>
-            </div>
-            <input type="hidden" id="cf-liquidita">
-          </div>
-          <div class="form-group">
-            <label>Erogazione mutuo (mese)</label>
-            <input type="month" id="cf-mese-mutuo" value="2026-09" oninput="salvaCfConfig();ricalcolaCashFlow()">
-          </div>
-          <div class="form-group">
-            <label>Vista grafico</label>
-            <select id="cf-vista" onchange="salvaCfConfig();ricalcolaCashFlow()">
-              <option value="saldo">Saldo cumulato</option>
-              <option value="flussi">Flussi mensili</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Mostra</label>
-            <select id="cf-mostra" onchange="salvaCfConfig();ricalcolaCashFlow()">
-              <option value="entrambi">Previsionale + Effettivo</option>
-              <option value="prev">Solo previsionale</option>
-              <option value="eff">Solo effettivo</option>
-            </select>
-          </div>
-        </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Periodo — da</label>
-              <input type="month" id="cf-data-inizio" value="2026-09" oninput="salvaCfConfig();ricalcolaCashFlow()">
-            </div>
-            <div class="form-group">
-              <label>Periodo — a</label>
-              <input type="month" id="cf-data-fine" value="2027-12" oninput="salvaCfConfig();ricalcolaCashFlow()">
-            </div>
-            <div class="form-group" style="grid-column:span 2">
-              <label>Vista rapida</label>
-              <div class="flex-gap">
-                <button class="btn btn-sm" onclick="cfVistaRapida(12)">12 mesi</button>
-                <button class="btn btn-sm" onclick="cfVistaRapida(24)">24 mesi</button>
-                <button class="btn btn-sm" onclick="cfVistaRapida(36)">36 mesi</button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Soglia minima di sicurezza (€)</label>
-              <input type="number" id="cf-soglia-minima" placeholder="es. 5000" min="0" step="500" value="5000" oninput="salvaCfConfig();ricalcolaCashFlow()">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI -->
-    <div class="metrics-grid" id="cf-kpi" style="margin-bottom:20px">
-      <div class="metric-card">
-        <div class="metric-label">Totale uscite previste</div>
-        <div class="metric-value" id="cf-tot-out-prev">—</div>
-        <div class="metric-sub">Lavori + mutuo + estinzioni</div>
-      </div>
-      <div class="metric-card accent">
-        <div class="metric-label">Totale entrate previste</div>
-        <div class="metric-value" id="cf-tot-in-prev">—</div>
-        <div class="metric-sub">Mutuo + 730 + risparmi</div>
-      </div>
-      <div class="metric-card" id="cf-kpi-saldo-card">
-        <div class="metric-label">Saldo minimo previsto</div>
-        <div class="metric-value" id="cf-saldo-min">—</div>
-        <div class="metric-sub" id="cf-saldo-min-mese">—</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Totale effettivo pagato</div>
-        <div class="metric-value" id="cf-tot-eff">—</div>
-        <div class="metric-sub">Da fatture con data certa</div>
-      </div>
-    </div>
-
-    <!-- GRAFICO SVG -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <span class="card-title" id="cf-grafico-titolo">Saldo cumulato mensile</span>
-        <div style="display:flex;gap:16px;font-size:11px;color:var(--text-2)">
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:var(--accent);display:inline-block;border-radius:2px"></span>Previsionale</span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:var(--info);display:inline-block;border-radius:2px;border-top:2px dashed var(--info);height:0"></span>Effettivo</span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:var(--danger-light);border:1px solid var(--danger);display:inline-block;border-radius:2px"></span>Mese critico</span>
-        </div>
-      </div>
-      <div style="padding:16px 18px;overflow-x:auto">
-        <svg id="cf-svg" style="width:100%;min-width:600px;height:260px;display:block"></svg>
-      </div>
-    </div>
-
-    <!-- TABELLA MENSILE -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <span class="card-title">Dettaglio mensile</span>
-        <span style="font-size:11px;color:var(--text-3)">P = Previsionale · E = Effettivo</span>
-      </div>
-      <div style="overflow-x:auto">
-        <table id="cf-tabella">
-          <thead>
-            <tr>
-              <th>Mese</th>
-              <th class="text-right">Uscite P</th>
-              <th class="text-right">Uscite E</th>
-              <th class="text-right">Entrate P</th>
-              <th class="text-right">Entrate E</th>
-              <th class="text-right">Saldo P</th>
-              <th class="text-right">Saldo E</th>
-              <th class="text-right">Cumulato P</th>
-            </tr>
-          </thead>
-          <tbody id="cf-tabella-body"></tbody>
-        </table>
-        <div id="cf-lista-mobile" class="mobile-list" style="gap:10px;padding:10px"></div>
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <span class="card-title">Uscite previsionali manuali</span>
-        <button class="btn btn-sm" onclick="apriModalCashOutPrev()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Aggiungi
-        </button>
-      </div>
-      <div id="cf-uscite-lista">
-        <div style="padding:14px 18px;font-size:13px;color:var(--text-3)">Nessuna uscita previsionale inserita. Le voci del computo con date vengono già incluse automaticamente.</div>
-      </div>
-    </div>
-
-    <!-- ENTRATE EXTRA -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Entrate extra (risparmi, contributi familiari, altro)</span>
-        <button class="btn btn-sm" onclick="apriModalCashIn()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Aggiungi
-        </button>
-      </div>
-      <div id="cf-entrate-lista">
-        <div style="padding:14px 18px;font-size:13px;color:var(--text-3)">Nessuna entrata extra. I rimborsi 730 vengono inclusi automaticamente dal modulo agevolazioni.</div>
-      </div>
-    </div>
-  </div>
-
 </main>
 
 <!-- ══ MODAL ESTINZIONE ANTICIPATA ══ -->
@@ -3120,97 +2944,6 @@
   </div>
 </div>
 
-
-<div class="modal-overlay" id="modal-cashout-prev">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-cashout-title">Nuova uscita previsionale</span>
-      <button class="btn btn-sm" onclick="chiudiModalCashOutPrev()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group" style="grid-column:1/-1">
-          <label>Descrizione *</label>
-          <input type="text" id="cop-descrizione" placeholder="es. SAL 1 — murature e strutture">
-        </div>
-        <div class="form-group">
-          <label>Mese previsto *</label>
-          <input type="month" id="cop-mese" value="2026-09">
-        </div>
-        <div class="form-group">
-          <label>Importo (€) *</label>
-          <input type="number" id="cop-importo" placeholder="0,00" min="0" step="100">
-        </div>
-        <div class="form-group">
-          <label>Categoria</label>
-          <select id="cop-categoria">
-            <option value="lavori">Lavori (SAL)</option>
-            <option value="onorari">Onorari tecnico</option>
-            <option value="altro">Altro</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Ricorrente?</label>
-          <select id="cop-ricorrente">
-            <option value="no">No — uscita singola</option>
-            <option value="mensile">Sì — ogni mese fino a dic 2027</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="chiudiModalCashOutPrev()">Annulla</button>
-      <button class="btn btn-primary" onclick="salvaCashOutPrev()">Salva</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL ENTRATA EXTRA ══ -->
-<div class="modal-overlay" id="modal-cashin">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-cashin-title">Nuova entrata</span>
-      <button class="btn btn-sm" onclick="chiudiModalCashIn()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group" style="grid-column:1/-1">
-          <label>Descrizione *</label>
-          <input type="text" id="ci-descrizione" placeholder="es. Contributo genitori, TFR, vendita auto…">
-        </div>
-        <div class="form-group">
-          <label>Mese *</label>
-          <input type="month" id="ci-mese" value="2026-09">
-        </div>
-        <div class="form-group">
-          <label>Importo (€) *</label>
-          <input type="number" id="ci-importo" placeholder="0,00" min="0" step="100">
-        </div>
-        <div class="form-group">
-          <label>Tipo</label>
-          <select id="ci-tipo">
-            <option value="risparmio">Risparmio familiare</option>
-            <option value="contributo">Contributo familiare</option>
-            <option value="tfr">TFR / liquidazione</option>
-            <option value="vendita">Vendita bene</option>
-            <option value="altro">Altro</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Ricorrente?</label>
-          <select id="ci-ricorrente">
-            <option value="no">No — entrata singola</option>
-            <option value="mensile">Sì — ogni mese fino a dic 2027</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="chiudiModalCashIn()">Annulla</button>
-      <button class="btn btn-primary" onclick="salvaCashIn()">Salva</button>
-    </div>
-  </div>
-</div>
 
 <div class="modal-overlay" id="modal-voce">
   <div class="modal">
@@ -4115,7 +3848,6 @@ function salvaScontoComputo() {
   salvaStato();
   aggiornaMetricheComputo();
   ricalcolaAgevolazioni();
-  ricalcolaCashFlow();
   if (document.getElementById('page-dashboard')?.classList.contains('active')) aggiornaDashboard();
 }
 
@@ -4125,7 +3857,6 @@ function salvaCassaComputo() {
   salvaStato();
   aggiornaMetricheComputo();
   ricalcolaAgevolazioni();
-  ricalcolaCashFlow();
   if (document.getElementById('page-dashboard')?.classList.contains('active')) aggiornaDashboard();
 }
 
@@ -6523,8 +6254,10 @@ function ricalcolaAgevolazioni() {
 //  è liberamente modificabile dall'utente: fatturato entro/oltre il 2026, aliquote
 //  2026 e 2027 per contenitore. Non calcola né suggerisce un importo "da fatturare
 //  entro fine anno" — è uno strumento di simulazione, non una raccomandazione.
+//  Lo stato viene salvato in state.simFiscale a ogni modifica, così sopravvive alla
+//  chiusura dell'app (prima restava solo in memoria e si perdeva a ogni ricarica).
 // ══════════════════════════════════════════
-let simFiscaleState = null; // null finché non inizializzato o ricaricato dal computo
+let simFiscaleState = null; // null finché non inizializzato, ricaricato da state o dal computo
 
 function precompilaSimulatoreFiscale() {
   const { totPerContenitore } = calcolaTotPerContenitore();
@@ -6535,14 +6268,14 @@ function precompilaSimulatoreFiscale() {
     { id: 'eco-inf', label: 'Ecobonus Infissi' },
     { id: 'eco-pdc', label: 'Ecobonus Clima/PdC' }
   ];
-  // "Fatturato entro 2026" parte sempre da zero al primo caricamento: è un simulatore
-  // per ragionare su scenari, non un riepilogo automatico — i valori esatti finora
-  // fatturati per ciascun contenitore dipendono da come è stata scorporata ogni fattura,
-  // cosa che solo l'utente sa con certezza. Spesa allocata e massimale restano
-  // precompilati dal computo perché quelli sono dati certi, indipendenti dal fatturato.
-  // Un "Ricarica dal computo" successivo aggiorna solo questi due dati oggettivi e
-  // preserva il fatturato/le aliquote già inserite a mano, per non far perdere lavoro.
-  const statoPrecedente = simFiscaleState;
+  // "Fatturato entro 2026" parte da zero solo se non c'è nulla di salvato: è un
+  // simulatore per ragionare su scenari, non un riepilogo automatico — i valori
+  // esatti finora fatturati per ciascun contenitore dipendono da come è stata
+  // scorporata ogni fattura, cosa che solo l'utente sa con certezza. Spesa allocata
+  // e massimale restano precompilati dal computo perché sono dati oggettivi.
+  // Un "Ricarica dal computo" successivo aggiorna solo questi due dati e preserva
+  // il fatturato/le aliquote già inserite (salvate), per non far perdere lavoro.
+  const statoPrecedente = simFiscaleState || state.simFiscale;
   simFiscaleState = DEFS.map(d => {
     const prec = statoPrecedente?.find(r => r.id === d.id);
     return {
@@ -6555,16 +6288,30 @@ function precompilaSimulatoreFiscale() {
       aliquota2027: prec ? prec.aliquota2027 : (d.id === 'br' ? 0 : 36)
     };
   });
+  salvaSimFiscale();
   renderSimulatoreFiscale();
+}
+
+function salvaSimFiscale() {
+  if (!simFiscaleState) return;
+  state.simFiscale = simFiscaleState;
+  salvaStato();
 }
 
 function aggiornaCampoSimFiscale(idx, campo, valore) {
   if (!simFiscaleState) return;
   simFiscaleState[idx][campo] = parseFloat(valore) || 0;
+  salvaSimFiscale();
   renderRisultatoSimFiscale();
 }
 
 function renderSimulatoreFiscale() {
+  // Se non ancora in memoria, prova prima a ripristinare quanto salvato in precedenza;
+  // solo se non c'è nulla di salvato, precompila da zero coi dati del computo.
+  if (!simFiscaleState) {
+    if (state.simFiscale?.length) simFiscaleState = state.simFiscale;
+    else { precompilaSimulatoreFiscale(); return; }
+  }
   if (!simFiscaleState) precompilaSimulatoreFiscale();
   const el = document.getElementById('sim-fiscale-tabella');
   if (!el) return;
@@ -6614,19 +6361,23 @@ function renderRisultatoSimFiscale() {
     // eccedente anche se già fatturata entro il 2026 ma oltre il tetto disponibile).
     const base2027 = Math.max(0, r.spesaAllocata - fatturatoEntroCapped);
     const detrazione2027 = base2027 * (r.aliquota2027 / 100);
-    // Perdita per rinvio: quanto costerebbe, sulla base spostata al 2027, la differenza
-    // fra l'aliquota 2026 e quella 2027 impostate — cioè cosa perdi fatturando quella
-    // quota dopo invece che entro il 31/12, a parità di aliquote inserite qui sopra.
-    // Se l'aliquota 2027 fosse più alta di quella 2026, la "perdita" diventa negativa
-    // (un guadagno: conviene rinviare), e lo segnaliamo di conseguenza.
+    // Perdita per rinvio: ha senso solo sulla quota di base2027 che aveva ANCORA
+    // margine per entrare nel 2026 (cioè il plafond residuo, massimale − già fatturato),
+    // non sull'intera base2027 — se il plafond è già saturo (fatturato ≥ massimale),
+    // quella spesa non poteva comunque rientrare nel 2026, quindi non è "persa per
+    // rinvio" ma semplicemente fuori portata: confrontarla con un ipotetico 50% nel
+    // 2026 sarebbe un confronto con uno scenario che non era più disponibile.
+    const margineResiduo2026 = Math.max(0, r.massimale2026 - fatturatoEntroCapped);
+    const baseRinviabile = Math.min(base2027, margineResiduo2026);
     const puntiPersi = r.aliquota2026 - r.aliquota2027;
-    const perditaRinvio = base2027 * (puntiPersi / 100);
+    const perditaRinvio = baseRinviabile * (puntiPersi / 100);
     return { ...r, fatturatoOltre2026, detrazione2026, base2027, detrazione2027, puntiPersi, perditaRinvio, totaleDetrazione: detrazione2026 + detrazione2027 };
   });
 
   const totali = {
     spesaAllocata: righe.reduce((s,r) => s + r.spesaAllocata, 0),
     fatturatoEntro2026: righe.reduce((s,r) => s + r.fatturatoEntro2026, 0),
+    fatturatoOltre2026: righe.reduce((s,r) => s + r.fatturatoOltre2026, 0),
     detrazione2026: righe.reduce((s,r) => s + r.detrazione2026, 0),
     base2027: righe.reduce((s,r) => s + r.base2027, 0),
     detrazione2027: righe.reduce((s,r) => s + r.detrazione2027, 0),
@@ -6635,6 +6386,14 @@ function renderRisultatoSimFiscale() {
   };
 
   el.innerHTML = `
+    <div style="background:var(--surface-2);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px">Da fatturare, in base ai valori impostati sopra</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:11px;color:var(--text-3)">Entro il 31/12 (già inserito)</div><div style="font-size:18px;font-weight:600">${formatEur(totali.fatturatoEntro2026)}</div></div>
+        <div><div style="font-size:11px;color:var(--text-3)">Oltre il 31/12 (residuo)</div><div style="font-size:18px;font-weight:600;color:var(--text-2)">${formatEur(totali.fatturatoOltre2026)}</div></div>
+      </div>
+      <div style="font-size:10px;color:var(--text-3);margin-top:8px">"Entro il 31/12" = somma di "Fatturato entro 2026" impostato per ciascun contenitore. "Oltre" = spesa allocata rimanente (spesa allocata − fatturato entro 2026), per contenitore.</div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
       <div class="metric-card"><div class="metric-label">Detrazione 2026</div><div class="metric-value" style="font-size:18px">${formatEur(totali.detrazione2026)}</div><div class="metric-sub">Su ${formatEur(totali.fatturatoEntro2026)} fatturati</div></div>
       <div class="metric-card"><div class="metric-label">Detrazione 2027 (ipotesi)</div><div class="metric-value" style="font-size:18px">${formatEur(totali.detrazione2027)}</div><div class="metric-sub">Su ${formatEur(totali.base2027)} residui</div></div>
@@ -6663,7 +6422,7 @@ function renderRisultatoSimFiscale() {
         </tr>`).join('')}
       </tbody>
     </table>
-    <div style="font-size:10px;color:var(--text-3);margin-top:8px">"Persa/guadagnata se rinviato" = base 2027 × (aliquota 2026 − aliquota 2027). Es. €10.000 di infissi spostati dal 2026 (50%) al 2027 (36%) fanno perdere €10.000 × 14% = €1.400 di detrazione.</div>`;
+    <div style="font-size:10px;color:var(--text-3);margin-top:8px">"Persa/guadagnata se rinviato" = quota di base 2027 che aveva ancora margine nel plafond 2026 × (aliquota 2026 − aliquota 2027). Es. €10.000 di infissi spostati dal 2026 (50%) al 2027 (36%), con plafond ancora disponibile, fanno perdere €10.000 × 14% = €1.400. Se il plafond 2026 è già saturo, quella spesa non poteva comunque rientrarci: la perdita per quella quota è €0, non un confronto con uno scenario impossibile.</div>`;
 }
 
 // ══════════════════════════════════════════
@@ -8313,586 +8072,6 @@ function caricaMutuo() {
 }
 
 // ══════════════════════════════════════════
-//  CASH FLOW — COSTANTI E STATO
-// ══════════════════════════════════════════
-// Default di fallback se l'utente non ha ancora configurato un periodo personalizzato
-const CF_INIZIO_DEFAULT = '2026-09';
-const CF_FINE_DEFAULT   = '2027-12';
-
-function cfMesi() {
-  const mesi = [];
-  const inizioStr = document.getElementById('cf-data-inizio')?.value || CF_INIZIO_DEFAULT;
-  const fineStr = document.getElementById('cf-data-fine')?.value || CF_FINE_DEFAULT;
-  let [a, m] = inizioStr.split('-').map(Number);
-  const [af, mf] = fineStr.split('-').map(Number);
-  // Limite di sicurezza: non generare più di 60 mesi anche in caso di date invertite/errate
-  let guard = 0;
-  while ((a < af || (a === af && m <= mf)) && guard < 60) {
-    mesi.push(`${a}-${String(m).padStart(2,'0')}`);
-    m++; if (m > 12) { m = 1; a++; }
-    guard++;
-  }
-  return mesi;
-}
-
-function cfVistaRapida(nMesi) {
-  const inizioEl = document.getElementById('cf-data-inizio');
-  const fineEl = document.getElementById('cf-data-fine');
-  if (!inizioEl.value) inizioEl.value = CF_INIZIO_DEFAULT;
-  let [a, m] = inizioEl.value.split('-').map(Number);
-  m += nMesi - 1;
-  while (m > 12) { m -= 12; a++; }
-  fineEl.value = `${a}-${String(m).padStart(2,'0')}`;
-  salvaCfConfig();
-  ricalcolaCashFlow();
-}
-
-// ══════════════════════════════════════════
-//  CASH FLOW — CALCOLO DATI
-// ══════════════════════════════════════════
-function buildCashFlow() {
-  const mesi = cfMesi();
-  const liquiditaIniziale = parseFloat(document.getElementById('cf-liquidita')?.value) || 0;
-  const meseMutuo = document.getElementById('cf-mese-mutuo')?.value || '2026-09';
-
-  // Inizializza struttura per ogni mese
-  const dati = {};
-  mesi.forEach(m => {
-    dati[m] = { outPrev: 0, outEff: 0, inPrev: 0, inEff: 0, voci: [] };
-  });
-
-  // ── USCITE PREVISIONALI MANUALI ──
-  (state.cfUscitePrev || []).forEach(u => {
-    if (u.ricorrente === 'mensile') {
-      mesi.forEach(m => { if (dati[m]) dati[m].outPrev += u.importo; });
-    } else {
-      if (dati[u.mese]) dati[u.mese].outPrev += u.importo;
-    }
-  });
-
-  // ── USCITE DA VOCI COMPUTO CON DATE (solo quota NON ancora fatturata) ──
-  // Se la voce ha già fatture collegate (vedi Collegamenti computo↔fatture),
-  // quella quota è già conteggiata come uscita EFFETTIVA tramite i pagamenti reali:
-  // qui si spalma in previsione solo il residuo, altrimenti la spesa risulterebbe doppia.
-  const _fscf = fattoreScontoComputo();
-  (state.voci || []).forEach(v => {
-    if (v.dataInizio && v.dataFine && v.imponibile > 0) {
-      const av = calcolaAvanzamentoVoce(v);
-      const residuoLordo = Math.max(0, v.imponibile - av.fatturato);
-      const totVoce = residuoLordo * _fscf * 1.10;
-      if (totVoce <= 0.01) return; // voce già interamente fatturata, nulla da prevedere
-      // Distribuisce uniformemente tra inizio e fine
-      const [ai, mi] = v.dataInizio.split('-').map(Number);
-      const [af, mf] = v.dataFine.split('-').map(Number);
-      const mesiVoce = [];
-      let a = ai, m = mi;
-      while (a < af || (a === af && m <= mf)) {
-        const key = `${a}-${String(m).padStart(2,'0')}`;
-        if (dati[key]) mesiVoce.push(key);
-        m++; if (m > 12) { m = 1; a++; }
-      }
-      if (mesiVoce.length > 0) {
-        const quota = totVoce / mesiVoce.length;
-        mesiVoce.forEach(key => { dati[key].outPrev += quota; });
-      }
-    }
-  });
-
-  // ── USCITE EFFETTIVE DA PAGAMENTI FATTURE ──
-  // Ogni pagamento (acconto, saldo, ecc.) pesa nel SUO mese effettivo,
-  // non più tutto ammassato in un'unica data per fattura
-  (state.fatture || []).forEach(f => {
-    getPagamenti(f).forEach(p => {
-      if (!p.data || !p.importo) return;
-      const mese = p.data.slice(0, 7);
-      if (dati[mese]) dati[mese].outEff += p.importo;
-    });
-  });
-
-  // ── USCITE MUTUO (rate mensili) ──
-  // Usa il piano EFFETTIVO (con estinzioni anticipate) se disponibile,
-  // così la rata mostrata riflette eventuali riduzioni post-estinzione
-  const pianoRataCF = (mutState.estinzioni?.length && mutState.pianoEff?.length) ? mutState.pianoEff : mutState.piano;
-  if (pianoRataCF.length && mutState.params) {
-    pianoRataCF.forEach(r => {
-      if (dati[r.data]) {
-        dati[r.data].outPrev += r.rata;
-        dati[r.data].outEff  += r.rata; // rata è certa una volta attivo
-      }
-    });
-    // Estinzioni anticipate
-    (mutState.estinzioni || []).forEach(e => {
-      if (dati[e.data]) {
-        dati[e.data].outPrev += e.importo;
-      }
-    });
-  }
-
-  // ── ENTRATE: EROGAZIONE MUTUO ──
-  if (mutState.params && dati[meseMutuo]) {
-    dati[meseMutuo].inPrev += mutState.params.nettoErogato || 0;
-    dati[meseMutuo].inEff  += mutState.params.nettoErogato || 0;
-  }
-
-  // ── ENTRATE: RIMBORSI 730 (luglio/agosto di ogni anno) ──
-  const anno730 = [2027]; // rimborsi relativi al 2026 arrivano nell'estate 2027
-  anno730.forEach(a => {
-    const meseRimb = `${a}-07`; // tipicamente luglio
-    if (dati[meseRimb] && state.agevConfig) {
-      const detAnnua = calcolaDetrazioneTotaleAnnua();
-      if (detAnnua > 0) {
-        dati[meseRimb].inPrev += detAnnua;
-        dati[meseRimb].inEff  += 0; // effettivo solo quando incassato
-      }
-    }
-  });
-
-  // ── ENTRATE EXTRA (risparmi, contributi, ecc.) ──
-  (state.cfEntrateExtra || []).forEach(e => {
-    if (e.ricorrente === 'mensile') {
-      mesi.forEach(m => { if (dati[m]) { dati[m].inPrev += e.importo; dati[m].inEff += e.importo; } });
-    } else {
-      if (dati[e.mese]) { dati[e.mese].inPrev += e.importo; dati[e.mese].inEff += e.importo; }
-    }
-  });
-
-  // ── CALCOLA SALDI CUMULATI ──
-  let cumPrev = liquiditaIniziale;
-  let cumEff  = liquiditaIniziale;
-  mesi.forEach(m => {
-    const d = dati[m];
-    d.saldoPrev = d.inPrev - d.outPrev;
-    d.saldoEff  = d.inEff  - d.outEff;
-    cumPrev += d.saldoPrev;
-    cumEff  += d.saldoEff;
-    d.cumPrev = cumPrev;
-    d.cumEff  = cumEff;
-  });
-
-  return { dati, mesi, liquiditaIniziale };
-}
-
-function calcolaDetrazione730Annua() {
-  // Usa i dati reali del modulo agevolazioni se disponibili (tutti e 4 i contenitori)
-  if (!state.agevConfig || !state.voci?.length) return 0;
-
-  const tipoImmobile = state.agevConfig.tipoImmobile || 'prima-casa';
-  const anno = state.agevConfig.anno || '2026';
-  const key = anno + '-' + tipoImmobile;
-  const aliq = {
-    '2026-prima-casa': 0.50, '2026-seconda-casa': 0.36,
-    '2027-prima-casa': 0.36, '2027-seconda-casa': 0.30,
-    '2028-prima-casa': 0.30, '2028-seconda-casa': 0.30
-  }[key] || 0.50;
-
-  // Ricalcola i totali per contenitore esattamente come fa ricalcolaAgevolazioni()
-  const totPerContenitore = { br: 0, 'eco-iso': 0, 'eco-inf': 0, 'eco-pdc': 0 };
-  const allocazioni = state.agevAllocazioni || {};
-  const split = state.agevSplit || {};
-
-  const _fsd = fattoreScontoComputo();
-  state.voci.forEach(v => {
-    const base = v.imponibile * _fsd * 1.10;
-    const alloc = allocazioni[v.id] || MAPPA_DEFAULT[v.numero] || 'br';
-    const splitPerc = split[v.id];
-    if (splitPerc !== undefined && splitPerc > 0 && alloc !== 'pro-quota' && alloc !== 'non-detraibile') {
-      const quotaPdc = base * (splitPerc / 100);
-      const quotaResto = base - quotaPdc;
-      totPerContenitore['eco-pdc'] += quotaPdc;
-      if (totPerContenitore[alloc] !== undefined) totPerContenitore[alloc] += quotaResto;
-    } else if (totPerContenitore[alloc] !== undefined) {
-      totPerContenitore[alloc] += base;
-    }
-  });
-
-  // Distribuisci le voci pro-quota
-  const totDet = Object.values(totPerContenitore).reduce((s, v) => s + v, 0);
-  const vociProQuota = state.voci.filter(v => {
-    const alloc = allocazioni[v.id] || MAPPA_DEFAULT[v.numero] || 'br';
-    return alloc === 'pro-quota';
-  });
-  const totPQ = vociProQuota.reduce((s, v) => s + v.imponibile * _fsd * 1.10, 0);
-  if (totPQ > 0 && totDet > 0) {
-    Object.keys(totPerContenitore).forEach(k => {
-      totPerContenitore[k] += totPQ * (totPerContenitore[k] / totDet);
-    });
-  }
-
-  // Onorari tecnico pro-quota — fonte unica: include Cassa Previdenziale
-  const onorari = calcolaTotaliComputo().totOnorari;
-  const totConOno = Object.values(totPerContenitore).reduce((s, v) => s + v, 0) || 1;
-  Object.keys(totPerContenitore).forEach(k => {
-    totPerContenitore[k] += onorari * (totPerContenitore[k] / totConOno);
-  });
-
-  // Somma detrazioni di tutti i contenitori rispettando i massimali
-  const detTotale = Object.entries(totPerContenitore).reduce((s, [k, v]) => {
-    return s + Math.min(v, maxSpesaContenitore(k)) * aliq;
-  }, 0);
-
-  return detTotale / 10; // rata annua — solo lavori (4 contenitori)
-}
-
-// Detrazione annua TOTALE: lavori + interessi passivi + pregresse
-function calcolaDetrazioneTotaleAnnua() {
-  // 1. Detrazioni lavori (4 contenitori)
-  const detLavori = calcolaDetrazione730Annua();
-
-  // 2. Interessi passivi mutuo (art.15 TUIR — 19% × min(interessi, €4.000))
-  // Usa il piano EFFETTIVO (con estinzioni anticipate) se disponibile
-  let detInteressi = 0;
-  const pianoMutuo = (mutState.estinzioni?.length && mutState.pianoEff?.length) ? mutState.pianoEff : mutState.piano;
-  if (pianoMutuo.length && mutState.params) {
-    const perAnno = {};
-    pianoMutuo.forEach(r => { const a = r.data.slice(0,4); perAnno[a] = (perAnno[a]||0) + r.interessi; });
-    const anni = Object.keys(perAnno).sort();
-    // Usa la media dei primi 10 anni come proxy per la rata annua media
-    const totInt10 = anni.slice(0,10).reduce((s,a) => s + Math.min(perAnno[a]||0, 4000) * 0.19, 0);
-    detInteressi = totInt10 / Math.min(10, anni.length);
-  }
-
-  // 3. Detrazioni pregresse (rata annua di ciascuna)
-  const detPregresse = (state.detrPregresse || []).reduce((s, d) => s + d.rataAnnua, 0);
-
-  return detLavori + detInteressi + detPregresse;
-}
-
-// ══════════════════════════════════════════
-//  CASH FLOW — RENDER PRINCIPALE
-// ══════════════════════════════════════════
-function ricalcolaCashFlow() {
-  const { dati, mesi, liquiditaIniziale } = buildCashFlow();
-  const vista = document.getElementById('cf-vista')?.value || 'saldo';
-  const mostra = document.getElementById('cf-mostra')?.value || 'entrambi';
-
-  // KPI
-  const totOutPrev = mesi.reduce((s, m) => s + dati[m].outPrev, 0);
-  const totInPrev  = mesi.reduce((s, m) => s + dati[m].inPrev, 0) + liquiditaIniziale;
-  const totEff     = mesi.reduce((s, m) => s + dati[m].outEff, 0);
-  const saldoMinPrev = Math.min(...mesi.map(m => dati[m].cumPrev));
-  const meseSaldoMin = mesi.find(m => dati[m].cumPrev === saldoMinPrev) || '';
-
-  document.getElementById('cf-tot-out-prev').textContent = formatEurK(totOutPrev);
-  document.getElementById('cf-tot-in-prev').textContent  = formatEurK(totInPrev);
-  document.getElementById('cf-tot-eff').textContent      = formatEurK(totEff);
-  document.getElementById('cf-saldo-min').textContent    = formatEurK(saldoMinPrev);
-  document.getElementById('cf-saldo-min').style.color    = saldoMinPrev < 0 ? 'var(--danger)' : 'var(--success)';
-  document.getElementById('cf-saldo-min-mese').textContent = meseSaldoMin
-    ? `Mese critico: ${meseSaldoMin}` : 'Nessun mese critico';
-
-  // Grafico e tabella
-  renderGraficoCF(dati, mesi, vista, mostra);
-  renderTabellaCF(dati, mesi, mostra);
-  salvaStato();
-}
-
-// ══════════════════════════════════════════
-//  CASH FLOW — GRAFICO SVG
-// ══════════════════════════════════════════
-function renderGraficoCF(dati, mesi, vista, mostra) {
-  const svg = document.getElementById('cf-svg');
-  if (!svg) return;
-  const W = svg.clientWidth || 800;
-  const H = 240;
-  const PAD = { top: 20, right: 20, bottom: 36, left: 64 };
-  const w = W - PAD.left - PAD.right;
-  const h = H - PAD.top - PAD.bottom;
-
-  const valPrev = mesi.map(m => vista === 'saldo' ? dati[m].cumPrev : dati[m].saldoPrev);
-  const valEff  = mesi.map(m => vista === 'saldo' ? dati[m].cumEff  : dati[m].saldoEff);
-
-  const allVals = [
-    ...(mostra !== 'eff' ? valPrev : []),
-    ...(mostra !== 'prev' ? valEff : []),
-    0
-  ];
-  const minV = Math.min(...allVals);
-  const maxV = Math.max(...allVals);
-  const range = maxV - minV || 1;
-
-  const xS = i => PAD.left + (i / (mesi.length - 1)) * w;
-  const yS = v => PAD.top + h - ((v - minV) / range) * h;
-
-  const linePath = (vals) => vals.map((v, i) =>
-    `${i === 0 ? 'M' : 'L'}${xS(i).toFixed(1)},${yS(v).toFixed(1)}`
-  ).join(' ');
-
-  // Zona rossa sotto lo zero
-  const zeroY = yS(0);
-  const areaRossa = minV < 0 ? `<rect x="${PAD.left}" y="${zeroY.toFixed(1)}" width="${w}" height="${Math.min(h - (zeroY - PAD.top), h).toFixed(1)}" fill="rgba(163,45,45,0.08)"/>` : '';
-
-  // Linea zero
-  const lineaZero = `<line x1="${PAD.left}" y1="${zeroY.toFixed(1)}" x2="${PAD.left + w}" y2="${zeroY.toFixed(1)}" stroke="var(--border-strong)" stroke-width="1" stroke-dasharray="4,3"/>`;
-
-  // Etichette asse X (ogni 3 mesi)
-  const labelsX = mesi.map((m, i) => {
-    if (i % 3 !== 0 && i !== mesi.length - 1) return '';
-    const [anno, mese] = m.split('-');
-    const label = ['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'][parseInt(mese)] + ' ' + anno.slice(2);
-    return `<text x="${xS(i).toFixed(1)}" y="${(H - 6).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--text-3)">${label}</text>`;
-  }).join('');
-
-  // Etichette asse Y
-  const nTick = 5;
-  const labelsY = Array.from({length: nTick + 1}, (_, i) => {
-    const v = minV + (i / nTick) * range;
-    const y = yS(v);
-    return `<text x="${(PAD.left - 6).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--text-3)">${formatEurK(v)}</text>
-    <line x1="${PAD.left}" y1="${y.toFixed(1)}" x2="${(PAD.left + w).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="0.5"/>`;
-  }).join('');
-
-  // Punti critici (saldo negativo)
-  const puntiCritici = mostra !== 'eff' ? mesi.map((m, i) => {
-    if (dati[m].cumPrev < 0) {
-      return `<circle cx="${xS(i).toFixed(1)}" cy="${yS(dati[m].cumPrev).toFixed(1)}" r="4" fill="var(--danger)" opacity="0.8"/>`;
-    }
-    return '';
-  }).join('') : '';
-
-  const lineaPrev = mostra !== 'eff'
-    ? `<path d="${linePath(valPrev)}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`
-    : '';
-  const lineaEff = mostra !== 'prev'
-    ? `<path d="${linePath(valEff)}" fill="none" stroke="var(--info)" stroke-width="2" stroke-dasharray="6,4" stroke-linejoin="round"/>`
-    : '';
-
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.innerHTML = `
-    ${areaRossa}
-    ${labelsY}
-    ${lineaZero}
-    ${lineaPrev}
-    ${lineaEff}
-    ${puntiCritici}
-    ${labelsX}
-  `;
-
-  document.getElementById('cf-grafico-titolo').textContent =
-    vista === 'saldo' ? 'Saldo cumulato mensile (liquidità disponibile)' : 'Flussi mensili netti';
-}
-
-// ══════════════════════════════════════════
-//  CASH FLOW — TABELLA
-// ══════════════════════════════════════════
-function renderTabellaCF(dati, mesi, mostra) {
-  const tbody = document.getElementById('cf-tabella-body');
-  const nomiMese = ['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-  tbody.innerHTML = mesi.map(m => {
-    const d = dati[m];
-    const [a, mm] = m.split('-');
-    const isCritico = d.cumPrev < 0;
-    const bg = isCritico ? 'background:var(--danger-light);' : '';
-    return `<tr style="${bg}">
-      <td style="font-weight:500;font-size:12px">${nomiMese[parseInt(mm)]} ${a}</td>
-      <td class="text-right text-mono" style="color:var(--danger);font-size:12px">${d.outPrev > 0 ? formatEur(d.outPrev) : '—'}</td>
-      <td class="text-right text-mono" style="color:var(--danger);font-size:12px">${d.outEff > 0 ? formatEur(d.outEff) : '—'}</td>
-      <td class="text-right text-mono" style="color:var(--success);font-size:12px">${d.inPrev > 0 ? formatEur(d.inPrev) : '—'}</td>
-      <td class="text-right text-mono" style="color:var(--success);font-size:12px">${d.inEff > 0 ? formatEur(d.inEff) : '—'}</td>
-      <td class="text-right text-mono" style="font-size:12px;color:${d.saldoPrev >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatEur(d.saldoPrev)}</td>
-      <td class="text-right text-mono" style="font-size:12px;color:${d.saldoEff >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatEur(d.saldoEff)}</td>
-      <td class="text-right text-mono" style="font-weight:600;font-size:12px;color:${d.cumPrev >= 0 ? 'var(--text)' : 'var(--danger)'}">${formatEur(d.cumPrev)}</td>
-    </tr>`;
-  }).join('');
-
-  // ── Lista mobile — adatta i campi mostrati al filtro "mostra" ──
-  const mobileList = document.getElementById('cf-lista-mobile');
-  if (mobileList) {
-    mobileList.innerHTML = mesi.map(m => {
-      const d = dati[m];
-      const [a, mm] = m.split('-');
-      const isCritico = d.cumPrev < 0;
-      const bg = isCritico ? 'background:var(--danger-light);' : '';
-      const showPrev = mostra !== 'eff';
-      const showEff = mostra !== 'prev';
-      const cellsPrev = showPrev ? `
-        <div class="anno-card-item"><span>Uscite prev.</span><span style="color:var(--danger)">${d.outPrev > 0 ? formatEur(d.outPrev) : '—'}</span></div>
-        <div class="anno-card-item"><span>Entrate prev.</span><span style="color:var(--success)">${d.inPrev > 0 ? formatEur(d.inPrev) : '—'}</span></div>` : '';
-      const cellsEff = showEff ? `
-        <div class="anno-card-item"><span>Uscite eff.</span><span style="color:var(--danger)">${d.outEff > 0 ? formatEur(d.outEff) : '—'}</span></div>
-        <div class="anno-card-item"><span>Entrate eff.</span><span style="color:var(--success)">${d.inEff > 0 ? formatEur(d.inEff) : '—'}</span></div>` : '';
-      return `<div class="anno-card" style="${bg}">
-        <div class="anno-card-top">
-          <span class="anno-card-anno" style="font-size:13px">${nomiMese[parseInt(mm)]} ${a}</span>
-          <span class="anno-card-tot" style="color:${d.cumPrev >= 0 ? 'var(--text)' : 'var(--danger)'}">${formatEur(d.cumPrev)}</span>
-        </div>
-        <div class="anno-card-grid">${cellsPrev}${cellsEff}</div>
-      </div>`;
-    }).join('');
-  }
-}
-
-// ══════════════════════════════════════════
-//  CASH FLOW — USCITE PREVISIONALI
-// ══════════════════════════════════════════
-let editingCashOutId = null;
-
-function apriModalCashOutPrev(id) {
-  editingCashOutId = id || null;
-  document.getElementById('modal-cashout-title').textContent = id ? 'Modifica uscita' : 'Nuova uscita previsionale';
-  if (id) {
-    const u = (state.cfUscitePrev || []).find(x => x.id === id);
-    if (!u) return;
-    document.getElementById('cop-descrizione').value = u.descrizione;
-    document.getElementById('cop-mese').value = u.mese;
-    document.getElementById('cop-importo').value = u.importo;
-    document.getElementById('cop-categoria').value = u.categoria;
-    document.getElementById('cop-ricorrente').value = u.ricorrente;
-  } else {
-    document.getElementById('cop-descrizione').value = '';
-    document.getElementById('cop-mese').value = '2026-09';
-    document.getElementById('cop-importo').value = '';
-    document.getElementById('cop-categoria').value = 'lavori';
-    document.getElementById('cop-ricorrente').value = 'no';
-  }
-  document.getElementById('modal-cashout-prev').classList.add('open');
-}
-
-function chiudiModalCashOutPrev() {
-  document.getElementById('modal-cashout-prev').classList.remove('open');
-  editingCashOutId = null;
-}
-
-function salvaCashOutPrev() {
-  const desc = document.getElementById('cop-descrizione').value.trim();
-  const mese = document.getElementById('cop-mese').value;
-  const importo = parseFloat(document.getElementById('cop-importo').value) || 0;
-  if (!desc || !mese || importo <= 0) { alert('Compila tutti i campi obbligatori.'); return; }
-  const uscita = {
-    id: editingCashOutId || uid(),
-    descrizione: desc, mese, importo,
-    categoria: document.getElementById('cop-categoria').value,
-    ricorrente: document.getElementById('cop-ricorrente').value
-  };
-  if (!state.cfUscitePrev) state.cfUscitePrev = [];
-  if (editingCashOutId) {
-    const idx = state.cfUscitePrev.findIndex(x => x.id === editingCashOutId);
-    if (idx !== -1) state.cfUscitePrev[idx] = uscita;
-  } else {
-    state.cfUscitePrev.push(uscita);
-  }
-  chiudiModalCashOutPrev();
-  renderListeExtra();
-  ricalcolaCashFlow();
-}
-
-function eliminaCashOutPrev(id) {
-  if (!confirm('Eliminare questa uscita?')) return;
-  state.cfUscitePrev = (state.cfUscitePrev || []).filter(x => x.id !== id);
-  renderListeExtra();
-  ricalcolaCashFlow();
-}
-
-// ══════════════════════════════════════════
-//  CASH FLOW — ENTRATE EXTRA
-// ══════════════════════════════════════════
-let editingCashInId = null;
-
-function apriModalCashIn(id) {
-  editingCashInId = id || null;
-  document.getElementById('modal-cashin-title').textContent = id ? 'Modifica entrata' : 'Nuova entrata';
-  if (id) {
-    const e = (state.cfEntrateExtra || []).find(x => x.id === id);
-    if (!e) return;
-    document.getElementById('ci-descrizione').value = e.descrizione;
-    document.getElementById('ci-mese').value = e.mese;
-    document.getElementById('ci-importo').value = e.importo;
-    document.getElementById('ci-tipo').value = e.tipo;
-    document.getElementById('ci-ricorrente').value = e.ricorrente;
-  } else {
-    document.getElementById('ci-descrizione').value = '';
-    document.getElementById('ci-mese').value = '2026-09';
-    document.getElementById('ci-importo').value = '';
-    document.getElementById('ci-tipo').value = 'risparmio';
-    document.getElementById('ci-ricorrente').value = 'no';
-  }
-  document.getElementById('modal-cashin').classList.add('open');
-}
-
-function chiudiModalCashIn() {
-  document.getElementById('modal-cashin').classList.remove('open');
-  editingCashInId = null;
-}
-
-function salvaCashIn() {
-  const desc = document.getElementById('ci-descrizione').value.trim();
-  const mese = document.getElementById('ci-mese').value;
-  const importo = parseFloat(document.getElementById('ci-importo').value) || 0;
-  if (!desc || !mese || importo <= 0) { alert('Compila tutti i campi obbligatori.'); return; }
-  const entrata = {
-    id: editingCashInId || uid(),
-    descrizione: desc, mese, importo,
-    tipo: document.getElementById('ci-tipo').value,
-    ricorrente: document.getElementById('ci-ricorrente').value
-  };
-  if (!state.cfEntrateExtra) state.cfEntrateExtra = [];
-  if (editingCashInId) {
-    const idx = state.cfEntrateExtra.findIndex(x => x.id === editingCashInId);
-    if (idx !== -1) state.cfEntrateExtra[idx] = entrata;
-  } else {
-    state.cfEntrateExtra.push(entrata);
-  }
-  chiudiModalCashIn();
-  renderListeExtra();
-  ricalcolaCashFlow();
-}
-
-function eliminaCashIn(id) {
-  if (!confirm('Eliminare questa entrata?')) return;
-  state.cfEntrateExtra = (state.cfEntrateExtra || []).filter(x => x.id !== id);
-  renderListeExtra();
-  ricalcolaCashFlow();
-}
-
-// ══════════════════════════════════════════
-//  CASH FLOW — RENDER LISTE
-// ══════════════════════════════════════════
-const TIPO_CI_LABEL = {
-  risparmio: 'Risparmio', contributo: 'Contributo fam.',
-  tfr: 'TFR', vendita: 'Vendita bene', altro: 'Altro'
-};
-const CAT_CO_LABEL = { lavori: 'Lavori SAL', onorari: 'Onorari', altro: 'Altro' };
-
-function renderListeExtra() {
-  // Uscite
-  const ul = document.getElementById('cf-uscite-lista');
-  const uscite = state.cfUscitePrev || [];
-  ul.innerHTML = uscite.length === 0
-    ? '<div style="padding:14px 18px;font-size:13px;color:var(--text-3)">Nessuna uscita previsionale. Le voci del computo con date vengono incluse automaticamente.</div>'
-    : `<table><thead><tr><th>Mese</th><th>Descrizione</th><th>Categoria</th><th class="text-right">Importo</th><th>Freq.</th><th></th></tr></thead><tbody>
-      ${uscite.map(u => `<tr>
-        <td style="font-family:monospace;font-size:12px">${u.mese}</td>
-        <td style="font-size:12px">${escHtml(u.descrizione)}</td>
-        <td><span class="badge badge-amber" style="font-size:10px">${CAT_CO_LABEL[u.categoria]||u.categoria}</span></td>
-        <td class="text-right text-mono">${formatEur(u.importo)}</td>
-        <td style="font-size:11px;color:var(--text-3)">${u.ricorrente === 'mensile' ? '🔁 mensile' : '1×'}</td>
-        <td><div class="flex-gap" style="gap:4px;justify-content:flex-end">
-          <button class="btn btn-sm" onclick="apriModalCashOutPrev('${u.id}')">✏️</button>
-          <button class="btn btn-sm btn-danger" onclick="eliminaCashOutPrev('${u.id}')">✕</button>
-        </div></td>
-      </tr>`).join('')}
-      </tbody></table>`;
-
-  // Entrate extra
-  const el = document.getElementById('cf-entrate-lista');
-  const entrate = state.cfEntrateExtra || [];
-  el.innerHTML = entrate.length === 0
-    ? '<div style="padding:14px 18px;font-size:13px;color:var(--text-3)">Nessuna entrata extra. I rimborsi 730 vengono inclusi automaticamente.</div>'
-    : `<table><thead><tr><th>Mese</th><th>Descrizione</th><th>Tipo</th><th class="text-right">Importo</th><th>Freq.</th><th></th></tr></thead><tbody>
-      ${entrate.map(e => `<tr>
-        <td style="font-family:monospace;font-size:12px">${e.mese}</td>
-        <td style="font-size:12px">${escHtml(e.descrizione)}</td>
-        <td><span class="badge badge-green" style="font-size:10px">${TIPO_CI_LABEL[e.tipo]||e.tipo}</span></td>
-        <td class="text-right text-mono">${formatEur(e.importo)}</td>
-        <td style="font-size:11px;color:var(--text-3)">${e.ricorrente === 'mensile' ? '🔁 mensile' : '1×'}</td>
-        <td><div class="flex-gap" style="gap:4px;justify-content:flex-end">
-          <button class="btn btn-sm" onclick="apriModalCashIn('${e.id}')">✏️</button>
-          <button class="btn btn-sm btn-danger" onclick="eliminaCashIn('${e.id}')">✕</button>
-        </div></td>
-      </tr>`).join('')}
-      </tbody></table>`;
-}
-
-// ══════════════════════════════════════════
 //  INTESTATARI
 // ══════════════════════════════════════════
 function salvaIntestatori() {
@@ -9170,6 +8349,96 @@ function aggiornaDimensioneDati() {
 }
 
 // ══════════════════════════════════════════
+//  DETRAZIONI ANNUE (per dashboard e riepilogo finanziario)
+//  Usa state.agevConfig (dati salvati) invece del DOM della pagina Agevolazioni,
+//  così può essere chiamata da qualunque pagina sia attiva, dashboard inclusa,
+//  senza dipendere da elementi che potrebbero non riflettere la configurazione salvata.
+// ══════════════════════════════════════════
+function calcolaDetrazione730Annua() {
+  if (!state.agevConfig || !state.voci?.length) return 0;
+
+  const tipoImmobile = state.agevConfig.tipoImmobile || 'prima-casa';
+  const anno = state.agevConfig.anno || '2026';
+  const key = anno + '-' + tipoImmobile;
+  const aliq = {
+    '2026-prima-casa': 0.50, '2026-seconda-casa': 0.36,
+    '2027-prima-casa': 0.36, '2027-seconda-casa': 0.30,
+    '2028-prima-casa': 0.30, '2028-seconda-casa': 0.30
+  }[key] || 0.50;
+
+  // Ricalcola i totali per contenitore esattamente come fa calcolaTotPerContenitore()
+  const totPerContenitore = { br: 0, 'eco-iso': 0, 'eco-inf': 0, 'eco-pdc': 0 };
+  const allocazioni = state.agevAllocazioni || {};
+  const split = state.agevSplit || {};
+
+  const _fsd = fattoreScontoComputo();
+  state.voci.forEach(v => {
+    const base = v.imponibile * _fsd * 1.10;
+    const alloc = allocazioni[v.id] || MAPPA_DEFAULT[v.numero] || 'br';
+    const splitPerc = split[v.id];
+    if (splitPerc !== undefined && splitPerc > 0 && alloc !== 'pro-quota' && alloc !== 'non-detraibile') {
+      const quotaPdc = base * (splitPerc / 100);
+      const quotaResto = base - quotaPdc;
+      totPerContenitore['eco-pdc'] += quotaPdc;
+      if (totPerContenitore[alloc] !== undefined) totPerContenitore[alloc] += quotaResto;
+    } else if (totPerContenitore[alloc] !== undefined) {
+      totPerContenitore[alloc] += base;
+    }
+  });
+
+  // Distribuisci le voci pro-quota
+  const totDet = Object.values(totPerContenitore).reduce((s, v) => s + v, 0);
+  const vociProQuota = state.voci.filter(v => {
+    const alloc = allocazioni[v.id] || MAPPA_DEFAULT[v.numero] || 'br';
+    return alloc === 'pro-quota';
+  });
+  const totPQ = vociProQuota.reduce((s, v) => s + v.imponibile * _fsd * 1.10, 0);
+  if (totPQ > 0 && totDet > 0) {
+    Object.keys(totPerContenitore).forEach(k => {
+      totPerContenitore[k] += totPQ * (totPerContenitore[k] / totDet);
+    });
+  }
+
+  // Onorari tecnico pro-quota — fonte unica: include Cassa Previdenziale
+  const onorari = calcolaTotaliComputo().totOnorari;
+  const totConOno = Object.values(totPerContenitore).reduce((s, v) => s + v, 0) || 1;
+  Object.keys(totPerContenitore).forEach(k => {
+    totPerContenitore[k] += onorari * (totPerContenitore[k] / totConOno);
+  });
+
+  // Somma detrazioni di tutti i contenitori rispettando i massimali
+  const detTotale = Object.entries(totPerContenitore).reduce((s, [k, v]) => {
+    return s + Math.min(v, maxSpesaContenitore(k)) * aliq;
+  }, 0);
+
+  return detTotale / 10; // rata annua — solo lavori (4 contenitori)
+}
+
+// Detrazione annua TOTALE: lavori + interessi passivi + pregresse
+function calcolaDetrazioneTotaleAnnua() {
+  // 1. Detrazioni lavori (4 contenitori)
+  const detLavori = calcolaDetrazione730Annua();
+
+  // 2. Interessi passivi mutuo (art.15 TUIR — 19% × min(interessi, €4.000))
+  // Usa il piano EFFETTIVO (con estinzioni anticipate) se disponibile
+  let detInteressi = 0;
+  const pianoMutuo = (mutState.estinzioni?.length && mutState.pianoEff?.length) ? mutState.pianoEff : mutState.piano;
+  if (pianoMutuo.length && mutState.params) {
+    const perAnno = {};
+    pianoMutuo.forEach(r => { const a = r.data.slice(0,4); perAnno[a] = (perAnno[a]||0) + r.interessi; });
+    const anni = Object.keys(perAnno).sort();
+    // Usa la media dei primi 10 anni come proxy per la rata annua media
+    const totInt10 = anni.slice(0,10).reduce((s,a) => s + Math.min(perAnno[a]||0, 4000) * 0.19, 0);
+    detInteressi = totInt10 / Math.min(10, anni.length);
+  }
+
+  // 3. Detrazioni pregresse (rata annua di ciascuna)
+  const detPregresse = (state.detrPregresse || []).reduce((s, d) => s + d.rataAnnua, 0);
+
+  return detLavori + detInteressi + detPregresse;
+}
+
+// ══════════════════════════════════════════
 //  DASHBOARD
 // ══════════════════════════════════════════
 function aggiornaDashboard() {
@@ -9203,20 +8472,16 @@ function aggiornaDashboard() {
   document.getElementById('dash-rata-sub').textContent = mutuo
     ? `${mutuo.tasso}% fisso · ${mutuo.durata} anni` : 'Non configurato';
 
-  // ── LIQUIDITÀ E ENTRATE EXTRA ──
-  const liquidita = parseFloat(document.getElementById('cf-liquidita')?.value) || 0;
-  const entrateExtra = (state.cfEntrateExtra || []).reduce((s, e) => {
-    if (e.ricorrente === 'mensile') {
-      return s + e.importo * 16;
-    }
-    return s + e.importo;
-  }, 0);
+  // ── LIQUIDITÀ ──
+  // Le entrate extra non sono più considerate nella fattibilità finanziaria: la
+  // liquidità disponibile è l'unica risorsa "propria" che l'utente vuole tracciare
+  // qui, gestita direttamente dal Riepilogo finanziario più sotto.
+  const liquidita = liquiditaVoci.reduce((s,v) => s + (v.importo||0), 0);
   document.getElementById('dash-liquidita').textContent = formatEurK(liquidita);
-  document.getElementById('dash-entrate-extra').textContent = formatEurK(entrateExtra);
 
   // ── FATTIBILITÀ ──
   const fabbisognoTotale = fabbisognoAcquisto + costoTotale;
-  const risorse = mutNetto + liquidita + entrateExtra;
+  const risorse = mutNetto + liquidita;
   const gap = risorse - fabbisognoTotale;
   const percCopertura = fabbisognoTotale > 0 ? Math.min(100, (risorse / fabbisognoTotale) * 100) : 0;
 
@@ -9252,21 +8517,21 @@ function aggiornaDashboard() {
   document.querySelector('#dash-detrazioni')?.closest('.metric-card')?.querySelector('.metric-sub')?.textContent && (document.querySelector('#dash-detrazioni').closest('.metric-card').querySelector('.metric-sub').textContent = 'Lavori + interessi + pregresse');
 
   // ── AVANZAMENTO LAVORI ──
-  renderAvanzamentoLavori();
+  try { renderAvanzamentoLavori(); } catch (e) { console.error('Errore renderAvanzamentoLavori:', e); }
 
   // ── ALTRE SPESE (EXTRA FUORI COMPUTO) ──
-  renderAvanzamentoExtra();
+  try { renderAvanzamentoExtra(); } catch (e) { console.error('Errore renderAvanzamentoExtra:', e); }
   // Qui passo SOLO il costo lavori (senza extra): calcolaQuadroGenerale somma già
   // gli extra al suo interno, sommarli anche qui li conterebbe due volte.
-  renderQuadroGenerale(t.totFinale);
+  try { renderQuadroGenerale(t.totFinale); } catch (e) { console.error('Errore renderQuadroGenerale:', e); }
 
   // ── DA FARE (alert proattivi) ──
-  renderAlertDashboard();
+  try { renderAlertDashboard(); } catch (e) { console.error('Errore renderAlertDashboard:', e); }
 
   // ── RIEPILOGO FINANZIARIO ──
   // Qui invece serve il totale lavori+extra già sommato, perché il Riepilogo non
   // scompone ulteriormente gli extra al suo interno.
-  renderRiepilogoFinanziario(costoTotale, mutNetto, liquidita, entrateExtra, detAnnua);
+  try { renderRiepilogoFinanziario(costoTotale, mutNetto, liquidita, detAnnua); } catch (e) { console.error('Errore renderRiepilogoFinanziario:', e); }
 
   // ── VOCI COMPUTO ──
   const voci = state.voci || [];
@@ -9613,23 +8878,6 @@ function calcolaAlertDashboard() {
     });
   }
 
-  // 3. Liquidità prevista sotto la soglia di sicurezza nel periodo configurato
-  try {
-    const soglia = parseFloat(document.getElementById('cf-soglia-minima')?.value) || 0;
-    const { dati, mesi } = buildCashFlow();
-    const meseCritico = mesi.find(m => dati[m] && dati[m].cumPrev < soglia);
-    if (meseCritico) {
-      const [a, m] = meseCritico.split('-');
-      const nomiMese = ['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-      alerts.push({
-        livello: 'danger',
-        testo: `Liquidità prevista sotto la soglia di sicurezza a ${nomiMese[parseInt(m)]} ${a}`,
-        dettaglio: formatEur(dati[meseCritico].cumPrev),
-        pagina: 'cashflow'
-      });
-    }
-  } catch (e) { /* cash flow non ancora configurato — nessun alert */ }
-
   // 4. Voci con lavori conclusi (dataFine passata) ma senza alcuna fattura collegata
   const oggiYYYYMM = new Date().toISOString().slice(0,7);
   const vociNonFatturate = (state.voci || []).filter(v => {
@@ -9665,7 +8913,7 @@ function renderAlertDashboard() {
   }).join('');
 }
 
-function renderRiepilogoFinanziario(costoLavoriPiuExtra, mutNetto, liquidita, entrateExtra, detAnnua) {
+function renderRiepilogoFinanziario(costoLavoriPiuExtra, mutNetto, liquidita, detAnnua) {
   const acq = state.acquisto || {};
   const prezzo = acq.prezzo || 0;
   const imposte = acq.imposte || 0;
@@ -9696,34 +8944,33 @@ function renderRiepilogoFinanziario(costoLavoriPiuExtra, mutNetto, liquidita, en
     <div class="totali-row total"><span>TOTALE USCITE</span><span class="val">${formatEur(fabbisognoAcquisto + costoLavoriPiuExtra)}</span></div>`;
 
   // Le detrazioni IRPEF sono un recupero spalmato su 10 anni, non una risorsa disponibile
-  // subito: mescolarle con mutuo/liquidità/entrate extra in un unico totale "risorse"
-  // confonderebbe flussi con tempi molto diversi. Restano visibili altrove (agevolazioni).
-  const dettaglioLiquiditaHTML = liquiditaVoci.filter(v => v.nome || v.importo).map(v => `
-    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px">
-      <span style="color:var(--text-3)">${escHtml(v.nome||'(senza nome)')}</span>
-      <span style="color:var(--text-2)">${formatEur(v.importo||0)}</span>
-    </div>`).join('') || '<div style="font-size:11px;color:var(--text-3);padding:4px 0">Nessuna voce inserita.</div>';
-
+  // subito: mescolarle con mutuo/liquidità in un unico totale "risorse" confonderebbe
+  // flussi con tempi molto diversi. Restano visibili altrove (agevolazioni).
+  // Il pannello liquidità è editabile direttamente qui (nome + importo per voce, con
+  // aggiungi/rimuovi): non serve più andare in un'altra pagina per gestirla.
   document.getElementById('dash-entrate-detail').innerHTML = `
     <div class="totali-row"><span>Mutuo netto erogato</span><span class="val">${formatEur(mutNetto)}</span></div>
     <div style="cursor:pointer" onclick="toggleDettaglioLiquidita()">
       <div class="totali-row"><span>Liquidità disponibile <span id="liq-caret" style="display:inline-block;transition:transform 0.15s;font-size:9px;color:var(--text-3)">▸</span></span><span class="val">${formatEur(liquidita)}</span></div>
     </div>
-    <div id="liq-dettaglio" style="display:none;margin:2px 0 6px;padding:6px 10px;background:var(--surface-2);border-radius:var(--radius)">
-      ${dettaglioLiquiditaHTML}
-      <div style="padding-top:6px;margin-top:4px;border-top:0.5px solid var(--border)">
-        <a href="#" onclick="event.stopPropagation();goTo('cashflow');return false;" style="font-size:11px;color:var(--accent-text);text-decoration:underline">Modifica in Cash Flow</a>
+    <div id="liq-dettaglio" style="display:none;margin:2px 0 6px;padding:8px 10px;background:var(--surface-2);border-radius:var(--radius)" onclick="event.stopPropagation()">
+      <div id="cf-liquidita-righe" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <button type="button" class="btn btn-sm" onclick="aggiungiVoceLiquidita()">+ Aggiungi voce</button>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:6px;border-top:0.5px solid var(--border);font-size:11px">
+        <span style="font-weight:600">Totale</span>
+        <span id="cf-liquidita-totale" style="font-weight:600;color:var(--accent-text)">€ 0,00</span>
       </div>
+      <input type="hidden" id="cf-liquidita">
     </div>
-    <div class="totali-row"><span>Entrate extra</span><span class="val">${formatEur(entrateExtra)}</span></div>
     ${polizzaAnno > 0 ? `<div class="totali-row"><span style="color:var(--text-3)">Polizza incendio (${formatEur(polizzaAnno)}/anno × 30)</span><span class="val" style="color:var(--text-3)">− ${formatEur(polizzaAnno * 30)}</span></div>` : ''}
-    <div class="totali-row total"><span>TOTALE RISORSE</span><span class="val">${formatEur(mutNetto + liquidita + entrateExtra)}</span></div>`;
+    <div class="totali-row total"><span>TOTALE RISORSE</span><span class="val" id="dash-tot-risorse-val">${formatEur(mutNetto + liquidita)}</span></div>`;
+  renderLiquiditaVoci();
 
   // Saldo tra risorse totali e uscite totali: il numero che risponde direttamente
   // alla domanda "mi bastano i soldi?" senza dover fare a mente la sottrazione
   // tra le due colonne.
   const totaleUscite = fabbisognoAcquisto + costoLavoriPiuExtra;
-  const totaleRisorse = mutNetto + liquidita + entrateExtra;
+  const totaleRisorse = mutNetto + liquidita;
   const saldo = totaleRisorse - totaleUscite;
   const positivo = saldo >= 0;
   document.getElementById('dash-riepilogo-saldo').innerHTML = `
@@ -9735,7 +8982,7 @@ function renderRiepilogoFinanziario(costoLavoriPiuExtra, mutNetto, liquidita, en
 }
 
 // Apre/chiude il pannello di dettaglio della liquidità nel Riepilogo finanziario,
-// mostrando le stesse righe configurate in Cash Flow (sempre le stesse, stessa fonte dati).
+// dove le voci sono editabili direttamente (aggiungi/modifica/rimuovi).
 function toggleDettaglioLiquidita() {
   const pannello = document.getElementById('liq-dettaglio');
   const caret = document.getElementById('liq-caret');
@@ -9792,9 +9039,21 @@ function aggiornaValoreCatastale(numero) {
   campoValore.value = valore.toLocaleString('it-IT', { maximumFractionDigits: 0 });
 }
 
+// Mostra/nasconde il blocco "preventivo definitivo notaio" (onorario+imposte in un
+// unico numero, quando si ha una parcella reale) al posto del calcolo automatico
+// separato di imposte + onorario, che resta una stima finché non si ha un preventivo.
+function toggleNotaioForfait() {
+  const forfait = document.getElementById('acq-notaio-forfait').checked;
+  document.getElementById('acq-imposte-box').style.display = forfait ? 'none' : 'block';
+  document.getElementById('acq-notaio-forfait-box').style.display = forfait ? 'block' : 'none';
+  document.getElementById('acq-notaio-riga').style.display = forfait ? 'none' : 'grid';
+  aggiornaImposteRogito();
+}
+
 function aggiornaImposteRogito() {
   const tipo = document.querySelector('input[name="acq-tipo"]:checked')?.value || 'privato';
   const criterioMinimo = document.getElementById('acq-criterio-minimo')?.value || 'unico';
+  const forfaitNotaio = document.getElementById('acq-notaio-forfait')?.checked || false;
 
   const prezzo1 = getInputNum('acq-prezzo') || 0;
   const catastale1 = getInputNum('acq-val-catastale') || 0;
@@ -9807,6 +9066,19 @@ function aggiornaImposteRogito() {
   document.getElementById('fg-val-catastale').style.display = tipo === 'privato' ? 'flex' : 'none';
   const fg2 = document.getElementById('fg-2-val-catastale');
   if (fg2) fg2.style.display = tipo === 'privato' ? 'flex' : 'none';
+
+  // Preventivo notaio definitivo: il totale inserito copre sia l'onorario sia le
+  // imposte, quindi salta il calcolo automatico qui sotto. Per restare compatibile
+  // con tutto il resto dell'app (che somma sempre acq.notaio + acq.imposte per il
+  // fabbisogno acquisto), il forfait viene salvato come "notaio" e le imposte
+  // automatiche azzerate — il totale che ne esce è comunque quello corretto.
+  if (forfaitNotaio) {
+    const totForfait = getInputNum('acq-notaio-tot-forfait') || 0;
+    document.getElementById('acq-imposte-tot').textContent = formatEur(0);
+    aggiornaRiepilogoAcquisto(prezzoTot, 0);
+    salvaAcquisto();
+    return;
+  }
 
   if (prezzoTot <= 0) { salvaAcquisto(); return; }
 
@@ -9873,7 +9145,8 @@ function aggiornaRiepilogoAcquisto(prezzo, imposte) {
   if (!prezzo) return;
   const acq = state.acquisto || {};
   const caparre = (acq.caparre || []).reduce((s, c) => s + c.importo, 0);
-  const notaio = getInputNum('acq-notaio') || 0;
+  const forfaitNotaio = document.getElementById('acq-notaio-forfait')?.checked || false;
+  const notaio = forfaitNotaio ? (getInputNum('acq-notaio-tot-forfait') || 0) : (getInputNum('acq-notaio') || 0);
   const agenzia = getInputNum('acq-agenzia') || 0;
   const perizia = getInputNum('acq-perizia') || 0;
   const saldoRogito = prezzo - caparre;
@@ -9893,8 +9166,10 @@ function aggiornaRiepilogoAcquisto(prezzo, imposte) {
     <div class="totali-row"><span style="color:var(--success)">− Caparre già versate</span><span class="val" style="color:var(--success)">− ${formatEur(caparre)}</span></div>
     <div class="totali-row" style="font-weight:500"><span>Saldo dovuto al rogito</span><span class="val">${formatEur(saldoRogito)}</span></div>
     <div class="divider" style="margin:8px 0"></div>
-    <div class="totali-row"><span>Imposte al rogito</span><span class="val">${formatEur(imposte || 0)}</span></div>
-    <div class="totali-row"><span>Onorario notaio</span><span class="val">${formatEur(notaio)}</span></div>
+    ${forfaitNotaio
+      ? `<div class="totali-row"><span>Notaio + imposte (preventivo)</span><span class="val">${formatEur(notaio)}</span></div>`
+      : `<div class="totali-row"><span>Imposte al rogito</span><span class="val">${formatEur(imposte || 0)}</span></div>
+    <div class="totali-row"><span>Onorario notaio</span><span class="val">${formatEur(notaio)}</span></div>`}
     <div class="totali-row"><span>Agenzia immobiliare <span style="font-size:10px;color:var(--success)">(già saldata)</span></span><span class="val" style="color:var(--text-3)">${formatEur(agenzia)}</span></div>
     <div class="totali-row"><span>Perizia bancaria</span><span class="val">${formatEur(perizia)}</span></div>
     <div class="divider" style="margin:8px 0"></div>
@@ -9905,12 +9180,17 @@ function aggiornaRiepilogoAcquisto(prezzo, imposte) {
 function salvaAcquisto() {
   const tipo = document.querySelector('input[name="acq-tipo"]:checked')?.value || 'privato';
   const criterioMinimo = document.getElementById('acq-criterio-minimo')?.value || 'unico';
+  const forfaitNotaio = document.getElementById('acq-notaio-forfait')?.checked || false;
+  const notaioTotForfait = getInputNum('acq-notaio-tot-forfait') || 0;
   const prezzo1 = getInputNum('acq-prezzo') || 0;
   const catastale1 = getInputNum('acq-val-catastale') || 0;
   const prezzo2 = getInputNum('acq-2-prezzo') || 0;
   const catastale2 = getInputNum('acq-2-val-catastale') || 0;
   const prezzo = prezzo1 + prezzo2;
-  const notaio = getInputNum('acq-notaio') || 2500;
+  // Con preventivo definitivo, l'intero forfait (onorario+imposte) viene salvato come
+  // "notaio" e le imposte automatiche azzerate — resta compatibile con tutto il resto
+  // dell'app, che continua a sommare notaio + imposte per il fabbisogno acquisto.
+  const notaio = forfaitNotaio ? notaioTotForfait : (getInputNum('acq-notaio') || 2500);
   const agenzia = getInputNum('acq-agenzia') || 0;
   const intermediario = getInputNum('acq-intermediario') || 0;
   const perizia = getInputNum('acq-perizia') || 0;
@@ -9933,9 +9213,10 @@ function salvaAcquisto() {
   // Calcola imposte con lo stesso identico criterio di aggiornaImposteRogito()
   // (minimo €1.000 unico o per immobile), per non avere due logiche divergenti
   // tra ciò che si vede a video e ciò che viene salvato/usato nei calcoli a valle.
+  // Con preventivo definitivo, le imposte sono già incluse nel forfait sopra: 0 qui.
   let imposte = 0;
   const haSecondoImmobile = prezzo2 > 0;
-  if (prezzo > 0) {
+  if (!forfaitNotaio && prezzo > 0) {
     if (tipo === 'privato') {
       const baseReg1 = catastale1 > 0 ? catastale1 : prezzo1 * 0.5;
       const baseReg2 = catastale2 > 0 ? catastale2 : prezzo2 * 0.5;
@@ -9958,6 +9239,7 @@ function salvaAcquisto() {
   state.acquisto = {
     ...( state.acquisto || {} ),
     tipo, prezzo, catastale: catastale1, criterioMinimo, immobile1, immobile2,
+    forfaitNotaio, notaioTotForfait,
     imposte, notaio, agenzia, intermediario, perizia, polizza
   };
   salvaStato();
@@ -10015,6 +9297,16 @@ function caricaAcquisto() {
       formatInputNum(document.getElementById(id), id.includes('rendita') ? 2 : 0);
     }
   });
+  // Preventivo notaio definitivo: ripristina il checkbox e il campo forfait, e
+  // applica subito la visibilità corretta prima di mostrare il campo "notaio"
+  // normale, che in questo caso conterrebbe il forfait invece di un vero onorario.
+  const forfaitNotaio = !!a.forfaitNotaio;
+  document.getElementById('acq-notaio-forfait').checked = forfaitNotaio;
+  if (forfaitNotaio && a.notaioTotForfait) {
+    document.getElementById('acq-notaio-tot-forfait').value = a.notaioTotForfait;
+    formatInputNum(document.getElementById('acq-notaio-tot-forfait'), 0);
+  }
+  toggleNotaioForfait();
   // Ripristina l'agevolazione prima casa per ciascun immobile (default "sì" per
   // retrocompatibilità con progetti salvati prima di questa opzione).
   document.getElementById('acq-1-agev-prima-casa').value = i1.agevolazionePrimaCasa === false ? 'no' : 'si';
@@ -10218,11 +9510,8 @@ function renderCaparre() {
 }
 
 // ══════════════════════════════════════════
-//  CASH FLOW — SALVA / CARICA CONFIG
-// ══════════════════════════════════════════
-// ══════════════════════════════════════════
-//  CASH FLOW — LIQUIDITÀ DISPONIBILE (a righe)
-//  La liquidità non è più un numero unico digitato a mano: è la somma di più
+//  LIQUIDITÀ DISPONIBILE (a righe) — gestita dal Riepilogo finanziario in dashboard
+//  La liquidità non è un numero unico digitato a mano: è la somma di più
 //  fonti (conti correnti, conti deposito, residui di vendita...), ciascuna
 //  tracciabile singolarmente. cf-liquidita resta il campo aggregato che il
 //  resto dell'app (dashboard, riepilogo finanziario, fattibilità) continua
@@ -10239,7 +9528,7 @@ function rimuoviVoceLiquidita(id) {
   liquiditaVoci = liquiditaVoci.filter(v => v.id !== id);
   renderLiquiditaVoci();
   salvaCfConfig();
-  ricalcolaCashFlow();
+  aggiornaCifreLiquidita();
 }
 
 function aggiornaVoceLiquidita(id, campo, valore) {
@@ -10258,7 +9547,7 @@ function renderLiquiditaVoci() {
         oninput="aggiornaVoceLiquidita('${v.id}','nome',this.value)" onblur="salvaCfConfig()" style="font-size:13px">
       <input type="text" value="${v.importo ? v.importo.toLocaleString('it-IT') : ''}" placeholder="0" inputmode="numeric"
         onfocus="this.value=getInputNumInline(this)||'';this.select()"
-        onblur="aggiornaVoceLiquidita('${v.id}','importo',getInputNumInline(this));formatInputNum(this,0);salvaCfConfig();ricalcolaCashFlow()"
+        onblur="aggiornaVoceLiquidita('${v.id}','importo',getInputNumInline(this));formatInputNum(this,0);salvaCfConfig();aggiornaCifreLiquidita()"
         style="font-size:13px;text-align:right">
       <button type="button" class="btn btn-sm btn-danger" onclick="rimuoviVoceLiquidita('${v.id}')">✕</button>
     </div>`).join('');
@@ -10280,16 +9569,72 @@ function getInputNumInline(input) {
   return parseFloat((input.value || '0').replace(/\./g, '').replace(',', '.')) || 0;
 }
 
+// Ricalcola solo i NUMERI di Fattibilità finanziaria e Riepilogo (Totale risorse,
+// Saldo) dopo una modifica alla liquidità — senza richiamare l'intero
+// aggiornaDashboard(), che rigenererebbe anche l'HTML del pannello liquidità
+// aperto in quel momento e lo richiuderebbe mentre l'utente ci sta ancora digitando.
+function aggiornaCifreLiquidita() {
+  const acq = state.acquisto || {};
+  const { fabbisogno: fabbisognoAcquisto } = calcolaFabbisognoAcquisto(acq);
+  const t = calcolaTotaliComputo();
+  const costoExtra = calcolaPrevistoTotaleExtra();
+  const costoTotale = t.totFinale + costoExtra;
+  const mutuo = state.mutuo || mutState.params;
+  const mutNetto = mutuo?.nettoErogato || 0;
+  const liquidita = liquiditaVoci.reduce((s,v) => s + (v.importo||0), 0);
+
+  document.getElementById('dash-liquidita').textContent = formatEurK(liquidita);
+
+  const fabbisognoTotale = fabbisognoAcquisto + costoTotale;
+  const risorse = mutNetto + liquidita;
+  const gap = risorse - fabbisognoTotale;
+  const percCopertura = fabbisognoTotale > 0 ? Math.min(100, (risorse / fabbisognoTotale) * 100) : 0;
+
+  document.getElementById('dash-risorse-tot').textContent = formatEur(risorse);
+  document.getElementById('dash-fabbisogno').textContent = formatEur(fabbisognoTotale);
+  document.getElementById('dash-gap-label').textContent = gap >= 0
+    ? `Avanzo: ${formatEur(gap)}` : `Deficit: ${formatEur(Math.abs(gap))}`;
+
+  const bar = document.getElementById('dash-fattibilita-bar');
+  if (bar) {
+    bar.style.width = percCopertura.toFixed(0) + '%';
+    bar.style.background = percCopertura >= 100 ? 'var(--success)' : percCopertura >= 80 ? 'var(--warning)' : 'var(--danger)';
+  }
+  const badge = document.getElementById('dash-fattibilita-badge');
+  if (badge) {
+    if (percCopertura >= 100) {
+      badge.className = 'badge badge-green'; badge.textContent = '✓ Fattibile';
+      document.getElementById('dash-gap-note').textContent = `Hai un margine di ${formatEur(gap)}`;
+    } else {
+      badge.className = 'badge badge-amber'; badge.textContent = `⚠ Copertura ${percCopertura.toFixed(0)}%`;
+      document.getElementById('dash-gap-note').textContent = `Servono altri ${formatEur(Math.abs(gap))}`;
+    }
+  }
+
+  // Totale risorse e saldo nel Riepilogo finanziario (senza toccare il resto del blocco,
+  // che contiene il pannello liquidità aperto)
+  const elTotRisorse = document.getElementById('dash-tot-risorse-val');
+  if (elTotRisorse) elTotRisorse.textContent = formatEur(mutNetto + liquidita);
+  const totaleUscite = fabbisognoAcquisto + costoTotale;
+  const saldo = (mutNetto + liquidita) - totaleUscite;
+  const positivo = saldo >= 0;
+  const elSaldo = document.getElementById('dash-riepilogo-saldo');
+  if (elSaldo) {
+    elSaldo.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:14px;font-weight:600">${positivo ? 'Saldo' : 'Saldo negativo'}</span>
+        <span style="font-size:18px;font-weight:700;color:${positivo ? 'var(--success)' : 'var(--danger)'}">${positivo ? '+' : ''}${formatEur(saldo)}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:2px">${positivo ? 'Risorse disponibili oltre il fabbisogno stimato' : 'Le risorse attuali non coprono il fabbisogno stimato'}</div>`;
+  }
+}
+
 function salvaCfConfig() {
   state.cfConfig = {
+    ...(state.cfConfig || {}),
     liquidita: aggiornaTotaleLiquidita(),
     liquiditaVoci: liquiditaVoci,
-    meseMutuo: document.getElementById('cf-mese-mutuo')?.value || '2026-09',
-    vista: document.getElementById('cf-vista')?.value || 'saldo',
-    mostra: document.getElementById('cf-mostra')?.value || 'entrambi',
-    dataInizio: document.getElementById('cf-data-inizio')?.value || CF_INIZIO_DEFAULT,
-    dataFine: document.getElementById('cf-data-fine')?.value || CF_FINE_DEFAULT,
-    sogliaMinima: parseFloat(document.getElementById('cf-soglia-minima')?.value) || 0
+    meseMutuo: document.getElementById('cf-mese-mutuo')?.value || state.cfConfig?.meseMutuo || '2026-09'
   };
   salvaStato();
 }
@@ -10308,24 +9653,6 @@ function caricaCfConfig() {
     liquiditaVoci = [{ id: uid(), nome: 'Liquidità', importo: 245000 }];
   }
   renderLiquiditaVoci();
-  if (cfg?.meseMutuo) {
-    const em = document.getElementById('cf-mese-mutuo');
-    if (em) em.value = cfg.meseMutuo;
-  }
-  if (cfg?.vista) {
-    const ev = document.getElementById('cf-vista');
-    if (ev) ev.value = cfg.vista;
-  }
-  if (cfg?.mostra) {
-    const emo = document.getElementById('cf-mostra');
-    if (emo) emo.value = cfg.mostra;
-  }
-  const eInizio = document.getElementById('cf-data-inizio');
-  if (eInizio) eInizio.value = cfg?.dataInizio || CF_INIZIO_DEFAULT;
-  const eFine = document.getElementById('cf-data-fine');
-  if (eFine) eFine.value = cfg?.dataFine || CF_FINE_DEFAULT;
-  const eSoglia = document.getElementById('cf-soglia-minima');
-  if (eSoglia) eSoglia.value = cfg?.sogliaMinima !== undefined ? cfg.sogliaMinima : 5000;
   // Salva subito il default se è il primo avvio
   if (!cfg) salvaCfConfig();
 }
@@ -13008,9 +12335,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   renderChecklist();
   caricaMutuo();
   caricaSimulatore();
-  renderListeExtra();
   caricaCfConfig();
-  ricalcolaCashFlow();
   caricaIntestatori();
   caricaAcquisto();
   renderBudgetExtra();
@@ -13029,19 +12354,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         editingId = null;
         editingFatturaId = null;
         editingEstinzioneId = null;
-        editingCashOutId = null;
-        editingCashInId = null;
         editingCaparraId = null;
         editingDetrPregrId = null;
         collegamentoVoceCorrente = null;
       }
     });
-  });
-
-  window.addEventListener('resize', () => {
-    if (document.getElementById('page-cashflow').classList.contains('active')) {
-      ricalcolaCashFlow();
-    }
   });
 });
 </script>
