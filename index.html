@@ -368,6 +368,54 @@
   .form-group { display: flex; flex-direction: column; gap: 5px; }
   .form-group.span2 { grid-column: span 2; }
   .form-group.span3 { grid-column: 1 / -1; }
+  .req-doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  .req-doc-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .req-doc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .req-doc-list li {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text-2);
+    padding-left: 16px;
+    position: relative;
+  }
+  .req-doc-list li::before {
+    content: '•';
+    position: absolute;
+    left: 2px;
+    color: var(--text-3);
+  }
+  .req-doc-list.ok li::before { content: '✓'; color: var(--success); font-size: 11px; }
+  .req-doc-list.danger li::before { content: '✕'; color: var(--danger); font-size: 11px; }
+  .req-doc-causale-box {
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+  .req-doc-causale-box textarea {
+    min-height: 60px;
+    font-size: 11px;
+    font-family: monospace;
+    background: var(--surface);
+    width: 100%;
+  }
   label {
     font-size: 11px;
     font-weight: 600;
@@ -1175,6 +1223,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.1-2.7-2.7L7 14.3"/></svg>
       Simulatore agevolazioni
     </div>
+    <div class="nav-link" data-page="requisiti-doc" onclick="goTo('requisiti-doc')" style="padding-left:30px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M9 8h1"/><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Requisiti fattura/bonifico
+    </div>
     <div class="nav-link" data-page="mutuo" onclick="goTo('mutuo')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       Mutuo
@@ -1233,6 +1285,10 @@
   <div class="more-menu-item" onclick="goTo('simulatore-fiscale')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.1-2.7-2.7L7 14.3"/></svg>
     Simulatore agevolazioni
+  </div>
+  <div class="more-menu-item" onclick="goTo('requisiti-doc')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M9 8h1"/><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Requisiti fattura/bonifico
   </div>
   <div class="more-menu-item" onclick="goTo('impostazioni')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06-.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -2107,6 +2163,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           Domande per tecnico/commercialista
         </button>
+        <button class="btn" onclick="goTo('requisiti-doc')" style="background:var(--info-light);border-color:var(--info);color:var(--info)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Requisiti fattura/bonifico
+        </button>
         <button class="btn btn-primary" onclick="ricalcolaAgevolazioni()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
           Ricalcola
@@ -2346,6 +2406,151 @@
       <div class="card-header"><span class="card-title">Risultato</span></div>
       <div class="card-body">
         <div id="sim-fiscale-risultato"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REQUISITI FATTURA / BONIFICO ── -->
+  <div class="page" id="page-requisiti-doc">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Requisiti fattura e bonifico</div>
+        <div class="page-subtitle">Cosa deve esserci scritto su fatture e causali per non perdere la detrazione</div>
+      </div>
+      <button class="btn" onclick="goTo('agevolazioni')">← Torna ad agevolazioni</button>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;background:var(--info-light);border-color:var(--info)">
+      <div class="card-body" style="font-size:12px;color:var(--info)">
+        Questa pagina è una guida operativa per te: cosa controllare su ogni fattura in arrivo e come scrivere la causale del bonifico, <strong>prima</strong> di pagare. Per le domande da girare a tecnico/commercialista vedi invece <a href="#" onclick="goTo('checklist');return false;" style="color:var(--info);text-decoration:underline">Domande per tecnico/commercialista</a>.
+      </div>
+    </div>
+
+    <!-- BONUS RISTRUTTURAZIONE -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <span class="card-title">Bonus Ristrutturazione 50%</span>
+        <span style="font-size:11px;color:var(--text-3)">Art. 16-bis DPR 917/86</span>
+      </div>
+      <div class="card-body">
+        <div class="req-doc-grid">
+          <div>
+            <div class="req-doc-label">In fattura</div>
+            <ul class="req-doc-list">
+              <li>Descrizione che identifichi <strong>interventi edilizi</strong> (manutenzione straordinaria, ristrutturazione) — mai formule generiche tipo "lavori vari"</li>
+              <li>Dati completi di fornitore (P.IVA/CF) e committente</li>
+              <li>Riferimento all'immobile (utile, non sempre obbligatorio in fattura)</li>
+            </ul>
+          </div>
+          <div>
+            <div class="req-doc-label">Pagamento ammesso</div>
+            <ul class="req-doc-list ok">
+              <li>Bonifico parlante — unico mezzo ammesso</li>
+            </ul>
+            <div class="req-doc-label" style="margin-top:10px;color:var(--danger)">Non ammesso</div>
+            <ul class="req-doc-list danger">
+              <li>Contanti, assegno, bonifico ordinario → decadenza totale della detrazione</li>
+            </ul>
+          </div>
+        </div>
+        <div id="req-doc-causale-br" style="margin-top:14px"></div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:10px">Un bonifico per intervento: se un'unica fattura copre voci ripartite su più contenitori (es. BR + Ecobonus), servono bonifici <strong>distinti</strong> per ciascuna quota — usa "Genera causali" nella scheda Fatture e pagamenti.</div>
+      </div>
+    </div>
+
+    <!-- ECOBONUS -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <span class="card-title">Ecobonus (infissi, isolamento, PDC)</span>
+        <span style="font-size:11px;color:var(--text-3)">Art. 14 D.L. 63/2013</span>
+      </div>
+      <div class="card-body">
+        <div class="req-doc-grid">
+          <div>
+            <div class="req-doc-label">In fattura</div>
+            <ul class="req-doc-list">
+              <li>Descrizione che identifichi <strong>riqualificazione energetica</strong>: es. "sostituzione infissi con trasmittanza U ≤ [valore]", "PDC aria-acqua classe A+++", "isolamento a cappotto con λ ≤ [valore]"</li>
+              <li>Marca/modello di materiali e impianti, per riscontro con la pratica ENEA</li>
+              <li>Scorporo IVA e mano d'opera se richiesto dal tipo di intervento</li>
+            </ul>
+          </div>
+          <div>
+            <div class="req-doc-label">Pagamento ammesso</div>
+            <ul class="req-doc-list ok">
+              <li>Bonifico parlante — unico mezzo ammesso</li>
+            </ul>
+            <div class="req-doc-label" style="margin-top:10px;color:var(--danger)">Non ammesso</div>
+            <ul class="req-doc-list danger">
+              <li>Contanti, assegno, bonifico ordinario → decadenza totale della detrazione</li>
+            </ul>
+          </div>
+        </div>
+        <div id="req-doc-causale-eco" style="margin-top:14px"></div>
+        <div style="background:var(--surface-2);border-radius:var(--radius);padding:10px 14px;margin-top:14px;font-size:11px;color:var(--text-2)">
+          <strong>Documentazione aggiuntiva obbligatoria</strong> (oltre a fattura + bonifico): comunicazione ENEA entro 90 giorni dalla fine lavori (anche se l'intervento è "annegato" nel Bonus Ristrutturazione, come i vostri infissi/PDC via split) e asseverazione tecnica per PDC, isolamento, fotovoltaico. Tieni traccia di entrambe nella scheda Documenti.
+        </div>
+        <div style="background:var(--warning-light);border-radius:var(--radius);padding:10px 14px;margin-top:10px;font-size:11px;color:var(--warning)">
+          <strong>Attenzione al Conto Termico:</strong> se una fattura è mista BR/Ecobonus/Conto Termico, la quota Conto Termico NON richiede bonifico parlante (gestita da GSE) — va pagata con bonifico ordinario, separato dagli altri.
+        </div>
+      </div>
+    </div>
+
+    <!-- BONUS MOBILI -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Bonus Mobili ed Elettrodomestici 50%</span>
+        <span style="font-size:11px;color:var(--text-3)">L. 208/2015 art. 1 c. 2</span>
+      </div>
+      <div class="card-body">
+        <div id="req-doc-mobili-alert" style="margin-bottom:14px"></div>
+        <div class="req-doc-grid">
+          <div>
+            <div class="req-doc-label">Condizione essenziale</div>
+            <ul class="req-doc-list">
+              <li>I lavori edilizi (Bonus Ristrutturazione) devono essere <strong>iniziati prima</strong> dell'acquisto di mobili/elettrodomestici — data da CILA/SCIA o dalla prima fattura/bonifico dei lavori edilizi</li>
+            </ul>
+            <div class="req-doc-label" style="margin-top:10px">In fattura</div>
+            <ul class="req-doc-list">
+              <li><strong>Mobili nuovi</strong> per l'arredo dell'immobile ristrutturato: letti, armadi, cassettiere, librerie, scrivanie, tavoli, sedie, materassi, apparecchi illuminazione</li>
+              <li><strong>Grandi elettrodomestici</strong> classe energetica non inferiore ad A (F per i forni), quando l'etichetta è obbligatoria</li>
+              <li>Non rientrano: porte, pavimentazioni, tende, complementi d'arredo generici</li>
+            </ul>
+          </div>
+          <div>
+            <div class="req-doc-label">Pagamento ammesso — regola diversa dagli altri bonus</div>
+            <ul class="req-doc-list ok">
+              <li>Bonifico bancario/postale <strong>ordinario</strong> — non serve il modello "parlante" né una causale speciale</li>
+              <li><strong>oppure</strong> carta di credito/debito — la prova è la ricevuta/estratto conto</li>
+            </ul>
+            <div class="req-doc-label" style="margin-top:10px;color:var(--danger)">Non ammesso</div>
+            <ul class="req-doc-list danger">
+              <li>Contanti o assegno → decadenza totale, senza eccezioni</li>
+            </ul>
+          </div>
+        </div>
+        <div style="background:var(--surface-2);border-radius:var(--radius);padding:10px 14px;margin-top:14px;font-size:11px;color:var(--text-2)">
+          A differenza di Bonus Ristrutturazione ed Ecobonus, per il Bonus Mobili <strong>non serve il bonifico parlante</strong>: un bonifico ordinario (senza causale speciale) o il pagamento con carta sono sufficienti. Conserva comunque ricevuta/estratto conto e scontrino o fattura del negozio.
+        </div>
+
+        <div style="border-top:0.5px solid var(--border);margin-top:16px;padding-top:16px">
+          <div class="req-doc-label" style="margin-bottom:10px">Spesa sostenuta (per il calcolo detrazione)</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Spesa mobili/elettrodomestici (€)</label>
+              <div style="position:relative">
+                <input type="text" id="mobili-spesa-display" placeholder="es. € 3.500"
+                  onfocus="this.value=getInputNumInline(this)||''"
+                  onblur="salvaSpesaMobili();formatInputNum(this,0)">
+              </div>
+              <div style="font-size:10px;color:var(--text-3);margin-top:4px">Massimale €5.000 per unità immobiliare di partenza (verifica l'importo in vigore per l'anno di spesa) — detrazione 50% in 10 anni, indipendente dal massimale Bonus Ristrutturazione. Nel vostro caso, con due unità catastali accorpate, il massimale si moltiplica per il numero di unità impostato in Agevolazioni fiscali → Configurazione fiscale → "Unità immobiliari a inizio lavori" (stesso campo usato per il Bonus Ristrutturazione).</div>
+            </div>
+            <div class="form-group">
+              <label>Note</label>
+              <input type="text" id="mobili-note" placeholder="es. fornitore, data acquisto" onblur="salvaSpesaMobili()">
+            </div>
+          </div>
+          <div id="req-doc-mobili-calcolo" style="margin-top:12px"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -3398,6 +3603,7 @@ function goTo(page) {
   if (page === 'agevolazioni') renderInteressiPassivi();
   if (page === 'documenti') renderDocumenti();
   if (page === 'simulatore-fiscale') renderSimulatoreFiscale();
+  if (page === 'requisiti-doc') renderRequisitiDocumentali();
 }
 
 // ══════════════════════════════════════════
@@ -4659,8 +4865,19 @@ const BADGE_STATO_PAG = {
 
 const IMMOBILE = {
   indirizzo: 'inserire indirizzo immobile',
-  cfOrdinante: 'inserire CF ordinante'
+  cfOrdinante: 'inserire CF ordinante',
+  cfOrdinanteB: '' // CF secondo intestatario (es. coniuge) — vuoto se non presente/non compilato
 };
+
+// Se la detrazione è ripartita tra due intestatari che vogliono ENTRAMBI detrarre
+// (es. coniugi cointestatari), la causale del bonifico parlante deve riportare i CF
+// di entrambi, non solo di chi materialmente ordina il bonifico — altrimenti l'Agenzia
+// delle Entrate non può attribuire la quota di detrazione al secondo intestatario.
+function cfOrdinantiCausale() {
+  const cfA = IMMOBILE.cfOrdinante || 'inserire CF ordinante';
+  const cfB = (IMMOBILE.cfOrdinanteB || '').trim();
+  return cfB ? `${cfA} e ${cfB}` : cfA;
+}
 
 const CAT_OPTIONS = ['Impianti','Finiture','Infissi','Pavimenti','Strutture','Murature',
                      'Intonaci','Rivestimenti','Demolizioni','Isolamento','Cantiere','Onorari tecnico','Varie'];
@@ -5502,6 +5719,7 @@ async function eliminaFattura(id) {
 const LAW_REF_CAUSALE = {
   'bonus50': "Pagamento per detrazioni fiscali di cui all'art. 16-bis DPR 917/86",
   'ecobonus': "Pagamento per detrazioni fiscali (Ecobonus) di cui all'art. 14 D.L. 63/2013"
+  // Bonus Mobili non richiede bonifico parlante né causale speciale — vedi renderRequisitiDocumentali.
 };
 
 function generaCausale() {
@@ -5535,12 +5753,12 @@ function generaCausale() {
 
   if (gruppi.bonus50.length) {
     const s = sommaGruppo(gruppi.bonus50);
-    const causale = `${LAW_REF_CAUSALE.bonus50} - ${s.desc || 'lavori di ristrutturazione'} - ${nFattura} - Immobile: ${IMMOBILE.indirizzo} - Beneficiario: ${fornitore} P.IVA/CF ${piva} - CF ordinante: ${IMMOBILE.cfOrdinante} - Importo: ${formatEur(s.tot)}`;
+    const causale = `${LAW_REF_CAUSALE.bonus50} - ${s.desc || 'lavori di ristrutturazione'} - ${nFattura} - Immobile: ${IMMOBILE.indirizzo} - Beneficiario: ${fornitore} P.IVA/CF ${piva} - CF ordinante: ${cfOrdinantiCausale()} - Importo: ${formatEur(s.tot)}`;
     blocchi.push({ label: 'Bonus Ristrutturazione 50%', tipo: 'parlante', importo: s.tot, causale });
   }
   if (gruppi.ecobonus.length) {
     const s = sommaGruppo(gruppi.ecobonus);
-    const causale = `${LAW_REF_CAUSALE.ecobonus} - ${s.desc || 'lavori di efficientamento energetico'} - ${nFattura} - Immobile: ${IMMOBILE.indirizzo} - Beneficiario: ${fornitore} P.IVA/CF ${piva} - CF ordinante: ${IMMOBILE.cfOrdinante} - Importo: ${formatEur(s.tot)}`;
+    const causale = `${LAW_REF_CAUSALE.ecobonus} - ${s.desc || 'lavori di efficientamento energetico'} - ${nFattura} - Immobile: ${IMMOBILE.indirizzo} - Beneficiario: ${fornitore} P.IVA/CF ${piva} - CF ordinante: ${cfOrdinantiCausale()} - Importo: ${formatEur(s.tot)}`;
     blocchi.push({ label: 'Ecobonus', tipo: 'parlante', importo: s.tot, causale });
   }
   if (gruppi['conto-termico'].length) {
@@ -5600,6 +5818,130 @@ function copiaCausaleBlocco(i) {
     btn.innerHTML = '✓ Copiato';
     setTimeout(() => { btn.innerHTML = orig; }, 1500);
   });
+}
+
+// ══════════════════════════════════════════
+//  REQUISITI FATTURA / BONIFICO — pagina di guida operativa
+//  (dicitura fattura + causale bonifico parlante per BR, Ecobonus, Bonus Mobili)
+// ══════════════════════════════════════════
+function copiaTestoGenerico(btn, testo) {
+  navigator.clipboard.writeText(testo).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ Copiato';
+    setTimeout(() => { btn.innerHTML = orig; }, 1500);
+  });
+}
+
+// Esempio di causale sempre aggiornato ai dati intestatari/immobile già inseriti
+// nell'app (stesse fonti di generaCausale in Fatture e pagamenti), con placeholder
+// per fornitore/importo che l'utente sostituisce fattura per fattura.
+function renderCausaleEsempio(containerId, riferimento, importoLabel) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const testo = `${riferimento} - [descrizione lavori/beni] - Fattura n. [N] del [DATA] - Immobile: ${IMMOBILE.indirizzo} - Beneficiario: [FORNITORE] P.IVA/CF [P.IVA/CF] - CF ordinante: ${cfOrdinantiCausale()} - Importo: ${importoLabel}`;
+  const notaCfB = !IMMOBILE.cfOrdinanteB
+    ? `<div style="font-size:10px;color:var(--warning);margin-top:4px">⚠ Solo un CF impostato. Se la detrazione va ripartita tra due intestatari (es. tu e tua moglie), la causale deve riportare <strong>entrambi</strong> i codici fiscali — completa il CF del secondo intestatario nella scheda Impostazioni → Intestatari.</div>`
+    : '';
+  el.innerHTML = `<div class="req-doc-causale-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:11px;font-weight:600;color:var(--accent-text)">Causale bonifico parlante — modello</span>
+      <button class="btn btn-sm" onclick="copiaTestoGenerico(this,${JSON.stringify(testo)})">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copia
+      </button>
+    </div>
+    ${notaCfB}
+    <textarea readonly>${testo}</textarea>
+    <div style="font-size:10px;color:var(--text-3);margin-top:6px">Sostituisci le parentesi quadre con i dati della fattura specifica. Indirizzo e CF ordinante sono già presi dai tuoi Intestatari — per generare la causale con importo e descrizione già compilati da una fattura reale, usa "Genera causali" nella scheda Fatture e pagamenti.</div>
+  </div>`;
+}
+
+// Prima data di inizio lavori (dataInizio) tra le voci di computo allocate al Bonus
+// Ristrutturazione — è il riferimento per verificare che l'acquisto mobili sia
+// successivo all'inizio lavori, condizione essenziale per il Bonus Mobili.
+function dataInizioLavoriBR() {
+  const voci = state.voci || [];
+  if (!agevState.allocazioni) agevState.allocazioni = state.agevAllocazioni || {};
+  const dateBR = voci
+    .filter(v => (agevState.allocazioni[v.id] || MAPPA_DEFAULT[v.numero] || 'br') === 'br' && v.dataInizio)
+    .map(v => v.dataInizio)
+    .sort();
+  return dateBR.length ? dateBR[0] : null;
+}
+
+function salvaSpesaMobili() {
+  const spesaRaw = getInputNumInline(document.getElementById('mobili-spesa-display'));
+  const note = document.getElementById('mobili-note').value.trim();
+  state.bonusMobili = { ...(state.bonusMobili || {}), spesa: spesaRaw, note };
+  salvaStato();
+  renderMobiliCalcolo();
+  // Il Bonus Mobili entra nel piano 10 anni e nel recap: se quella pagina/tab è
+  // già stata calcolata almeno una volta, la tiene allineata senza dover tornare
+  // manualmente su "Agevolazioni fiscali" e cliccare Ricalcola.
+  if (document.getElementById('agev-recap-body') && document.getElementById('agev-recap-body').innerHTML.trim() && !document.getElementById('agev-recap-body').querySelector('.empty-state')) {
+    ricalcolaAgevolazioni();
+  }
+}
+
+function renderMobiliCalcolo() {
+  const el = document.getElementById('req-doc-mobili-calcolo');
+  if (!el) return;
+  const bm = state.bonusMobili || {};
+  const spesa = bm.spesa || 0;
+  const max = maxSpesaBonusMobili();
+  const nUnita = numeroUnitaIniziali();
+  const spesaAmmessa = Math.min(spesa, max);
+  const eccedenza = Math.max(0, spesa - max);
+  const detrazioneTot = spesaAmmessa * ALIQUOTA_BONUS_MOBILI;
+  const detrazioneAnnua = detrazioneTot / 10;
+
+  if (spesa <= 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-3)">Inserisci la spesa per vedere il calcolo della detrazione.</div>';
+    return;
+  }
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+    <div class="metric-card"><div class="metric-label">Spesa ammessa</div><div class="metric-value" style="font-size:16px">${formatEur(spesaAmmessa)}</div><div class="metric-sub">su max ${formatEur(max)}${nUnita > 1 ? ` (${formatEur(MASSIMALE_BONUS_MOBILI)} × ${nUnita} unità)` : ''}</div></div>
+    <div class="metric-card accent"><div class="metric-label">Detrazione totale</div><div class="metric-value" style="font-size:16px">${formatEur(detrazioneTot)}</div><div class="metric-sub">50% in 10 anni</div></div>
+    <div class="metric-card"><div class="metric-label">Rata annua</div><div class="metric-value" style="font-size:16px">${formatEur(detrazioneAnnua)}</div><div class="metric-sub">stessi anni del Bonus Ristrutturazione</div></div>
+  </div>
+  ${eccedenza > 0 ? `<div style="font-size:11px;color:var(--danger);margin-top:8px">⚠ Eccedenza indetraibile: ${formatEur(eccedenza)} oltre il massimale.</div>` : ''}
+  ${nUnita > 1 ? `<div style="font-size:10px;color:var(--text-3);margin-top:8px">Massimale moltiplicato per ${nUnita} unità immobiliari (censite in catasto a inizio lavori, prima della fusione) — stesso principio del Bonus Ristrutturazione, confermato per il Bonus Mobili dalla Circolare AdE 17/2023. Verifica comunque con il commercialista che entrambe le unità abbiano avuto un proprio intervento di recupero edilizio distinto.</div>` : ''}
+  <div style="font-size:10px;color:var(--text-3);margin-top:8px">Questo importo entra automaticamente nel Piano IRPEF unificato e nel Recap detrazioni della scheda Agevolazioni fiscali.</div>`;
+}
+
+function renderRequisitiDocumentali() {
+  renderCausaleEsempio('req-doc-causale-br', LAW_REF_CAUSALE.bonus50, '[IMPORTO]');
+  renderCausaleEsempio('req-doc-causale-eco', LAW_REF_CAUSALE.ecobonus, '[IMPORTO]');
+  // Bonus Mobili: nessuna causale parlante richiesta (bonifico ordinario o carta),
+  // quindi nessun box causale per questo bonus — vedi la nota informativa nella card.
+
+  // Precompila l'input spesa mobili con quanto già salvato
+  const bm = state.bonusMobili || {};
+  const dispEl = document.getElementById('mobili-spesa-display');
+  if (dispEl) dispEl.value = bm.spesa ? '€ ' + bm.spesa.toLocaleString('it-IT') : '';
+  const noteEl = document.getElementById('mobili-note');
+  if (noteEl) noteEl.value = bm.note || '';
+
+  // Avviso eligibilità: la condizione essenziale è che i lavori BR siano iniziati
+  // prima dell'acquisto mobili. Non conosciamo la data di acquisto mobili se non
+  // l'ha scritta nelle note, quindi qui mostriamo solo il riferimento disponibile
+  // (data inizio lavori BR più vecchia nel computo) perché l'utente possa verificare da sé.
+  const alertEl = document.getElementById('req-doc-mobili-alert');
+  if (alertEl) {
+    const dataInizio = dataInizioLavoriBR();
+    if (dataInizio) {
+      const dataFmt = new Date(dataInizio).toLocaleDateString('it-IT');
+      alertEl.innerHTML = `<div style="background:var(--success-light);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--success)">
+        ✓ Data inizio lavori (Bonus Ristrutturazione) più vecchia nel computo: <strong>${dataFmt}</strong>. Verifica che l'acquisto di mobili/elettrodomestici sia avvenuto <strong>dopo</strong> questa data — altrimenti il Bonus Mobili decade.
+      </div>`;
+    } else {
+      alertEl.innerHTML = `<div style="background:var(--warning-light);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--warning)">
+        ⚠ Nessuna data inizio lavori trovata tra le voci allocate al Bonus Ristrutturazione nel computo metrico. Inseriscila nelle voci (scheda Computo metrico) per poter verificare qui che l'acquisto mobili sia successivo — condizione essenziale per non perdere il bonus.
+      </div>`;
+    }
+  }
+
+  renderMobiliCalcolo();
 }
 
 // ══════════════════════════════════════════
@@ -5928,6 +6270,16 @@ function chiudiDettaglioFattura() {
 //  AGEVOLAZIONI — COSTANTI
 // ══════════════════════════════════════════
 
+// Bonus Mobili ed Elettrodomestici (L. 208/2015 art. 1 c. 2): massimale di spesa
+// per immobile. È un contenitore strutturalmente diverso dai 4 di CONTENITORI —
+// non è una quota del computo metrico, ma spesa diretta per arredi/elettrodomestici,
+// con aliquota fissa 50% indipendente dall'anno/tipo immobile e massimale proprio
+// (verificare l'importo in vigore per l'anno di spesa: storicamente confermato a
+// €5.000 in proroghe successive, ma non centralizzato in REGOLE_FISCALI perché non
+// varia con le stesse regole di BR/Ecobonus).
+const MASSIMALE_BONUS_MOBILI = 5000;
+const ALIQUOTA_BONUS_MOBILI = 0.50;
+
 const CONTENITORI = [
   {
     id: 'br',
@@ -6053,6 +6405,17 @@ function maxSpesaContenitore(contenitoreId) {
   // e Sismabonus il tema andrebbe verificato a parte prima di applicare lo stesso criterio.
   if (contenitoreId === 'br') return base * numeroUnitaIniziali();
   return base;
+}
+
+// Massimale Bonus Mobili moltiplicato per il numero di unità immobiliari censite in
+// catasto all'inizio dei lavori — stesso principio del Bonus Ristrutturazione (unità
+// "di partenza", non quelle risultanti a fine intervento dopo l'accorpamento).
+// Confermato per il Bonus Mobili dalla Circolare AdE 17/2023: in caso di accorpamento
+// di più unità già oggetto di interventi di recupero edilizio distinti, il bonus
+// mobili spetta per ciascuna unità di partenza, con il proprio massimale autonomo —
+// il riferimento è la configurazione catastale ad inizio lavori, non quella finale.
+function maxSpesaBonusMobili() {
+  return MASSIMALE_BONUS_MOBILI * numeroUnitaIniziali();
 }
 
 // ══════════════════════════════════════════
@@ -6667,11 +7030,22 @@ function renderAlert16ter(redditoA, redditoB, figli, totali, aliq, anno) {
   const el = document.getElementById('agev-alert-16ter');
 
   // Calcola detrazione annua totale
-  const detTotale = CONTENITORI.reduce((s, c) => {
+  const detTotaleLavori = CONTENITORI.reduce((s, c) => {
     return s + Math.min(totali[c.id] || 0, maxSpesaContenitore(c.id)) * aliq;
   }, 0);
+  const spesaLavoriAmmessa = detTotaleLavori / aliq;  // spesa equivalente annua (lavori, aliquota unica)
+
+  // Bonus Mobili: aliquota propria (50%, indipendente da anno/tipo immobile), quindi
+  // la spesa equivalente va calcolata separatamente e sommata — sommare direttamente
+  // le detrazioni e poi dividere per l'aliquota dei lavori distorcerebbe il risultato
+  // se le due aliquote differiscono (es. seconda casa 36% vs mobili sempre 50%).
+  // Il bonus mobili rientra comunque nello stesso plafond limitato dall'art. 16-ter.
+  const spesaMobiliAmmessa16ter = Math.min(state.bonusMobili?.spesa || 0, maxSpesaBonusMobili());
+  const detTotaleMobili = spesaMobiliAmmessa16ter * ALIQUOTA_BONUS_MOBILI;
+
+  const detTotale = detTotaleLavori + detTotaleMobili;
   const detAnnua = detTotale / 10;
-  const spesaAnnua = detAnnua / aliq;  // spesa equivalente annua
+  const spesaAnnua = (spesaLavoriAmmessa + spesaMobiliAmmessa16ter) / 10; // spesa equivalente annua totale (lavori + mobili)
 
   const limA = calcLimite16ter(redditoA, figli);
   const limB = calcLimite16ter(redditoB, figli);
@@ -6686,7 +7060,7 @@ function renderAlert16ter(redditoA, redditoB, figli, totali, aliq, anno) {
     <div style="font-size:13px;font-weight:600;color:var(--warning);margin-bottom:8px">⚠ Attenzione — Limite art. 16-ter TUIR (Quoziente Familiare)</div>
     <div style="font-size:12px;color:var(--text-2);margin-bottom:10px">
       Con detrazioni spalmate in 10 anni, ogni anno porti in detrazione circa <strong>${formatEur(detAnnua)}</strong>
-      (su spesa annua di <strong>${formatEur(spesaAnnua)}</strong>).
+      (su spesa annua di <strong>${formatEur(spesaAnnua)}</strong>)${detTotaleMobili > 0.01 ? ' — incluso il Bonus Mobili, che rientra nello stesso plafond' : ''}.
     </div>`;
 
   if (avvisiA) {
@@ -6727,6 +7101,15 @@ function calcolaPianoAnnualeDetrazioni(totali, aliq, redditoA, redditoB, figli, 
     detTotale += detPerCont[c.id];
   });
 
+  // Bonus Mobili: aliquota e massimale propri (non dipendono da anno/tipo immobile
+  // come gli altri contenitori), ma la detrazione rientra nello stesso plafond
+  // limitato dall'art. 16-ter TUIR (Legge di Bilancio 2025) insieme a BR/Ecobonus —
+  // confermato: bonus mobili è esplicitamente incluso nel tetto quoziente familiare,
+  // non tra le esclusioni (spese sanitarie, mutui pre-2025, ecc.).
+  const spesaMobiliAmmessa = Math.min(state.bonusMobili?.spesa || 0, maxSpesaBonusMobili());
+  const detMobili = spesaMobiliAmmessa * ALIQUOTA_BONUS_MOBILI;
+  detTotale += detMobili;
+
   const detAnnua = detTotale / 10;
   const limA = calcLimite16ter(redditoA, figli);
   const limB = calcLimite16ter(redditoB, figli);
@@ -6746,6 +7129,8 @@ function calcolaPianoAnnualeDetrazioni(totali, aliq, redditoA, redditoB, figli, 
   const detPregrAnno = (a) => (state.detrPregresse || []).reduce((s, d) =>
     s + ((a >= d.annoInizio && a < d.annoInizio + d.rateResidue) ? d.rataAnnua : 0), 0);
 
+  const quotaMobiliAnnua = detMobili / 10;
+
   const righeCalc = [];
   let cumTot = 0;
   for (let i = 0; i < 10; i++) {
@@ -6761,30 +7146,32 @@ function calcolaPianoAnnualeDetrazioni(totali, aliq, redditoA, redditoB, figli, 
     const pregrAnno = detPregrAnno(annoR);
     const totRiga = detEffTot + intAnno + pregrAnno;
     cumTot += totRiga;
-    righeCalc.push({ anno: annoR, quoteCont, detEffTot, taglio, intAnno, pregrAnno, totRiga, cumTot });
+    righeCalc.push({ anno: annoR, quoteCont, quotaMobili: quotaMobiliAnnua, detEffTot, taglio, intAnno, pregrAnno, totRiga, cumTot });
   }
 
-  return { righeCalc, detPerCont, detTotale, detAnnua, spesaMaxA, spesaMaxB };
+  return { righeCalc, detPerCont, detMobili, detTotale, detAnnua, spesaMaxA, spesaMaxB };
 }
 
 function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
   const body = document.getElementById('agev-piano-body');
   const annoInizio = parseInt(anno) || 2026;
 
-  const { righeCalc, detPerCont, detTotale } = calcolaPianoAnnualeDetrazioni(totali, aliq, redditoA, redditoB, figli, anno);
+  const { righeCalc, detPerCont, detMobili, detTotale } = calcolaPianoAnnualeDetrazioni(totali, aliq, redditoA, redditoB, figli, anno);
+  const haMobili = detMobili > 0.01;
 
   const colonneCont = CONTENITORI.map(c =>
     `<th class="text-right" style="font-size:10px">${c.label.replace('Ecobonus ','Eco ').replace('Bonus Ristrutturazione','BR')}</th>`
-  ).join('');
+  ).join('') + (haMobili ? `<th class="text-right" style="font-size:10px">Mobili</th>` : '');
 
   let righe = '';
   let righeCards = '';
   let sumInt = 0, sumPregr = 0, sumRiga = 0;
   righeCalc.forEach(r => {
-    const { anno: annoR, quoteCont, totRiga, taglio, intAnno, pregrAnno, cumTot } = r;
+    const { anno: annoR, quoteCont, quotaMobili, totRiga, taglio, intAnno, pregrAnno, cumTot } = r;
     sumInt += intAnno; sumPregr += pregrAnno; sumRiga += totRiga;
 
-    const colonneDet = quoteCont.map(q => `<td class="text-right text-mono" style="font-size:11px;color:var(--text-2)">${formatEur(q)}</td>`).join('');
+    const colonneDet = quoteCont.map(q => `<td class="text-right text-mono" style="font-size:11px;color:var(--text-2)">${formatEur(q)}</td>`).join('')
+      + (haMobili ? `<td class="text-right text-mono" style="font-size:11px;color:var(--text-2)">${formatEur(quotaMobili)}</td>` : '');
     const rigaTaglio = taglio > 0.01 ? `<span style="font-size:10px;color:var(--danger);margin-left:6px">-${formatEur(taglio)} art.16-ter</span>` : '';
 
     righe += `<tr>
@@ -6802,7 +7189,7 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
       if (v < 0.01) return '';
       const lbl = c.label.replace('Ecobonus ','Eco ').replace('Bonus Ristrutturazione','BR');
       return `<div class="anno-card-item"><span>${lbl}</span><span>${formatEur(v)}</span></div>`;
-    }).join('');
+    }).join('') + (haMobili && quotaMobili >= 0.01 ? `<div class="anno-card-item"><span>Bonus Mobili</span><span>${formatEur(quotaMobili)}</span></div>` : '');
     righeCards += `<div class="anno-card">
       <div class="anno-card-top">
         <span class="anno-card-anno">${annoR}</span>
@@ -6825,8 +7212,8 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
 
   body.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;padding:16px 18px;border-bottom:0.5px solid var(--border)">
-      <div class="metric-card"><div class="metric-label">Detrazione lavori spettante</div><div class="metric-value" style="font-size:18px">${formatEur(detTotale)}</div><div class="metric-sub">${(aliq*100).toFixed(0)}% su spesa ammessa</div></div>
-      <div class="metric-card accent"><div class="metric-label">Media annua tutte le fonti</div><div class="metric-value" style="font-size:18px">${formatEur(sumRiga / 10)}</div><div class="metric-sub">Lavori + mutuo + pregresse</div></div>
+      <div class="metric-card"><div class="metric-label">Detrazione lavori spettante</div><div class="metric-value" style="font-size:18px">${formatEur(detTotale)}</div><div class="metric-sub">${haMobili ? `Incl. ${formatEur(detMobili)} Bonus Mobili` : `${(aliq*100).toFixed(0)}% su spesa ammessa`}</div></div>
+      <div class="metric-card accent"><div class="metric-label">Media annua tutte le fonti</div><div class="metric-value" style="font-size:18px">${formatEur(sumRiga / 10)}</div><div class="metric-sub">Lavori + mobili + mutuo + pregresse</div></div>
       ${eccedenzaBR > 0 ? `<div class="metric-card danger"><div class="metric-label">Eccedenza BR indetraibile</div><div class="metric-value" style="font-size:18px">${formatEur(eccedenzaBR * aliq)}</div><div class="metric-sub">${formatEur(eccedenzaBR)} oltre ${formatEurK(maxBR)}</div></div>` : ''}
     </div>
     <div style="overflow-x:auto">
@@ -6843,6 +7230,7 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
       <tfoot><tr style="font-weight:600;background:var(--surface-2)">
         <td>TOTALE</td>
         ${CONTENITORI.map(c => `<td class="text-right text-mono" style="font-size:11px">${formatEur(detPerCont[c.id])}</td>`).join('')}
+        ${haMobili ? `<td class="text-right text-mono" style="font-size:11px">${formatEur(detMobili)}</td>` : ''}
         <td class="text-right text-mono" style="font-size:11px;color:var(--info)">${formatEur(sumInt)}</td>
         <td class="text-right text-mono" style="font-size:11px;color:var(--warning)">${formatEur(sumPregr)}</td>
         <td class="text-right text-mono">${formatEur(sumRiga)}</td>
@@ -6852,7 +7240,7 @@ function renderPiano10anni(totali, aliq, redditoA, redditoB, figli, anno) {
     </div>
     <div class="mobile-list" style="padding:10px;gap:10px">${righeCards}</div>
     <div style="padding:8px 18px;font-size:11px;color:var(--text-3);border-top:0.5px solid var(--border)">
-      Interessi mutuo (art.15) e pregresse continuano anche oltre i 10 anni dei lavori — vedi il riepilogo in alto. Il ${annoInizio} può mostrare interessi ridotti se il mutuo parte in corso d'anno.
+      Interessi mutuo (art.15) e pregresse continuano anche oltre i 10 anni dei lavori — vedi il riepilogo in alto. Il ${annoInizio} può mostrare interessi ridotti se il mutuo parte in corso d'anno.${haMobili ? ' Il Bonus Mobili rientra nello stesso plafond limitato dall\'art. 16-ter insieme a BR/Ecobonus (spesa 2025+).' : ''}
     </div>`;
 }
 
@@ -8091,9 +8479,13 @@ function salvaIntestatori() {
     indirizzo: document.getElementById('int-indirizzo').value.trim()
   };
   salvaStato();
-  // Aggiorna IMMOBILE per causale bonifici
+  // Aggiorna IMMOBILE per causale bonifici — CF di entrambi gli intestatari, perché
+  // se la detrazione è ripartita tra due persone la causale del bonifico parlante deve
+  // riportarli entrambi (altrimenti l'Agenzia delle Entrate non riconosce la quota
+  // del secondo intestatario, es. il coniuge).
   if (state.intestatari.indirizzo) IMMOBILE.indirizzo = state.intestatari.indirizzo;
   if (state.intestatari.a.cf) IMMOBILE.cfOrdinante = state.intestatari.a.cf;
+  IMMOBILE.cfOrdinanteB = state.intestatari.b?.cf || '';
   // Feedback visivo
   const btn = event.target;
   const orig = btn.textContent;
@@ -8123,6 +8515,7 @@ function caricaIntestatori() {
   // Aggiorna IMMOBILE
   if (d.indirizzo) IMMOBILE.indirizzo = d.indirizzo;
   if (d.a?.cf) IMMOBILE.cfOrdinante = d.a.cf;
+  IMMOBILE.cfOrdinanteB = d.b?.cf || '';
 }
 
 function sincronizzaRedditiAgev() {
@@ -9945,15 +10338,29 @@ function renderRecapUnificato(totPerContenitore, aliq) {
     label: d.descrizione, base: null, aliq: '—', annua: d.rataAnnua, durata: d.rateResidue, totale: d.rataAnnua * d.rateResidue, tipo: 'pregressa'
   }));
 
-  const tutte = [...righeContenitore, ...(rigaInteressi ? [rigaInteressi] : []), ...righePregresse];
+  // --- Bonus Mobili ed Elettrodomestici ---
+  // Riga indipendente dai 4 CONTENITORI: non è una quota del computo, è spesa diretta
+  // con massimale e aliquota proprie (vedi MASSIMALE_BONUS_MOBILI/ALIQUOTA_BONUS_MOBILI),
+  // ma segue la stessa durata di 10 anni delle altre detrazioni lavori. Il massimale è
+  // moltiplicato per il numero di unità di partenza (maxSpesaBonusMobili), stesso
+  // principio del Bonus Ristrutturazione in caso di accorpamento (Circolare AdE 17/2023).
+  const spesaMobili = state.bonusMobili?.spesa || 0;
+  let rigaMobili = null;
+  if (spesaMobili > 0) {
+    const spesaAmmessaMobili = Math.min(spesaMobili, maxSpesaBonusMobili());
+    const detTotMobili = spesaAmmessaMobili * ALIQUOTA_BONUS_MOBILI;
+    rigaMobili = { label: 'Bonus Mobili ed Elettrodomestici', base: spesaAmmessaMobili, aliq: `${(ALIQUOTA_BONUS_MOBILI*100).toFixed(0)}%`, annua: detTotMobili / 10, durata: 10, totale: detTotMobili, tipo: 'mobili' };
+  }
+
+  const tutte = [...righeContenitore, ...(rigaMobili ? [rigaMobili] : []), ...(rigaInteressi ? [rigaInteressi] : []), ...righePregresse];
 
   // Totali per anno 1-10 e oltre
   const totAnnuaPrimi10 = tutte.reduce((s, r) => s + r.annua, 0);
   const totAnnuaDopo10 = (rigaInteressi?.annua || 0) + righePregresse.filter(r => r.durata > 10).reduce((s,r) => s+r.annua, 0);
   const totAssoluto = tutte.reduce((s, r) => s + r.totale, 0);
 
-  const coloreRiga = (tipo) => tipo === 'lavori' ? 'var(--accent-text)' : tipo === 'interessi' ? 'var(--info)' : 'var(--warning)';
-  const badgeRiga = (tipo) => tipo === 'lavori' ? '' : tipo === 'interessi' ? '<span class="badge badge-blue" style="font-size:10px;margin-left:6px">Art.15</span>' : '<span class="badge badge-amber" style="font-size:10px;margin-left:6px">Pregressa</span>';
+  const coloreRiga = (tipo) => tipo === 'lavori' ? 'var(--accent-text)' : tipo === 'mobili' ? 'var(--accent-text)' : tipo === 'interessi' ? 'var(--info)' : 'var(--warning)';
+  const badgeRiga = (tipo) => tipo === 'lavori' ? '' : tipo === 'mobili' ? '<span class="badge badge-green" style="font-size:10px;margin-left:6px">Mobili</span>' : tipo === 'interessi' ? '<span class="badge badge-blue" style="font-size:10px;margin-left:6px">Art.15</span>' : '<span class="badge badge-amber" style="font-size:10px;margin-left:6px">Pregressa</span>';
 
   el.innerHTML = `
     <table>
