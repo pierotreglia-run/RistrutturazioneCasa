@@ -16,7 +16,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, getDocs, query, where, orderBy, limit, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyAfgZcbN_GU0rg24WxY5qw79y-hxfG701g",
@@ -42,6 +42,7 @@
   window._fbAddDoc = addDoc;
   window._fbGetDocs = getDocs;
   window._fbQuery = query;
+  window._fbWhere = where;
   window._fbOrderBy = orderBy;
   window._fbLimit = limit;
   window._fbDeleteDoc = deleteDoc;
@@ -2934,7 +2935,7 @@
             <option value="verificato">Verificato</option>
           </select>
         </div>
-        <div class="form-group" style="grid-column:span 2">
+        <div class="form-group" style="grid-column:span 2" id="fg-doc-nome">
           <label>Nome / descrizione</label>
           <input type="text" id="doc-nome" placeholder="es. Visura catastale pre-fusione">
           <div id="doc-nome-hint" style="font-size:10px;color:var(--text-3);margin-top:4px">Se carichi più documenti dello stesso tipo (es. visura pre e post fusione), usa un nome che li distingua.</div>
@@ -2974,8 +2975,9 @@
             <button type="button" class="btn btn-sm" id="doc-file-btn-view" onclick="">👁 Visualizza</button>
             <button type="button" class="btn btn-sm btn-danger" onclick="rimuoviFileDocumento()">✕</button>
           </div>
-          <input type="file" id="doc-file-input" accept=".pdf,image/*,.doc,.docx,.xls,.xlsx" onchange="selezionaFileDocumento(this)">
+          <input type="file" id="doc-file-input" accept=".pdf,image/*,.doc,.docx,.xls,.xlsx" multiple onchange="selezionaFileDocumento(this)">
           <div id="doc-file-status" style="font-size:11px;color:var(--text-3);margin-top:4px"></div>
+          <div id="doc-file-multi-lista" style="margin-top:6px;display:none;flex-direction:column;gap:4px"></div>
         </div>
         <div class="form-group" style="grid-column:span 2">
           <label>Dove si trova fisicamente (opzionale, se non carichi il file qui)</label>
@@ -3666,10 +3668,46 @@ function conTimeout(promise, ms, messaggioTimeout) {
 //  dello stato — altrimenti supererebbe presto il limite di 1MB per
 //  documento e romperebbe la sincronizzazione di tutta l'app.
 //  Le immagini vengono ridimensionate/compresse automaticamente per
-//  restare sotto il limite; i PDF vengono accettati così come sono, se
-//  già abbastanza piccoli (di norma lo sono, essendo documenti testuali).
+//  restare sotto il limite. Gli altri formati (PDF, Word, Excel...) NON
+//  vengono mai alterati: se stanno sotto LIMITE_FILE_BYTES vanno in un
+//  unico documento, altrimenti (fino a LIMITE_FILE_BYTES_MAX_CHUNKED)
+//  vengono spezzati automaticamente in più documenti "a parti" e
+//  ricomposti byte-per-byte alla lettura — utile per un atto o un
+//  preliminare originale che non si vuole comprimere.
 // ══════════════════════════════════════════
-const LIMITE_FILE_BYTES = 700 * 1024; // ~700KB grezzi -> ~930KB in base64, sotto il tetto di 1MB Firestore
+// Il limite NON è un numero scelto a caso: è calcolato dal vero tetto di Firestore,
+// che vale per l'intero documento (file in base64 + nomeFile + tipoMime + dimensione +
+// createdAt). Il base64 gonfia il file di 4/3 (+33%), quindi si parte dal tetto
+// Firestore, si toglie un margine generoso per gli altri campi, e si torna alla
+// dimensione del file PRIMA della codifica dividendo per 4/3. Lo stesso valore
+// è anche la dimensione massima di ciascuna "parte" quando un file viene spezzato.
+const FIRESTORE_DOC_LIMIT_BYTES = 1024 * 1024; // 1 MiB — tetto reale per documento Firestore
+const RISERVA_METADATI_BYTES = 8 * 1024; // margine per nomeFile/tipoMime/dimensione/createdAt + overhead interno di Firestore (abbondante anche con nomi file lunghi)
+const LIMITE_FILE_BYTES = Math.floor((FIRESTORE_DOC_LIMIT_BYTES - RISERVA_METADATI_BYTES) * 3 / 4); // ≈ 762KB grezzi -> ≈1016KB in base64, con margine sotto il tetto di 1MB Firestore
+// Tetto di buon senso per i file "a più parti": oltre non ha senso spezzettare
+// automaticamente (troppi documenti Firestore, upload troppo lento) — a quel punto
+// il file va compresso o ridotto a monte. 20MB coprono ampiamente anche una
+// scansione pesante di un atto notarile.
+const LIMITE_FILE_BYTES_MAX_CHUNKED = 20 * 1024 * 1024;
+
+// Converte una stringa base64 nei byte originali (Uint8Array). Centralizzato qui
+// perché serve sia per un documento singolo sia per ricomporre le "parti" di un
+// file spezzato (vedi recuperaFileCompletoFirestore).
+function base64ToBytes(base64) {
+  const byteChars = atob(base64);
+  const bytes = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+  return bytes;
+}
+
+// Concatena più Uint8Array in un unico array di byte contigui, nell'ordine dato.
+function concatBytes(arrays) {
+  const totale = arrays.reduce((s, a) => s + a.length, 0);
+  const risultato = new Uint8Array(totale);
+  let offset = 0;
+  for (const a of arrays) { risultato.set(a, offset); offset += a.length; }
+  return risultato;
+}
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -3716,27 +3754,91 @@ async function preparaFilePerFirestore(file) {
     }
     return new File([compresso], (file.name || 'foto').replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
   }
-  if (file.size > LIMITE_FILE_BYTES) {
-    throw new Error(`Il file supera ${(LIMITE_FILE_BYTES/1024).toFixed(0)} KB (limite per restare dentro Firestore, piano gratuito) — comprimilo con uno strumento online prima di caricarlo.`);
+  // I file non immagine non vengono mai alterati: se superano anche il tetto dei
+  // file "a più parti" (LIMITE_FILE_BYTES_MAX_CHUNKED), a quel punto davvero non
+  // c'è alternativa alla compressione/riduzione manuale prima del caricamento.
+  if (file.size > LIMITE_FILE_BYTES_MAX_CHUNKED) {
+    throw new Error(`Il file supera ${(LIMITE_FILE_BYTES_MAX_CHUNKED/1024/1024).toFixed(0)}MB, troppo anche per il caricamento automatico a più parti — comprimilo o riducilo prima di caricarlo.`);
   }
   return file;
 }
 
-async function caricaFileSuFirestore(file) {
+// Carica un file su Firestore. Se sta dentro LIMITE_FILE_BYTES va in un unico
+// documento (percorso invariato, per compatibilità con tutti i file già salvati).
+// Se è più grande (fino a LIMITE_FILE_BYTES_MAX_CHUNKED) viene spezzato in più
+// documenti "a parti", MAI compresso — pensato per un originale che non va alterato
+// (es. un atto o un preliminare scaricato dall'Agenzia delle Entrate).
+// onProgress(testo) opzionale: invocato con una stringa di stato durante l'upload
+// a più parti, per aggiornare il testo di un bottone "Caricamento…".
+async function caricaFileSuFirestore(file, onProgress) {
   if (!window._fbFilesRef) throw new Error('Database non disponibile.');
   const preparato = await preparaFilePerFirestore(file);
-  const base64 = await fileToBase64(preparato);
-  const docRef = await conTimeout(
+
+  if (preparato.size <= LIMITE_FILE_BYTES) {
+    const base64 = await fileToBase64(preparato);
+    const docRef = await conTimeout(
+      window._fbAddDoc(window._fbFilesRef, {
+        nomeFile: file.name,
+        tipoMime: preparato.type,
+        dataBase64: base64,
+        dimensione: preparato.size,
+        createdAt: Date.now()
+      }),
+      20000, 'Tempo scaduto durante il salvataggio del file.'
+    );
+    return { fileDocId: docRef.id, fileName: file.name };
+  }
+
+  return await caricaFileChunked(file, preparato, onProgress);
+}
+
+// Spezza "preparato" (File/Blob) in parti da al più LIMITE_FILE_BYTES byte grezzi
+// ciascuna, e le salva come documenti separati nella stessa collezione, più un
+// documento "manifesto" (chunked:true, numChunks) che le riassume. La lettura
+// (recuperaFileCompletoFirestore) le ricompone byte-per-byte, in modo trasparente
+// per chi chiama — nessun bit del file viene alterato, solo "impacchettato" diviso.
+async function caricaFileChunked(file, preparato, onProgress) {
+  const numChunks = Math.ceil(preparato.size / LIMITE_FILE_BYTES);
+  const manifestRef = await conTimeout(
     window._fbAddDoc(window._fbFilesRef, {
       nomeFile: file.name,
       tipoMime: preparato.type,
-      dataBase64: base64,
       dimensione: preparato.size,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      chunked: true,
+      numChunks
     }),
     20000, 'Tempo scaduto durante il salvataggio del file.'
   );
-  return { fileDocId: docRef.id, fileName: file.name };
+
+  const chunkRefsCreati = [];
+  try {
+    for (let i = 0; i < numChunks; i++) {
+      if (onProgress) onProgress(`Caricamento parte ${i + 1}/${numChunks}…`);
+      const inizio = i * LIMITE_FILE_BYTES;
+      const pezzo = preparato.slice(inizio, inizio + LIMITE_FILE_BYTES);
+      const base64Pezzo = await fileToBase64(pezzo);
+      const chunkRef = await conTimeout(
+        window._fbAddDoc(window._fbFilesRef, {
+          isChunk: true,
+          fileId: manifestRef.id,
+          indice: i,
+          dataBase64: base64Pezzo
+        }),
+        20000, `Tempo scaduto durante il salvataggio della parte ${i + 1}/${numChunks}.`
+      );
+      chunkRefsCreati.push(chunkRef);
+    }
+  } catch (e) {
+    // Upload interrotto a metà: ripulisce le parti già caricate e il manifesto,
+    // per non lasciare pezzi orfani nel database.
+    await Promise.all(
+      [manifestRef, ...chunkRefsCreati].map(ref => conTimeout(window._fbDeleteDoc(ref), 10000, '').catch(() => {}))
+    );
+    throw e;
+  }
+
+  return { fileDocId: manifestRef.id, fileName: file.name };
 }
 
 // Rimuove accenti/caratteri speciali e spazi da un testo per renderlo
@@ -3798,23 +3900,47 @@ function nomeFileDocumento(documento) {
   return parti.join('_');
 }
 
+// Recupera un file da Firestore ricomponendolo automaticamente se è stato caricato
+// "a più parti" (file originale troppo grande per un singolo documento Firestore,
+// tetto fisso 1MiB) — trasparente per chi chiama: restituisce sempre i byte completi
+// e il mime/nome, come se il file fosse in un unico documento. Punto unico per tutte
+// le letture, così la logica di ricomposizione vive in un solo posto.
+async function recuperaFileCompletoFirestore(fileDocId) {
+  const ref = window._fbDocRef(window._fbDb, 'progetto', 'casa-treglia', 'file', fileDocId);
+  const snap = await conTimeout(window._fbGetDoc(ref), 15000, 'Tempo scaduto nel recupero del file.');
+  if (!snap.exists()) return null;
+  const d = snap.data();
+
+  let bytes;
+  if (d.chunked) {
+    const q = window._fbQuery(window._fbFilesRef, window._fbWhere('fileId', '==', fileDocId));
+    const chunkSnap = await conTimeout(window._fbGetDocs(q), 20000, 'Tempo scaduto nel recupero delle parti del file.');
+    const pezzi = [];
+    chunkSnap.forEach(s => pezzi.push(s.data()));
+    if (pezzi.length !== d.numChunks) {
+      throw new Error(`File incompleto: trovate ${pezzi.length} parti su ${d.numChunks} attese.`);
+    }
+    pezzi.sort((a, b) => a.indice - b.indice);
+    bytes = concatBytes(pezzi.map(p => base64ToBytes(p.dataBase64)));
+  } else {
+    bytes = base64ToBytes(d.dataBase64);
+  }
+
+  const mime = d.tipoMime || 'application/octet-stream';
+  return { bytes, mime, nomeFile: d.nomeFile, estensione: estensioneDaMime(mime, d.nomeFile) };
+}
+
 async function apriFileDaFirestore(fileDocId, nomeScaricato) {
   if (!fileDocId) return;
   try {
-    const ref = window._fbDocRef(window._fbDb, 'progetto', 'casa-treglia', 'file', fileDocId);
-    const snap = await conTimeout(window._fbGetDoc(ref), 15000, 'Tempo scaduto nel recupero del file.');
-    if (!snap.exists()) { alert('File non trovato — potrebbe essere stato eliminato.'); return; }
-    const d = snap.data();
-    const byteChars = atob(d.dataBase64);
-    const byteNumbers = new Uint8Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-    const blob = new Blob([byteNumbers], { type: d.tipoMime || 'application/octet-stream' });
+    const res = await recuperaFileCompletoFirestore(fileDocId);
+    if (!res) { alert('File non trovato — potrebbe essere stato eliminato.'); return; }
+    const blob = new Blob([res.bytes], { type: res.mime });
     const url = URL.createObjectURL(blob);
-    const estensione = estensioneDaMime(d.tipoMime, d.nomeFile);
-    const base = nomeScaricato || sanitizzaNomeFile((d.nomeFile||'file').replace(/\.\w+$/,'')) || 'file';
+    const base = nomeScaricato || sanitizzaNomeFile((res.nomeFile||'file').replace(/\.\w+$/,'')) || 'file';
     const a = document.createElement('a');
     a.href = url;
-    a.download = base + '.' + estensione;
+    a.download = base + '.' + res.estensione;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -3841,21 +3967,16 @@ async function visualizzaFileDaFirestore(fileDocId, nomeScaricato) {
   modal.classList.add('open');
 
   try {
-    const ref = window._fbDocRef(window._fbDb, 'progetto', 'casa-treglia', 'file', fileDocId);
-    const snap = await conTimeout(window._fbGetDoc(ref), 15000, 'Tempo scaduto nel recupero del file.');
-    if (!snap.exists()) { body.innerHTML = '<div style="color:var(--danger);font-size:13px;padding:20px">File non trovato — potrebbe essere stato eliminato.</div>'; return; }
-    const d = snap.data();
-    const byteChars = atob(d.dataBase64);
-    const byteNumbers = new Uint8Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-    const mime = d.tipoMime || 'application/octet-stream';
-    const blob = new Blob([byteNumbers], { type: mime });
+    const res = await recuperaFileCompletoFirestore(fileDocId);
+    if (!res) { body.innerHTML = '<div style="color:var(--danger);font-size:13px;padding:20px">File non trovato — potrebbe essere stato eliminato.</div>'; return; }
+    const mime = res.mime;
+    const blob = new Blob([res.bytes], { type: mime });
     const url = URL.createObjectURL(blob);
     _previewFileUrlCorrente = url;
 
-    const estensione = estensioneDaMime(mime, d.nomeFile);
-    const base = nomeScaricato || sanitizzaNomeFile((d.nomeFile||'file').replace(/\.\w+$/,'')) || 'file';
-    titolo.textContent = d.nomeFile || (base + '.' + estensione);
+    const estensione = res.estensione;
+    const base = nomeScaricato || sanitizzaNomeFile((res.nomeFile||'file').replace(/\.\w+$/,'')) || 'file';
+    titolo.textContent = res.nomeFile || (base + '.' + estensione);
     btnScarica.onclick = () => {
       const a = document.createElement('a');
       a.href = url;
@@ -3931,15 +4052,11 @@ function applicaZoomPreviewImg(img) {
 
 // Recupera i byte grezzi (Uint8Array) e l'estensione di un file Firestore, senza avviare
 // un download — usato per comporre pacchetti ZIP (fattura + contabili, export completo…).
+// Wrapper sottile su recuperaFileCompletoFirestore, che gestisce anche i file "a più parti".
 async function recuperaBytesFileFirestore(fileDocId) {
-  const ref = window._fbDocRef(window._fbDb, 'progetto', 'casa-treglia', 'file', fileDocId);
-  const snap = await conTimeout(window._fbGetDoc(ref), 15000, 'Tempo scaduto nel recupero del file.');
-  if (!snap.exists()) return null;
-  const d = snap.data();
-  const byteChars = atob(d.dataBase64);
-  const byteNumbers = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-  return { bytes: byteNumbers, estensione: estensioneDaMime(d.tipoMime, d.nomeFile) };
+  const res = await recuperaFileCompletoFirestore(fileDocId);
+  if (!res) return null;
+  return { bytes: res.bytes, estensione: res.estensione };
 }
 
 function caricaJSZip() {
@@ -3998,10 +4115,20 @@ async function scaricaFatturaConPagamenti(fatturaId) {
   }
 }
 
+// Elimina un file da Firestore. Se era stato caricato "a più parti", elimina anche
+// tutti i documenti delle parti — altrimenti resterebbero orfani nel database per sempre.
 async function eliminaFileDaFirestore(fileDocId) {
   if (!fileDocId || !window._fbDb) return;
   try {
     const ref = window._fbDocRef(window._fbDb, 'progetto', 'casa-treglia', 'file', fileDocId);
+    const snap = await conTimeout(window._fbGetDoc(ref), 10000, 'Tempo scaduto nel recupero del file.');
+    if (snap.exists() && snap.data().chunked) {
+      const q = window._fbQuery(window._fbFilesRef, window._fbWhere('fileId', '==', fileDocId));
+      const chunkSnap = await conTimeout(window._fbGetDocs(q), 15000, 'Tempo scaduto nel recupero delle parti del file.');
+      const eliminazioni = [];
+      chunkSnap.forEach(s => eliminazioni.push(conTimeout(window._fbDeleteDoc(s.ref), 10000, '')));
+      await Promise.all(eliminazioni);
+    }
     await conTimeout(window._fbDeleteDoc(ref), 10000, 'Tempo scaduto eliminando il file.');
   } catch (e) {
     console.warn('Eliminazione file fallita:', e.message);
@@ -12304,13 +12431,19 @@ const STATO_VERIFICA_DOC = {
 
 let editingDocumentoId = null;
 let filtroTipoDocumento = null;
-let fileDocumentoCorrente = null; // File selezionato ma non ancora caricato su Storage
+let fileDocumentoCorrente = null; // File selezionato ma non ancora caricato su Storage (modalità singola)
+let fileDocumentiMultipli = []; // File selezionati in modalità multi-upload: [{file, ok, motivo}]
 
 function apriModalDocumento(id, tipoPreselezionato) {
   editingDocumentoId = id || null;
   fileDocumentoCorrente = null;
+  fileDocumentiMultipli = [];
   document.getElementById('doc-file-input').value = '';
   document.getElementById('doc-file-status').textContent = '';
+  const listaMulti = document.getElementById('doc-file-multi-lista');
+  listaMulti.style.display = 'none';
+  listaMulti.innerHTML = '';
+  document.getElementById('fg-doc-nome').style.display = '';
   document.getElementById('modal-documento-title').textContent = id ? 'Modifica documento' : 'Nuovo documento';
 
   const selTipo = document.getElementById('doc-tipo');
@@ -12389,19 +12522,115 @@ function chiudiModalDocumento() {
   document.getElementById('modal-documento').classList.remove('open');
   editingDocumentoId = null;
   fileDocumentoCorrente = null;
+  fileDocumentiMultipli = [];
+}
+
+// Verifica se un file ha ragionevoli possibilità di passare preparaFilePerFirestore:
+// le immagini vengono compresse automaticamente (quindi quasi sempre ok, a meno di
+// essere enormi); gli altri formati (PDF, Word, Excel) NON vengono mai alterati — se
+// superano LIMITE_FILE_BYTES vengono caricati automaticamente "a più parti" (fino a
+// LIMITE_FILE_BYTES_MAX_CHUNKED), stesse soglie reali applicate al salvataggio,
+// controllate qui PRIMA per non far scoprire il problema solo a salvataggio avvenuto.
+function validaDimensioneFileDoc(file) {
+  if (file.type.startsWith('image/')) {
+    if (file.size > 15 * 1024 * 1024) return { ok: false, motivo: 'immagine troppo grande anche per la compressione automatica' };
+    return { ok: true, motivo: file.size > LIMITE_FILE_BYTES ? 'verrà compressa automaticamente' : null };
+  }
+  if (file.size > LIMITE_FILE_BYTES_MAX_CHUNKED) {
+    return { ok: false, motivo: `supera ${(LIMITE_FILE_BYTES_MAX_CHUNKED/1024/1024).toFixed(0)}MB — troppo anche per il caricamento a più parti` };
+  }
+  if (file.size > LIMITE_FILE_BYTES) {
+    const numChunks = Math.ceil(file.size / LIMITE_FILE_BYTES);
+    return { ok: true, motivo: `file grande: verrà caricato in ${numChunks} parti, senza comprimerlo` };
+  }
+  return { ok: true, motivo: null };
 }
 
 function selezionaFileDocumento(input) {
-  const file = input.files[0];
-  if (!file) { fileDocumentoCorrente = null; return; }
-  if (file.size > 8 * 1024 * 1024) {
-    alert('Il file supera 8 MB — comprimilo o usa il campo "Dove si trova" per indicare dove lo conservi.');
-    input.value = '';
-    fileDocumentoCorrente = null;
+  const files = Array.from(input.files || []);
+  const listaMulti = document.getElementById('doc-file-multi-lista');
+  const fgNome = document.getElementById('fg-doc-nome');
+  const status = document.getElementById('doc-file-status');
+
+  // In modalità "modifica documento esistente" il file è sempre e solo uno, perché è
+  // legato a quel singolo record — se per sbaglio ne vengono selezionati di più, si
+  // usa solo il primo e lo si segnala, invece di confondere con un comportamento diverso.
+  if (editingDocumentoId) {
+    fileDocumentiMultipli = [];
+    listaMulti.style.display = 'none'; listaMulti.innerHTML = '';
+    fgNome.style.display = '';
+    const file = files[0];
+    if (!file) { fileDocumentoCorrente = null; status.textContent = ''; return; }
+    if (files.length > 1) alert('Stai modificando un documento già esistente: verrà usato solo il primo file selezionato. Per caricare più file insieme, crea nuovi documenti separati.');
+    const v = validaDimensioneFileDoc(file);
+    if (!v.ok) {
+      alert(`"${file.name}" non può essere caricato: ${v.motivo}.`);
+      input.value = ''; fileDocumentoCorrente = null; status.textContent = '';
+      return;
+    }
+    fileDocumentoCorrente = file;
+    status.textContent = `Pronto per il caricamento: ${file.name} (${(file.size/1024).toFixed(0)} KB)${v.motivo ? ' — ' + v.motivo : ''}`;
     return;
   }
-  fileDocumentoCorrente = file;
-  document.getElementById('doc-file-status').textContent = `Pronto per il caricamento: ${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+
+  // Nuovo documento, un solo file selezionato: stesso comportamento di sempre —
+  // un record con tutti i metadati compilati a mano.
+  if (files.length <= 1) {
+    fileDocumentiMultipli = [];
+    listaMulti.style.display = 'none'; listaMulti.innerHTML = '';
+    fgNome.style.display = '';
+    const file = files[0];
+    if (!file) { fileDocumentoCorrente = null; status.textContent = ''; return; }
+    const v = validaDimensioneFileDoc(file);
+    if (!v.ok) {
+      alert(`"${file.name}" non può essere caricato: ${v.motivo}.`);
+      input.value = ''; fileDocumentoCorrente = null; status.textContent = '';
+      return;
+    }
+    fileDocumentoCorrente = file;
+    status.textContent = `Pronto per il caricamento: ${file.name} (${(file.size/1024).toFixed(0)} KB)${v.motivo ? ' — ' + v.motivo : ''}`;
+    return;
+  }
+
+  // Nuovo documento, PIÙ file selezionati insieme: ognuno diventerà un documento
+  // separato con lo stesso tipo/collegamento/stato impostati nel modal, e il nome
+  // del file (senza estensione) come nome/descrizione — il campo "Nome" singolo non
+  // si applica più, quindi lo si nasconde per evitare l'illusione che conti.
+  fileDocumentoCorrente = null;
+  status.textContent = '';
+  fgNome.style.display = 'none';
+  fileDocumentiMultipli = files.map(file => {
+    const v = validaDimensioneFileDoc(file);
+    return { file, ok: v.ok, motivo: v.motivo };
+  });
+  renderListaFileMultipli();
+}
+
+function renderListaFileMultipli() {
+  const listaMulti = document.getElementById('doc-file-multi-lista');
+  const nOk = fileDocumentiMultipli.filter(f => f.ok).length;
+  const nScartati = fileDocumentiMultipli.length - nOk;
+  listaMulti.style.display = 'flex';
+  listaMulti.innerHTML = `<div style="font-size:11px;color:var(--text-2);margin-bottom:2px">${fileDocumentiMultipli.length} file selezionati — ${nOk} pronti${nScartati ? `, ${nScartati} scartati` : ''}. Ognuno diventerà un documento separato (tipo e collegamento impostati sopra, nome = nome del file).</div>` +
+    fileDocumentiMultipli.map((f, i) => `<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:4px 8px;background:var(--surface-2);border-radius:var(--radius)">
+      <span style="color:${f.ok ? 'var(--success)' : 'var(--danger)'}">${f.ok ? '✓' : '✕'}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.file.name)}</span>
+      <span style="color:var(--text-3)">${(f.file.size/1024).toFixed(0)} KB</span>
+      ${f.motivo ? `<span style="color:${f.ok ? 'var(--text-3)' : 'var(--danger)'}">${f.motivo}</span>` : ''}
+      <button type="button" class="btn btn-sm" onclick="rimuoviFileDaMultipli(${i})" title="Rimuovi">✕</button>
+    </div>`).join('');
+}
+
+function rimuoviFileDaMultipli(i) {
+  fileDocumentiMultipli.splice(i, 1);
+  if (!fileDocumentiMultipli.length) {
+    document.getElementById('doc-file-input').value = '';
+    document.getElementById('fg-doc-nome').style.display = '';
+    document.getElementById('doc-file-multi-lista').style.display = 'none';
+    document.getElementById('doc-file-multi-lista').innerHTML = '';
+    return;
+  }
+  renderListaFileMultipli();
 }
 
 async function rimuoviFileDocumento() {
@@ -12449,11 +12678,36 @@ function aggiornaSelectCollegatoDoc() {
   }
 }
 
+// Metadati condivisi dal modal, comuni a tutti i record creati — sia nel salvataggio
+// singolo sia in quello multiplo, per non duplicare la lettura dei campi in due punti.
+function leggiMetadatiComuniDoc() {
+  const statoVerifica = document.getElementById('doc-stato-verifica').value;
+  const collegatoTipo = document.getElementById('doc-collegato-tipo').value;
+  return {
+    tipo: document.getElementById('doc-tipo').value,
+    numero: document.getElementById('doc-numero').value.trim(),
+    data: document.getElementById('doc-data').value,
+    scadenza: document.getElementById('doc-scadenza').value,
+    statoVerifica,
+    verificatoDa: document.getElementById('doc-verificato-da').value.trim(),
+    collegatoTipo,
+    collegatoId: collegatoTipo !== 'nessuno' ? document.getElementById('doc-collegato-id').value : '',
+    posizione: document.getElementById('doc-posizione').value.trim(),
+    note: document.getElementById('doc-note').value.trim()
+  };
+}
+
 async function salvaDocumento() {
+  // Modalità multi-upload: più file selezionati insieme in un documento "nuovo" —
+  // un record per file, stessi metadati condivisi, nome = nome del file.
+  if (fileDocumentiMultipli.length > 0) {
+    await salvaDocumentiMultipli();
+    return;
+  }
+
   const nome = document.getElementById('doc-nome').value.trim();
   if (!nome) { alert('Inserisci un nome o una descrizione per il documento.'); return; }
-  const collegatoTipo = document.getElementById('doc-collegato-tipo').value;
-  const statoVerifica = document.getElementById('doc-stato-verifica').value;
+  const comuni = leggiMetadatiComuniDoc();
   const esistente = editingDocumentoId ? (state.documenti||[]).find(d => d.id===editingDocumentoId) : null;
   const docId = editingDocumentoId || uid();
 
@@ -12465,7 +12719,9 @@ async function salvaDocumento() {
     const testoOriginale = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Caricamento file…'; }
     try {
-      const risultato = await caricaFileSuFirestore(fileDocumentoCorrente);
+      const risultato = await caricaFileSuFirestore(fileDocumentoCorrente, (testo) => {
+        if (btn) btn.textContent = testo;
+      });
       fileDocId = risultato.fileDocId;
       fileName = risultato.fileName;
     } catch (e) {
@@ -12476,20 +12732,11 @@ async function salvaDocumento() {
 
   const documento = {
     id: docId,
-    tipo: document.getElementById('doc-tipo').value,
+    ...comuni,
     nome,
-    numero: document.getElementById('doc-numero').value.trim(),
-    data: document.getElementById('doc-data').value,
-    scadenza: document.getElementById('doc-scadenza').value,
-    statoVerifica,
-    verificatoDa: document.getElementById('doc-verificato-da').value.trim(),
-    dataVerifica: statoVerifica === 'verificato'
+    dataVerifica: comuni.statoVerifica === 'verificato'
       ? (esistente?.statoVerifica === 'verificato' ? esistente.dataVerifica : new Date().toISOString().slice(0,10))
       : '',
-    collegatoTipo,
-    collegatoId: collegatoTipo !== 'nessuno' ? document.getElementById('doc-collegato-id').value : '',
-    posizione: document.getElementById('doc-posizione').value.trim(),
-    note: document.getElementById('doc-note').value.trim(),
     fileDocId, fileName,
     createdAt: esistente?.createdAt || Date.now()
   };
@@ -12504,6 +12751,51 @@ async function salvaDocumento() {
   salvaStato();
   chiudiModalDocumento();
   renderDocumenti();
+}
+
+// Crea un documento separato per ciascun file valido selezionato nel multi-upload.
+// I file scartati per dimensione (fileDocumentiMultipli[i].ok === false) vengono saltati —
+// l'utente li ha già visti segnalati in rosso nella lista prima di premere "Salva".
+async function salvaDocumentiMultipli() {
+  const validi = fileDocumentiMultipli.filter(f => f.ok);
+  if (!validi.length) { alert('Nessuno dei file selezionati può essere caricato — vedi i motivi sopra.'); return; }
+  const comuni = leggiMetadatiComuniDoc();
+  const btn = document.getElementById('btn-salva-documento');
+  const testoOriginale = btn ? btn.textContent : '';
+  if (!state.documenti) state.documenti = [];
+
+  let okCount = 0, failCount = 0;
+  for (let i = 0; i < validi.length; i++) {
+    const { file } = validi[i];
+    if (btn) { btn.disabled = true; btn.textContent = `Caricamento ${i + 1}/${validi.length}…`; }
+    let fileDocId = null, fileName = null;
+    try {
+      const risultato = await caricaFileSuFirestore(file);
+      fileDocId = risultato.fileDocId;
+      fileName = risultato.fileName;
+      okCount++;
+    } catch (e) {
+      failCount++;
+      console.warn(`Caricamento fallito per ${file.name}:`, e.message);
+    }
+    const nomeFileSenzaEst = (file.name || 'documento').replace(/\.\w+$/, '');
+    state.documenti.push({
+      id: uid(),
+      ...comuni,
+      nome: nomeFileSenzaEst,
+      dataVerifica: comuni.statoVerifica === 'verificato' ? new Date().toISOString().slice(0,10) : '',
+      fileDocId, fileName,
+      createdAt: Date.now()
+    });
+  }
+  if (btn) { btn.disabled = false; btn.textContent = testoOriginale; }
+
+  salvaStato();
+  chiudiModalDocumento();
+  renderDocumenti();
+  if (failCount > 0) {
+    alert(`${validi.length} documenti creati. Per ${failCount} di essi il caricamento del file è fallito — restano registrati, ma senza allegato (puoi riprovare modificandoli).`);
+  }
 }
 
 async function eliminaDocumento(id) {
