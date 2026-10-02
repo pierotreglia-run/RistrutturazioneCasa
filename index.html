@@ -1873,7 +1873,10 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">Voci di lavoro</span>
-        <span class="text-muted" id="contatore-voci" style="font-size:12px">0 voci</span>
+        <div class="flex-gap" style="align-items:center;gap:10px">
+          <input type="text" id="ricerca-computo" placeholder="🔍 Cerca descrizione, tariffa, categoria, note…" oninput="renderTabella()" style="font-size:12px;padding:5px 8px;min-width:200px">
+          <span class="text-muted" id="contatore-voci" style="font-size:12px">0 voci</span>
+        </div>
       </div>
       <div id="tabella-computo-wrapper">
         <div class="empty-state" id="empty-computo">
@@ -4193,6 +4196,24 @@ function salvaCassaComputo() {
   if (document.getElementById('page-dashboard')?.classList.contains('active')) aggiornaDashboard();
 }
 
+// Stringa unica su cui far corrispondere la ricerca libera di una voce di computo —
+// numero, tariffa, descrizione, note e categoria, tutto minuscolo. Centralizzata qui
+// perché serve sia al render della tabella/card sia al contatore dei risultati.
+function testoRicercaVoce(v) {
+  return [v.numero, v.tariffa, v.descrizione, v.note, v.categoria].filter(Boolean).join(' ').toLowerCase();
+}
+
+// Applica insieme il filtro categoria (bottoni sopra la tabella) e la ricerca libera,
+// nello stesso ordine in cui l'utente li vede: prima la categoria, poi il testo dentro
+// quella categoria. Un solo punto di verità, usato sia da renderTabella() che dal
+// contatore in aggiornaMetricheComputo(), così restano sempre coerenti tra loro.
+function vociComputoFiltrate() {
+  let voci = filtroCorrente === 'tutti' ? state.voci : state.voci.filter(v => v.categoria === filtroCorrente);
+  const ricerca = (document.getElementById('ricerca-computo')?.value || '').trim().toLowerCase();
+  if (ricerca) voci = voci.filter(v => testoRicercaVoce(v).includes(ricerca));
+  return voci;
+}
+
 function aggiornaMetricheComputo() {
   const t = calcolaTotaliComputo();
 
@@ -4244,17 +4265,23 @@ function aggiornaMetricheComputo() {
   document.getElementById('totali-box').style.display = mostra ? 'block' : 'none';
   document.getElementById('btn-esporta').style.display = mostra ? 'inline-flex' : 'none';
   document.getElementById('nav-badge-computo').textContent = state.voci.length;
-  document.getElementById('contatore-voci').textContent =
-    state.voci.length + (state.voci.length === 1 ? ' voce' : ' voci');
+
+  // Il contatore riflette ricerca/filtro quando attivi ("N di M voci"), così l'utente
+  // vede subito quanti risultati ha trovato — il totale assoluto resta comunque visibile.
+  const vociVisibili = vociComputoFiltrate();
+  const nTot = state.voci.length;
+  const filtriAttivi = vociVisibili.length !== nTot;
+  document.getElementById('contatore-voci').textContent = filtriAttivi
+    ? `${vociVisibili.length} di ${nTot} voc${nTot===1?'e':'i'}`
+    : `${nTot} voc${nTot===1?'e':'i'}`;
 }
 
 // ══════════════════════════════════════════
 //  COMPUTO — RENDER TABELLA
 // ══════════════════════════════════════════
 function renderTabella() {
-  const voci = filtroCorrente === 'tutti'
-    ? state.voci
-    : state.voci.filter(v => v.categoria === filtroCorrente);
+  const voci = vociComputoFiltrate();
+  const ricerca = (document.getElementById('ricerca-computo')?.value || '').trim();
 
   const empty = document.getElementById('empty-computo');
   const table = document.getElementById('tabella-computo');
@@ -4264,7 +4291,16 @@ function renderTabella() {
   if (voci.length === 0) {
     empty.style.display = 'block';
     table.style.display = 'none';
+    empty.querySelector('p').innerHTML = ricerca
+      ? `Nessuna voce trova corrispondenza per "${escHtml(ricerca)}".`
+      : state.voci.length
+      ? 'Nessuna voce corrisponde al filtro selezionato.'
+      : 'Nessuna voce inserita.<br>Aggiungi la prima voce o importa un CSV.';
+    // Svuota anche il contenuto nascosto: altrimenti righe/card di un render precedente
+    // restano nel DOM (invisibili ma presenti) finché il prossimo risultato non azzera tutto.
+    tbody.innerHTML = '';
     if (cards) cards.innerHTML = '';
+    aggiornaMetricheComputo();
     return;
   }
   empty.style.display = 'none';
@@ -12406,6 +12442,7 @@ const TIPI_DOCUMENTO = {
   'ape': 'Attestato Prestazione Energetica',
   'contratto-mutuo': 'Contratto di mutuo',
   'cert-interessi-mutuo': 'Certificazione annuale interessi mutuo',
+  'preliminare-acquisto': 'Preliminare di acquisto (compromesso)',
   'atto-acquisto': 'Atto di acquisto immobile (rogito)',
   'atto-box-pregresso': 'Atto acquisto box (detrazione pregressa)',
   'altro': 'Altro',
@@ -12420,7 +12457,7 @@ const TIPI_DOCUMENTO = {
 const TIPI_CHECKLIST_DOC = [
   'titolo-abilitativo', 'contratto-appalto', 'visura-catastale', 'bonifico',
   'certificazione', 'enea', 'asseverazione', 'ape',
-  'contratto-mutuo', 'cert-interessi-mutuo', 'atto-acquisto', 'atto-box-pregresso'
+  'contratto-mutuo', 'cert-interessi-mutuo', 'preliminare-acquisto', 'atto-acquisto', 'atto-box-pregresso'
 ];
 
 const STATO_VERIFICA_DOC = {
@@ -12841,6 +12878,7 @@ const PERCHE_CHECKLIST_DOC = {
   'ape': 'Dimostra il miglioramento energetico, utile anche in caso di vendita futura.',
   'contratto-mutuo': 'Collega il mutuo all\'abitazione principale — condizione per dedurre gli interessi.',
   'cert-interessi-mutuo': 'Necessaria ogni anno per la dichiarazione dei redditi.',
+  'preliminare-acquisto': 'Fissa prezzo, caparre e condizioni della compravendita — base per mutuo e rogito.',
   'atto-acquisto': 'Collega mutuo e detrazioni all\'acquisto dell\'abitazione principale.',
   'atto-box-pregresso': 'Giustifica le rate residue della detrazione pregressa.'
 };
@@ -12961,7 +12999,9 @@ function renderDocumenti() {
   empty.style.display = 'none'; table.style.display = 'table';
 
   const oggiStr = new Date().toISOString().slice(0,10);
-  const sorted = [...filtrati].sort((a,b) => (b.data||'').localeCompare(a.data||''));
+  // Ordine cronologico: dal più vecchio al più recente. I documenti senza data
+  // (stringa vuota) finiscono in cima, prima di qualunque data valida.
+  const sorted = [...filtrati].sort((a,b) => (a.data||'').localeCompare(b.data||''));
 
   tbody.innerHTML = sorted.map(d => {
     const [sc, sl] = STATO_VERIFICA_DOC[d.statoVerifica] || ['badge-gray', d.statoVerifica];
