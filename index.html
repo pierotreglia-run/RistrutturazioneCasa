@@ -10,7 +10,49 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Casa">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#161616">
+<meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)" data-auto="#f7f6f3" data-media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a18" media="(prefers-color-scheme: dark)" data-auto="#1a1a18" data-media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<!-- Temi: applicato PRIMA del rendering per evitare il lampo di colore all'avvio.
+     La scelta è per-dispositivo (localStorage), NON entra nei dati sincronizzati su Firebase né nel reset. -->
+<script>
+(function () {
+  var KEY = 'ristrutturazione_tema';
+  // Anteprime (swatch) + colore barra del browser. Le variabili vere stanno nei blocchi CSS :root[data-theme].
+  var THEMES = {
+    auto:  { label: 'Automatico', desc: 'Segue il sistema' },
+    light: { label: 'Chiaro', desc: 'Sabbia e verde',      bg: '#f7f6f3', surface: '#ffffff', accent: '#0f6e56', text: '#1a1a18', nav: '#ffffff' },
+    dark:  { label: 'Scuro',  desc: 'Notte e verde',       bg: '#1a1a18', surface: '#242420', accent: '#25ab80', text: '#f0efe9', nav: '#242420' },
+    mare:  { label: 'Mare',   desc: 'Azzurro e blu notte', bg: '#dde9f3', surface: '#fbfdff', accent: '#0a639d', text: '#0d2238', nav: '#0d2c4a' }
+  };
+  function corrente() {
+    var t = document.documentElement.getAttribute('data-theme');
+    return THEMES[t] ? t : 'auto';
+  }
+  function applicaTema(t, salva) {
+    if (!THEMES[t]) t = 'auto';
+    var root = document.documentElement;
+    if (t === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
+    // Barra del browser / PWA: in manuale colore del tema scelto, in automatico torna alle due meta con media-query
+    var metas = document.querySelectorAll('meta[name="theme-color"]');
+    for (var i = 0; i < metas.length; i++) {
+      var m = metas[i];
+      if (t === 'auto') { m.setAttribute('content', m.getAttribute('data-auto')); m.setAttribute('media', m.getAttribute('data-media')); }
+      else { m.setAttribute('content', THEMES[t].bg); m.removeAttribute('media'); }
+    }
+    if (salva) { try { if (t === 'auto') localStorage.removeItem(KEY); else localStorage.setItem(KEY, t); } catch (e) {} }
+    document.dispatchEvent(new CustomEvent('tema-cambiato', { detail: t }));
+  }
+  window.TEMI = THEMES;
+  window.temaCorrente = corrente;
+  window.applicaTema = applicaTema;
+  var salvato = null;
+  try { salvato = localStorage.getItem(KEY); } catch (e) {}
+  if (salvato && THEMES[salvato] && salvato !== 'auto') applicaTema(salvato, false);
+  // Altra scheda/finestra cambia tema → allinea questa
+  window.addEventListener('storage', function (e) { if (e.key === KEY) applicaTema(e.newValue || 'auto', false); });
+})();
+</script>
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAATu0lEQVR4nO2deXhdVbXA99p7n3PunNwkHZLO80BHZqjagtKCoIAM+rD6HB6goPDwYSsVPxF4oE8FFRy/6mPwoYhgC1KwICggQosd0yYdKCkpbdrMdz7TXu+PG0qT29Omacmd1u+7//Trubk7Ob+799prr70PjBw5khHE4eD5bgBRuJAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB+EJyUF4QnIQnpAchCckB2OMAXAAfvAfACKvzSkUSA4GXLh2yrGSDDhjgK5tZ7oZAAPId9PyTHnLAQBcWsm26Jh5Qyad51pJRNeI1I085dOulWTKBV7WXUj5ygHAGaIZ3zf27OtPuep30y+6xwgNtRItE+cvmX3Z/bMv/zUy5phx4DLfLc0bUJ6P1AAuXTPB9cCkc5eNOuXzrp0UWrB914vdezeM/+BNdiamB6o7336t8dlbut9ZpweqUbmMYb5bPdiUoxwAwjFjRrj2pI/dO3TqQjPeDpwzZFzzAZeulWAMUDmav9JKtm/+05fbdr0g9TADzlDlu+2DSpnJAQAATiZWNW7+zEt+qgeHOmYXcK3nf1Fhdrjp+ZfDhS704Jt//59dL98LQnJhoHLy1vhBp4zkAC6UcuxUx6Rzlk085xuunVaO1SvkRESG781pWY8uuj/avuvvGx77nJOJab5KpezBb3xeKJeAFLh0MjEhjDlXPjhhwRLHTCjXPtQMRAVCk3oQ0T30bQDcSrVXjZ13+uefjo45O5NoAS7KZJZbDnIAALfTHcEhk+dc+eCIOVc4mTjr3UOgcqQeMhP7u5rXar5KxF7hJ3BpZ7qDNZPnXPlg3exPOZkYuk6vDqZEKfXfEDhjzDETw6ZffPrnnq4cdboZawMuGHvvq5+NPTOxvRse/eyaBy5q2bJCD1QzZHhI+JnteIDLOVf8ZvLCO4BL1zFLfpZbyjEHcKFc2zHjUz7ynfHzb7JT3YjOoalxRAWM6cGqvZseb3jmG44Z40J37fSoUz83ddGdqFzXTvcyABHR1YM1Xc1r1z/6GTNxQPNXoluyIUjJygFCs1MdRnj4jIvvqx6/wDHjwHplxFG5QvOD0Lb95ZvNbzwAwLn0ZXsLx4xVjjpt5sX3B4dMsZJtfXoIVI40wma8ZeuqJfu3rjTCwxkiluIstxTlAAAGVqojOubsaRfcXTHi5MPfYF8kE9u7/bnb9m3+oxaoAgYHbzBwaafbg9WTpl7w3ZoJ59qZ7lyxpB50ncyOv97Z/K//5Vzj0tcrki0JSk0OAI7KVY45Yu5VUxbewaXRNwWOiExpRmWitWHDH/490bpdD9Wg2zd7AVwqO61cc/pF9448+TOOlUDl9ophUQFwPVDZ/MbDO16400p1SCNUYlmQkpIDuFROBl1nyqI7x559rZXoRKZ6BxkuMC79lXvWPdT47LLsyOJ1RwE4IjpmrG7WldMu/AHn0rVTvXsgRNfRQ0Pi+zav/8Nn051N0ldZSn6UjhwgNCvZFoiOmX35ryvqTrYzXQCi91jgCD0IwOufvGHvxj8IPcC5PFqsAADgmLFgzeRZly2vqJtpJg4zQgkt4NrphlU371n/iC8yvM9Mp3gpCTkAGAMr2Tps6oVTFt4RrJlkpztzb6Hmr0q0NjY++822N1/Q/ZXIkGG/1tKyeQ5fuHbyebfVzbzcznQh9k6ToMuljyE2/eMnu165lwEILVgCXUjRywHAlWshqrFnXTfhQzczEK6V6BNkMGBSj3TtWbPpiWtTnU16oPpY7xxwoZyMa6enLLxz9OlXIzrKNvsmWAH0QLRly5PbVn871dWkFf8QU9xyAJeuneLCmHr+XaNPW2zGOw5dOWOMoXKBS6H5317zq23PfZsLnUvfwO4ZAGcMrFTb8Okfn37RPdJX2ddCxtC19dCQROv2TX/8Ymz/Fs1XUdRr/UUsBwjNSraGaqbM/eTDwZrJdroTRN/UZ3YGsfHxa/Y3PKX5o4fOVwf4oVw6mW4jUjvnigeio08zE4fJt3LpB4CGVUveXrvcCA1jrFhDkKKUA4AjQyvZOmLOVZM/cpsRGppTsoWoXD1Y073nja2rlnTvXa/5KlCpE/IlBi5dKymN8MQFS0efcY2dPkzilXMJQu7510PbnruNoSv0opzlFp8cwIVrpwH4xHOWjT79aobKtdN9h38upB5q3bF661M3ZeItmj96Yu8NgFCu5VqJCfOXjJt3AwjdtZJ9Vv8ZY1og2v7WSw3PLI23bBlAoJN3ikwO4NIxE0awesr5d9fNutRMtGcXXQ9egMrl0mAM33r1/p0vflcaIS40VO9D7hIAQJiJ/UMmnTf9oh/6K0blFpwq1zaCNamu3fUrvtKx+1XNiCCemN5rcCgiOQC4sFJtkeGzT/633/oqRtmpDhDaoVegsqURca3khse+0LbjOT00BFH1c746wDZx6Zgx6auYc8UD1eM/ZCXbcpMrXBpCCzQ+c0vTP3+qBaoARLEk2otDjuwf1E51jD7jmknn3io0f99kJSKia4Rr2t58ectTN6U735JGZHC6ceBCOSYDPv4D/zlh/tedTKxPGRFDxYALLbBvyxMNf77ZdTLSCBfFEFMEcgCXjhkX0jfto9+rnXmFci3lWMB7LXNwrgk9sHfjo9ue+5ad7ho0M3paCByV65jx0adfPXHBUumvdDLdfQNkRM1XGW/ZvOXPX+t8+59GaFjh+1HocmSnjoHq8VMX3T10ynlmoh2A5ybFXSv55t9/0PTP+6WvgnMtH/02ABdmYn/VmHnTPvq9SO0sO93dZ08UKkf6olaipeGZbxxofFoYIcbY+zrqHScFLEd25T3dGR195txPPqQHa+x053uV4oyxniCjwkq2bnzsC+1NLxuhYYhuHv/cIDQnE+PSmH358qGTz7fSHYeJl4UmfZHtz31n1yv3Cj2YJ5X7RYHKAVyg6zhmfNwHbpy4YCmiUn3K8lAhKiNcc6Bxdf3Kr9rpjgLJJQAXynWUkxl71nVTFt7uZOLK7dXybEJMMypad66uX/EVO9NdsCFIIcqRHUqEEZ55yc+GTF6U3cKaO18V0rf7tV/sfOn7yk4LPfC+zFcHBgBD5pix2hmXTV74HV+4zk539E20oyuNSKaruf7JG9p2Pm+Eawsw0V5ocgBwbqc7K+pOnnr+XdHRZ1mpduA8JykesZKt25+//Z0N/6f5KoGLwstPA3BhJQ5EamdPPf+uqvEfstOd2dWZg1dkyw3tTGzHC3e8s+63QgsU2i9SQHIAcETlmPGaiR+eddmvpBFxMl05QYYjfZFUR9Omx6/u2rPWFx6uXKfQvnAHAaE5ZhwYn3HJ/bUzLnUy8T6bphBd4FIPVOx88QdvvvR9xkBovsLpAgtFDuBSuRY61oQFS8Z/8CbHSqLr9EmKM4ZGqHrf5hX1K7+qHFPoRVAz0ZOhycRGn/aF6Rf+0LVTysnkZGiUHqjqaHpl84rrMrG9gzwPPwIFIQdwaWe6dH/V7CsfqBo7z0l3sb4FvY7Q/CD0nS9+d/drP2cMuTQK5xt2FACAgW3GasafM+3C7werJ1jJ1pwe0ZVGyM5016+4fn/DU0Z4+Pud2+0P+ZYDAIBbybaaCedOPf+u0NCpdrrrsEVcqc63Gp+95UDjs5q/ohg3vAOXdqrdXzVuysLbh0+/2Ep1AmO5WyWUa+165UdN//gJlz4u9PzOcvMpBwBXylZ2ZvhJl0y/6F6h+R0zlrPyrqQvEtu7sX7lV+L7N+vBbGKxQIOMIwNcunYSFU674O4RJy9Gx1QqZ5MVcD1Y2fTqL3e+eJdjJaURymMHmTc5srX/ILSJ5y4be+aX7XQX9j5mKRu3G8GqPesf2fLkjdmCLuU6rHj3MCPLHgRipVpHzF084+M/RqUOu0ikB2u631m3ecX1ydZt0leRrxAkP3JwrlnpDl+kbu6nfltRN9dKdeTOV4UWYADb/nLrOxseYYwx4AxdVsRqZEHGgIFQTqaibu5JH/tRePhJVvIw5WTZcHvziuv3bXrMCA1jLA+b6gZfDmCorGTb8JmXTV30375IbW4ZBCpHD9bEW7ZsffrmjqaXAKSvog6EnvcA7cQBZmK/k+n0R8dNOvebo075jJXszHYsB69A5XKhA+e71yzf8fztAJzrgUGOtAZZDmCouOYfftKlkz58Kz9cARUylEakfdffGp9ZGtu3KVI7a9y8G6Nj50k9hKXQc2TBxIHG5rXLW7asFHpgwvylY868ljFQjtm3nAyYFoi+s+6Rt/7x43RXMwg5mN+QwZUDAF3LCNee+R/PC83vWikQvRYdOAjpi7y99tcNq5Yq1xwyaeGMS39mhIa5VpKhKhUzGGMotAAybHr1vh1/vdN1MrUzLptx8f1cZr8tvUJy5dj+6NDNT9zYvO6hd8vZB4nBHlaACyvVUTvzilmf+IVjxg89gEvoQeVaW//8Xy31TwgtIPTgKYv/GBo6zU53cK6VjhiMsYN7JvTg+t8vbt/1N4bKHx0785KfVY481Uq1HwxBstP4fZsf2/TEl6QvPMgD62Af3oLK1QPV+zY+uv3524xgVTYOR+XooZrEgYbXly9qqX9c+isdKzF06oWR2pl2upMLPbunrZRewCUqhzEYfcY12UWWdOfuNx6+tOm1nxvhGsYAUaFyNH91x+5X6lfeII3Q4M/f83CyDypHC1S9vWb5vvoV0oigcjV/dN/Gx9b/fnGibbv0VTJUjGF0zNno9lqMzb6bITJWvK/3AC6UnQoPneaLjHDttNCDqHDbX25tWLWMIQrpA6FlYnsan1nGMLsdfLDtyNPBRcCAy01/+tKZX1wdqT3pzZd/vH31t6UR1nwRVAeXVDD3XDYAwTgvziQYMIY5EUP2F0SWXYQTQsrIrpfuSbRum3HxfUa4bv3vPh1r2ZSvbQ15kgORC80xM43P3qIFqlrqV+iBKsbY0aItcO2Ucq1ijUwBpB48UuOzZdKR2radf33joUsrRp7a1bxGD1TlKwmWtyPPULlSD3U1r0V09UD1URcRULlaILr1qexBPJVFs+qWBQBdW/NFT/nsE9ne8QiKoHI0X2W6a3eibbs0wnn8TfN5Hh6iEpqfMdbv5SVw7ZSd7mBw1D6mwABA12KsvwMiogtC10Sej5LK82GJx5oSBhAgNOCyyEYWAIZ4bEdTIiLL8xeg6E7SPHS2UlwUX5tL/ZBa4jggOQhPSA7CE5KD8ITkIDwhOQhPSA7CE5KD8ITkIDwhOQhPSA7CE5KD8ITkIDwhOQhPSA7Ck6Kr5zgBAAhExVD1q2AIe8qhT9S5+kVE2ckBwB0zxqXBpdGvPULAkDE73SWNUP/r/EqD8pIDQDhm95ApF4z/4Nf6vfkWAcT+hqd2vXwP4wzKyY8ykgNAOGasZvKiOVc+yBCVsvt5p5HhpA9/XfNHG1YtkUakYM+UPeGUkRzIELgYd9b1wJiV6eZcImN4RDmAMcYAGZoxc8Scq/asezhxYKvQAgV1IOT7RxnJwRCBa0IL9BwhBMAY4yCPtMlIKcYQGDBU2S1JZaJFlnKSgzHGENE9dJelY8W9w1Lk0g9c9sxYjn0jRbFTbnKw9yJQAHTt9b9fnOneAzkzFwDumomZn/hFzcRz7HQsZz93WVCGcvTCTndZqfbcaS0Ad8w4unaR7Z46oZS7HMAlCA2ElisHCC13m39ZUe5y9Gyhw9xHl/f3YeYlTDkOpUQ/ITkIT0gOwhOSg/CE5CA8ITkIT0gOwhOSg/CE5CA8ITkIT0gOwhOSg/CE5CA8KcZV2YMPphjYG/v504588bF++oDbnE+KTQ5ERDf7OvY3Q+673vtpOUv2iG7f2vR3Lz72ekEYaJvzSZHJAUITml/IgT3wHVCJPvU7QvqE9B22Egx7P/SVMQbS6Pn0Y5UDAEEI6Tv2NueTopEDuHDM2IQFS8bN+yobeEUnav6oa2cAePYw8rmffNhzaxMq6a903n1EoXKsGR+/D9WACweRAZdaEFXRPMawkOXIKcRC1PyVEKg6nh+q3F4PtNZDw45QCqiUc0iPgnqwBo6jcBAZQ9ce8NsHn8KVA0DkFuqhco63eK/33UXXOuKupj4X28dbOdjXrew27QLtSAp1Kousq3kNCJEzugOD43v14QRefIyfjkpxzZ9o3WbG9vGCfKRyIcqBqIQRbNn6ZOJAo+arQNd+dyAouD/fgECWfWAZAABvXvubgo1CClEOhsiFbsb3blv9LcdOaoFqAJk9JeMEfHfz/+KMMWmENX909+u/3N/wpDTChTnLHfxn2fcXAOFY8UD1xInzl0RHnyG0Utqnisn2nbtf/+X++pXCFyrAASVL4crBsnsSHVM5aX90rJB+RFWIne8AAEh17kbXkka4kI0v3NkKYwxRcakLzWclDmQH6Xy36ITBpQEyz8/3OyoFLQdjPfnynh2LpUQBPN/vqBS8HFkKdVQubQpytkIUBiQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJyQH4QnJQXhCchCekByEJ/8Pv095emF2drwAAAAASUVORK5CYII=">
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAADaUlEQVR4nO1WW2tcVRRe39r7nJnJdIJJrIkxXkhJabWx2ojUQB9a9EVRoqXEaxVEW0R9EBTB21/wAj7kxUs10QdjRbBg8cULRcylVksVxUoarZdMx7Q5c2bOviwfJtXazC1iQMHFfjicdfb61lp7fd/Z6OnpoZU0XtHo/wP8KwD0Mr4FQCAiISLx/zAAWDlT8q4MIqhQBRnxrpmNTbUIrE1cSLd2D9z2xsBd4y3tvUkxD24quUYAAMBJ9GvHmm2Duz9gnfK2PLhrf+f6G5OFXwAmNIhQzw1W4l0SF3q3PHL1PeOz06MTe26Zen346CcvDtwx2nfd06Y0L86AVb0gtaQCrG35FOt0/9DznetvOPT2gz8eHAta2kFIormuy4Y27hjJH/340Fu7bfmkTrWKt8sAAOukmM+dd+mm219jFUyN7Tx5/POwpUPEkRCUTqJ8dvXaTbe+qlOrJkfvnJ+dCLPnVsWoDpAU892X7+gfeuHnr/Z9Mf6ATRaCdKt3f+5npW15ASrYcNOzF1wxfPjdR49NvhJm2ghcGeN6ACKub+sTlwzumvns5Z++3Ms6zTpcOpRgJc7YJOpcd/3F19w/Ozn69ftPLc21yqiBOJXrPPjmvV3926/auTcp5gEQ4azUKrkEmbYT3380PXZ398ZhsPbOAGjUIhFnIgK2PDw98+nIsYmXwmy7+LOpC2ZT/K1rw81925788LkrrYl0mMOSFlUjC6BTrSJOvHEmNnEBzOIdgU9LhZB4sDJxwZlIvOEgE7CqWmV1Nop4EU8EQEEF4ABQzpadjYmIdZp1GmCoANBEIPEiHqhCiIZ0FxIhIu+SbMeaVavXESia+zaa+wY6RSJVDmaZAEQgAN4la699Bqy8S3QqN7Fne8XV0JoSOxGqlH/kvccOv/OQOAvWDXOvWMMKcHoREQWZtjOU5y+uvwEAIvK25G1cWeKNS4ouicRbb2MS523sbYlI6sDUEjuIt5vv25/KdcWFGVahiGtp7y2fOi7eZc65MDrxHYi9N+nc+c4UD4xs9c4uJUHtCkAi/si+x9su2rwoEoC3ZVYBEbwrs05X/pxgNf/DlDMl1mFl3pqsgIjgTNHb0hkvsBjijwciImKdUkG21pnXOQPRYZZSuUbTssiyWu56UyTim7891LL//sVrxQF+B/4riWRMbTthAAAAAElFTkSuQmCC">
 <!-- Firebase SDK -->
@@ -66,6 +108,7 @@
         aggiornaMetricheComputo();
         renderTabelleFatture();
         renderCaparre();
+        if (typeof renderDocumenti === 'function') renderDocumenti(); // contatore e checklist Documenti
         if (document.getElementById('page-dashboard')?.classList.contains('active')) aggiornaDashboard();
         console.log('🔄 Dati sincronizzati da Firebase');
       }
@@ -76,17 +119,24 @@
 </script>
 <style>
   :root {
+    color-scheme: light dark;   /* controlli nativi (date, select, scrollbar) seguono il tema */
+    accent-color: var(--accent); /* checkbox / radio / range nativi */
     --bg: #f7f6f3;
     --surface: #ffffff;
     --surface-2: #f0efe9;
     --border: rgba(0,0,0,0.10);
-    --border-strong: rgba(0,0,0,0.18);
+    --border-strong: rgba(0,0,0,0.24);
     --text: #1a1a18;
-    --text-2: #5a5a56;
-    --text-3: #9a9a94;
+    --text-2: #4a4a46;      /* 7.7:1 su surface-2 */
+    --text-3: #6b6b65;      /* 4.65:1 su surface-2 (prima 2.5:1) */
     --accent: #0f6e56;
+    --accent-hover: #0b5a46;
     --accent-light: #e1f5ee;
     --accent-text: #085041;
+    --on-accent: #ffffff;   /* testo su sfondo accent: 6.2:1 */
+    --accent-ring: rgba(15,110,86,0.20);
+    --overlay: rgba(20,20,18,0.45);
+    --shadow-up: rgba(0,0,0,0.15);
     --danger: #a32d2d;
     --danger-light: #fcebeb;
     --warning: #854f0b;
@@ -101,19 +151,30 @@
     --font: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
+  /* ── TEMI ──
+     Il tema si sceglie da Impostazioni → Aspetto e vive in <html data-theme="…">.
+     Attributo assente = Automatico (segue il sistema). Valori: light | dark | mare.
+     Per aggiungere un tema: nuovo blocco :root[data-theme="nome"] + voce in THEMES (JS). */
+  :root[data-theme="light"] { color-scheme: light; }
+
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme]) {
       --bg: #1a1a18;
       --surface: #242420;
       --surface-2: #2e2e2a;
       --border: rgba(255,255,255,0.10);
-      --border-strong: rgba(255,255,255,0.18);
+      --border-strong: rgba(255,255,255,0.26);
       --text: #f0efe9;
-      --text-2: #a8a8a0;
-      --text-3: #686860;
-      --accent: #1d9e75;
+      --text-2: #b4b4ac;      /* 6.5:1 su surface-2 */
+      --text-3: #98988f;      /* 4.7:1 su surface-2 (prima 2.4:1) */
+      --accent: #25ab80;      /* 5.3:1 su surface, 4.7:1 su accent-light */
+      --accent-hover: #34c493;
       --accent-light: #04342c;
       --accent-text: #9fe1cb;
+      --on-accent: #04251d;   /* testo scuro su accent chiaro: 5.6:1 (il bianco darebbe 2.9:1) */
+      --accent-ring: rgba(37,171,128,0.32);
+      --overlay: rgba(0,0,0,0.65);
+      --shadow-up: rgba(0,0,0,0.55);
       --danger: #f09595;
       --danger-light: #501313;
       --warning: #fac775;
@@ -123,6 +184,82 @@
       --success: #97c459;
       --success-light: #173404;
     }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #1a1a18;
+    --surface: #242420;
+    --surface-2: #2e2e2a;
+    --border: rgba(255,255,255,0.10);
+    --border-strong: rgba(255,255,255,0.26);
+    --text: #f0efe9;
+    --text-2: #b4b4ac;      /* 6.5:1 su surface-2 */
+    --text-3: #98988f;      /* 4.7:1 su surface-2 (prima 2.4:1) */
+    --accent: #25ab80;      /* 5.3:1 su surface, 4.7:1 su accent-light */
+    --accent-hover: #34c493;
+    --accent-light: #04342c;
+    --accent-text: #9fe1cb;
+    --on-accent: #04251d;   /* testo scuro su accent chiaro: 5.6:1 (il bianco darebbe 2.9:1) */
+    --accent-ring: rgba(37,171,128,0.32);
+    --overlay: rgba(0,0,0,0.65);
+    --shadow-up: rgba(0,0,0,0.55);
+    --danger: #f09595;
+    --danger-light: #501313;
+    --warning: #fac775;
+    --warning-light: #412402;
+    --info: #85b7eb;
+    --info-light: #042c53;
+    --success: #97c459;
+    --success-light: #173404;
+  }
+
+  /* Mare: tela azzurrina, card quasi bianche, accento azzurro e — a differenza di Chiaro/Scuro —
+     barra di navigazione blu notte (vedi "isola" qui sotto). L'info passa all'indaco per non confondersi con l'accento. */
+  :root[data-theme="mare"] {
+    color-scheme: light;
+    --bg: #dde9f3;
+    --surface: #fbfdff;
+    --surface-2: #e9eff5;
+    --border: rgba(13,44,74,0.14);
+    --border-strong: rgba(13,44,74,0.30);
+    --text: #0d2238;
+    --text-2: #33506b;      /* 7.3:1 su surface-2 */
+    --text-3: #4b6782;      /* 4.8:1 sulla tela, 5.1:1 su surface-2 */
+    --accent: #0a639d;      /* azzurro: 6.2:1 su surface */
+    --accent-hover: #084f7e;
+    --accent-light: #d3e7f7;
+    --accent-text: #08406e;
+    --on-accent: #ffffff;
+    --accent-ring: rgba(10,99,157,0.24);
+    --overlay: rgba(8,26,46,0.55);
+    --shadow-up: rgba(8,40,70,0.20);
+    --danger: #a32d2d;
+    --danger-light: #fcebeb;
+    --warning: #854f0b;
+    --warning-light: #faeeda;
+    --info: #4a4fb0;
+    --info-light: #e9eafa;
+    --success: #3b6d11;
+    --success-light: #eaf3de;
+  }
+  /* "Isola" blu notte: dentro questi elementi i token tornano in versione scura, quindi tutte le regole
+     esistenti di nav / barra mobile / menu "Altro" funzionano senza modifiche. */
+  :root[data-theme="mare"] nav,
+  :root[data-theme="mare"] #bottom-nav,
+  :root[data-theme="mare"] #mobile-more-menu {
+    --surface: #0d2c4a;
+    --surface-2: #174163;
+    --border: rgba(255,255,255,0.12);
+    --border-strong: rgba(255,255,255,0.22);
+    --text: #eaf3fa;
+    --text-2: #b9d0e3;
+    --text-3: #9bb7ce;
+    --accent: #6cc4f2;      /* voce attiva, icone */
+    --accent-light: #16466c;
+    --accent-text: #cdeafb;
+    --on-accent: #062238;
+    --shadow-up: rgba(0,0,0,0.35);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -210,7 +347,7 @@
     padding: 1px 6px;
     border-radius: 20px;
   }
-  .nav-link.active .nav-badge { background: var(--accent); color: #fff; }
+  .nav-link.active .nav-badge { background: var(--accent); color: var(--on-accent); }
 
   /* ── MAIN ── */
   main {
@@ -352,10 +489,10 @@
   .btn:hover { background: var(--surface-2); }
   .btn-primary {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     border-color: var(--accent);
   }
-  .btn-primary:hover { opacity: 0.88; background: var(--accent); }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
   .btn-danger { border-color: var(--danger); color: var(--danger); }
   .btn-danger:hover { background: var(--danger-light); }
   .btn-sm { padding: 4px 10px; font-size: 12px; }
@@ -438,8 +575,9 @@
   }
   input:focus, select:focus, textarea:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(15,110,86,0.12);
+    box-shadow: 0 0 0 3px var(--accent-ring);
   }
+  ::placeholder { color: var(--text-3); opacity: 1; }
   textarea { resize: vertical; min-height: 72px; }
   select { cursor: pointer; }
 
@@ -447,7 +585,7 @@
   .modal-overlay {
     display: none;
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: var(--overlay);
     z-index: 200;
     align-items: center;
     justify-content: center;
@@ -791,7 +929,7 @@
     border-top: 0.5px solid var(--border);
     z-index: 199;
     padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 -4px 20px var(--shadow-up);
   }
   #mobile-more-menu.open { display: block; }
   .more-menu-item {
@@ -1175,7 +1313,147 @@
   .sim-tab-btn.active {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
+  }
+
+  /* ── SELETTORE TEMA (Impostazioni → Aspetto) ── */
+  .theme-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 12px; }
+  .theme-opt {
+    position: relative;
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s;
+    /* annulla lo stile globale di <label> (maiuscolo, 11px) */
+    text-transform: none; letter-spacing: normal; font-size: 13px; font-weight: 400; color: var(--text);
+  }
+  .theme-opt:hover { border-color: var(--accent); }
+  .theme-opt:focus-within { box-shadow: 0 0 0 3px var(--accent-ring); border-color: var(--accent); }
+  .theme-opt.sel { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+  .theme-opt.sel:focus-within { box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 4.5px var(--accent-ring); }
+  .theme-opt input {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer;
+  }
+  .theme-swatch {
+    position: relative; display: block; height: 58px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+  }
+  .theme-swatch .sw-layer {
+    position: absolute; inset: 0;
+    display: flex;
+    background: var(--sw-bg);
+  }
+  .theme-swatch .sw-nav { flex: 0 0 22px; background: var(--sw-nav); border-right: 0.5px solid rgba(128,128,128,0.35); }
+  .theme-swatch .sw-main { flex: 1; min-width: 0; padding: 8px; }
+  .theme-swatch .sw-l { clip-path: inset(0 50% 0 0); }   /* Automatico: metà chiaro… */
+  .theme-swatch .sw-d { clip-path: inset(0 0 0 50%); }   /* …metà scuro */
+  .theme-swatch .sw-card {
+    display: flex; flex-direction: column; justify-content: center; gap: 5px;
+    height: 100%; padding: 0 8px;
+    border-radius: 5px;
+    background: var(--sw-surface);
+  }
+  .theme-swatch .sw-line { display: block; height: 4px; width: 72%; border-radius: 2px; background: var(--sw-text); opacity: 0.55; }
+  .theme-swatch .sw-pill { display: block; height: 6px; width: 36%; border-radius: 3px; background: var(--sw-accent); }
+  .theme-opt.sel .theme-swatch::after {
+    content: '✓';
+    position: absolute; top: 5px; right: 5px;
+    width: 17px; height: 17px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--accent); color: var(--on-accent);
+    font-size: 11px; font-weight: 700; line-height: 1;
+  }
+  .theme-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.2; }
+  .theme-desc { font-size: 11.5px; color: var(--text-3); line-height: 1.3; margin-top: -4px; }
+
+  /* ── DOCUMENTI: macro-categorie e checklist ── */
+  .dc-nav { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .dc-tile {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+    text-align: left; padding: 12px 14px; cursor: pointer; font-family: inherit;
+    background: var(--surface); color: var(--text);
+    border: 0.5px solid var(--border-strong); border-radius: var(--radius-lg);
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .dc-tile:hover { background: var(--surface-2); }
+  .dc-tile.sel { background: var(--accent-light); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .dc-tile-name { font-size: 13px; font-weight: 600; line-height: 1.25; }
+  .dc-tile.sel .dc-tile-name { color: var(--accent-text); }
+  .dc-tile-sub { font-size: 11px; color: var(--text-2); line-height: 1.3; }
+  .dc-tile-prog { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: auto; padding-top: 8px; }
+  .dc-tile-prog b { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dc-bar { flex: 1; height: 5px; border-radius: 3px; background: var(--border-strong); overflow: hidden; }
+  .dc-bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .dc-bar.full i { background: var(--success); }
+  .dc-tile-docs { font-size: 11px; color: var(--text-2); }
+
+  .dc-head { flex-wrap: wrap; row-gap: 8px; }
+  .dc-head-sub { font-size: 12px; color: var(--text-3); margin-left: 8px; }
+  .dc-head-actions { gap: 12px; flex-wrap: wrap; }
+  .dc-head-prog { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .dc-desc { padding: 12px 18px 4px; font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+  .dc-legenda { padding: 6px 18px 12px; font-size: 11.5px; color: var(--text-3); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; border-bottom: 0.5px solid var(--border); }
+  .dc-legenda .dc-tag { margin-left: 0; }
+  .dc-group { padding: 7px 18px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); background: var(--surface-2); border-bottom: 0.5px solid var(--border); }
+  .dc-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 18px; border-bottom: 0.5px solid var(--border); }
+  /* Cerchio di stato: tratteggiato = da raccogliere · mezzo pieno = parziale · ✓ = presente · – = non applicabile */
+  .dc-st { flex: 0 0 24px; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; line-height: 1; background: var(--surface-2); color: var(--text-3); border: 1.5px dashed var(--text-3); }
+  .dc-row.ok .dc-st { background: var(--success-light); color: var(--success); border: 1.5px solid var(--success); }
+  .dc-row.parziale .dc-st { background: linear-gradient(90deg, var(--warning) 50%, var(--warning-light) 50%); border: 1.5px solid var(--warning); }
+  .dc-row.na .dc-st { border-style: solid; border-color: var(--border-strong); }
+  .dc-row.altro .dc-st { border: 1.5px solid var(--border-strong); color: var(--text-2); font-size: 15px; }
+  .dc-main { flex: 1; min-width: 0; }
+  .dc-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .dc-ptr .dc-title { color: var(--text-2); }
+  .dc-row.na .dc-title { color: var(--text-3); text-decoration: line-through; }
+  .dc-why { font-size: 11.5px; color: var(--text-3); margin-top: 2px; line-height: 1.45; }
+  .dc-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: flex-start; }
+  .dc-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 20px; margin-left: 4px; vertical-align: 1px; white-space: nowrap; }
+  .dc-tag.ob { background: var(--accent-light); color: var(--accent-text); }
+  .dc-tag.se { background: var(--warning-light); color: var(--warning); }
+  .dc-tag.co { background: var(--surface-2); color: var(--text-2); }
+  .dc-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 9px; border-radius: 20px; background: var(--surface-2); color: var(--text-2); border: 0.5px solid var(--border); }
+  .dc-chip.ok { background: var(--success-light); color: var(--success); border-color: transparent; }
+  .dc-chip.part { background: var(--warning-light); color: var(--warning); border-color: transparent; }
+  .dc-att { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 7px; }
+  .dc-docs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+  .dc-doc { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 3px 4px 3px 9px; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 12px; color: var(--text); }
+  .dc-doc.ph { border-style: dashed; border-color: var(--border-strong); }
+  .dc-doc em { font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--accent-text); background: var(--accent-light); border-radius: 20px; padding: 0 7px; white-space: nowrap; }
+  .dc-doc-name { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dc-doc-meta { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+  .dc-ico { background: none; border: none; cursor: pointer; padding: 2px 4px; font-size: 13px; line-height: 1; color: var(--text-2); border-radius: 4px; }
+  .dc-ico:hover { background: var(--border); }
+  .dc-link { background: none; border: none; padding: 0; cursor: pointer; font: inherit; font-size: 12px; color: var(--accent-text); text-decoration: underline; }
+  .dc-foot { padding: 12px 18px; font-size: 11px; color: var(--text-3); line-height: 1.5; }
+  .dc-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .dc-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; margin-bottom: 14px; background: var(--warning-light); color: var(--warning); border-radius: var(--radius); font-size: 12.5px; }
+  .dc-banner .btn { flex-shrink: 0; white-space: nowrap; }
+  .dc-filtri { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 18px; border-bottom: 0.5px solid var(--border); }
+  .metric-card.dc-warn { background: var(--warning-light); }
+  .metric-card.dc-warn .metric-value { color: var(--warning); }
+  .metric-card.dc-ok { background: var(--success-light); }
+  .metric-card.dc-ok .metric-value { color: var(--success); }
+  @keyframes dc-flash { 0%, 60% { background: var(--accent-light); } 100% { background: transparent; } }
+  .dc-row.dc-flash { animation: dc-flash 1.8s ease-out; }
+  @media (max-width: 768px) {
+    .dc-nav { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .dc-tile { padding: 10px 11px; }
+    .dc-head { padding: 12px 14px; }
+    .dc-desc, .dc-legenda, .dc-foot, .dc-filtri, .dc-group { padding-left: 14px; padding-right: 14px; }
+    .dc-row { flex-wrap: wrap; padding: 12px 14px; gap: 10px; }
+    .dc-main { flex: 1 1 calc(100% - 40px); }
+    .dc-actions { flex: 1 1 100%; padding-left: 34px; }
+    /* Il documento allegato va a capo invece di allargare la pagina oltre lo schermo */
+    .dc-doc { flex-wrap: wrap; row-gap: 3px; }
+    .dc-doc-name, .dc-doc-meta { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+    #tabella-documenti { display: none !important; }
   }
 </style>
 </head>
@@ -1206,7 +1484,7 @@
       <span class="nav-badge" id="nav-badge-fatture">0</span>
     </div>
     <div class="nav-link" data-page="documenti" onclick="goTo('documenti')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
       Documenti
       <span class="nav-badge" id="nav-badge-documenti">0</span>
     </div>
@@ -1276,7 +1554,7 @@
     Fatture e pagamenti
   </div>
   <div class="more-menu-item" onclick="goTo('documenti')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
     Documenti
   </div>
   <div class="more-menu-item" onclick="goTo('checklist')">
@@ -1450,7 +1728,16 @@
     <div class="page-header">
       <div>
         <div class="page-title">Impostazioni</div>
-        <div class="page-subtitle">Dati intestatari, backup e ripristino dati</div>
+        <div class="page-subtitle">Aspetto, dati intestatari, backup e ripristino dati</div>
+      </div>
+    </div>
+
+    <!-- ASPETTO -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><span class="card-title">Aspetto</span></div>
+      <div class="card-body">
+        <div id="theme-picker" class="theme-picker" role="radiogroup" aria-label="Tema dell'app"></div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:12px">La scelta vale solo per questo dispositivo. Con «Automatico» l'app segue il tema chiaro o scuro del sistema.</div>
       </div>
     </div>
 
@@ -2082,7 +2369,7 @@
     <div class="page-header">
       <div>
         <div class="page-title">Documenti</div>
-        <div class="page-subtitle">Registro documentazione — cosa hai, cosa manca, dove si trova</div>
+        <div class="page-subtitle">Per macro-categoria di agevolazione — a distanza di anni sai subito dove cercare</div>
       </div>
       <div class="flex-gap" style="gap:8px">
         <button class="btn" id="btn-esporta-zip-documenti" onclick="apriPreviewZipDocumenti()">
@@ -2098,49 +2385,52 @@
 
     <div class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-label">Totale documenti</div>
+        <div class="metric-label">Documenti registrati</div>
         <div class="metric-value" id="doc-tot">0</div>
+        <div class="metric-sub" id="doc-tot-sub"></div>
       </div>
-      <div class="metric-card" style="background:var(--success-light)">
-        <div class="metric-label">Verificati</div>
-        <div class="metric-value" id="doc-verificati" style="color:var(--success)">0</div>
+      <div class="metric-card accent">
+        <div class="metric-label">Obbligatori raccolti</div>
+        <div class="metric-value" id="doc-ob-raccolti">0/0</div>
+        <div class="metric-sub" id="doc-ob-sub"></div>
       </div>
-      <div class="metric-card" style="background:var(--warning-light)">
+      <div class="metric-card" id="doc-card-raccogliere">
+        <div class="metric-label">Da raccogliere</div>
+        <div class="metric-value" id="doc-da-raccogliere">0</div>
+        <div class="metric-sub">obbligatori mancanti</div>
+      </div>
+      <div class="metric-card" id="doc-card-verificare">
         <div class="metric-label">Da verificare</div>
-        <div class="metric-value" id="doc-da-verificare" style="color:var(--warning)">0</div>
-      </div>
-      <div class="metric-card" style="background:var(--danger-light)">
-        <div class="metric-label">Mancanti</div>
-        <div class="metric-value" id="doc-mancanti" style="color:var(--danger)">0</div>
+        <div class="metric-value" id="doc-da-verificare">0</div>
+        <div class="metric-sub">con tecnico o commercialista</div>
       </div>
     </div>
 
-    <div class="flex-gap" id="doc-filtri" style="margin-bottom:16px;flex-wrap:wrap"></div>
+    <div id="doc-nc-banner" style="display:none"></div>
 
-    <div class="card" style="margin-bottom:20px">
+    <div class="dc-nav" id="doc-cat-nav" aria-label="Categorie documentali"></div>
+    <div class="card" id="doc-cat-detail"></div>
+
+    <div class="card" id="doc-registro">
       <div class="card-header">
-        <span class="card-title">Checklist documentale</span>
-        <span style="font-size:11px;color:var(--text-3)" id="doc-checklist-contatore"></span>
+        <span class="card-title">Registro completo</span>
+        <span style="font-size:11px;color:var(--text-3)" id="doc-registro-contatore"></span>
       </div>
-      <div class="card-body" style="padding:8px 0" id="doc-checklist-body"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><span class="card-title">Elenco documenti</span></div>
+      <div class="dc-filtri" id="doc-filtri" style="display:none"></div>
       <div class="card-body" style="padding:0">
         <div class="empty-state" id="empty-documenti">
-          <p>Nessun documento registrato. Aggiungi titoli abilitativi, contratti, ricevute bonifico, pratiche ENEA e tutto ciò che vuoi tenere tracciato.</p>
+          <p>Nessun documento registrato. Scegli una categoria qui sopra e aggiungi i documenti dalla checklist, oppure usa «Nuovo documento».</p>
         </div>
         <table id="tabella-documenti" style="display:none">
           <thead>
             <tr>
-              <th style="width:14%">Tipo</th>
-              <th style="width:26%">Nome</th>
-              <th style="width:14%">N° / Data</th>
-              <th style="width:10%">Scadenza</th>
-              <th style="width:14%">Collegato a</th>
-              <th style="width:10%">Stato</th>
-              <th style="width:8%">Posizione</th>
+              <th style="width:17%">Categoria / voce</th>
+              <th style="width:25%">Nome</th>
+              <th style="width:13%">N° / Data</th>
+              <th style="width:9%">Scadenza</th>
+              <th style="width:13%">Collegato a</th>
+              <th style="width:9%">Stato</th>
+              <th style="width:10%">Posizione</th>
               <th style="width:4%"></th>
             </tr>
           </thead>
@@ -2491,7 +2781,7 @@
         </div>
         <div id="req-doc-causale-eco" style="margin-top:14px"></div>
         <div style="background:var(--surface-2);border-radius:var(--radius);padding:10px 14px;margin-top:14px;font-size:11px;color:var(--text-2)">
-          <strong>Documentazione aggiuntiva obbligatoria</strong> (oltre a fattura + bonifico): comunicazione ENEA entro 90 giorni dalla fine lavori (anche se l'intervento è "annegato" nel Bonus Ristrutturazione, come i vostri infissi/PDC via split) e asseverazione tecnica per PDC, isolamento, fotovoltaico. Tieni traccia di entrambe nella scheda Documenti.
+          <strong>Documentazione aggiuntiva obbligatoria</strong> (oltre a fattura + bonifico): comunicazione ENEA entro 90 giorni dalla fine lavori (anche se l'intervento è "annegato" nel Bonus Ristrutturazione, come i vostri infissi/PDC via split) e asseverazione tecnica per PDC, isolamento, fotovoltaico. La comunicazione ENEA resta da non saltare: per il Bonus Ristrutturazione l'omissione non comporta la decadenza (Ris. AdE 46/E/2019) e per l'Ecobonus la Cassazione ha escluso la perdita della detrazione (sent. 7657/2024; ord. 12422 e 12426/2025), ma l'Agenzia delle Entrate ha in passato sostenuto il contrario e può contestarla. Per gli infissi (singola unità immobiliare) e per le pompe di calore fino a 100 kW di potenza termica utile l'asseverazione può essere sostituita dalla dichiarazione del fornitore; per le strutture opache serve sempre il tecnico. Tieni traccia di tutto nella scheda Documenti, categoria per categoria.
         </div>
         <div style="background:var(--warning-light);border-radius:var(--radius);padding:10px 14px;margin-top:10px;font-size:11px;color:var(--warning)">
           <strong>Attenzione al Conto Termico:</strong> se una fattura è mista BR/Ecobonus/Conto Termico, la quota Conto Termico NON richiede bonifico parlante (gestita da GSE) — va pagata con bonifico ordinario, separato dagli altri.
@@ -2516,7 +2806,7 @@
             <div class="req-doc-label" style="margin-top:10px">In fattura</div>
             <ul class="req-doc-list">
               <li><strong>Mobili nuovi</strong> per l'arredo dell'immobile ristrutturato: letti, armadi, cassettiere, librerie, scrivanie, tavoli, sedie, materassi, apparecchi illuminazione</li>
-              <li><strong>Grandi elettrodomestici</strong> classe energetica non inferiore ad A (F per i forni), quando l'etichetta è obbligatoria</li>
+              <li><strong>Grandi elettrodomestici</strong> di classe energetica non inferiore ad A per i forni, E per lavatrici, lavasciuga e lavastoviglie, F per frigoriferi e congelatori (quando l'etichetta è obbligatoria)</li>
               <li>Non rientrano: porte, pavimentazioni, tende, complementi d'arredo generici</li>
             </ul>
           </div>
@@ -2927,21 +3217,21 @@
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group">
-          <label>Tipo documento</label>
-          <select id="doc-tipo" onchange="aggiornaSuggerimentoNomeDoc()"></select>
+          <label>Categoria</label>
+          <select id="doc-categoria" onchange="aggiornaVociDoc()"></select>
         </div>
         <div class="form-group">
-          <label>Stato verifica</label>
-          <select id="doc-stato-verifica">
-            <option value="mancante">Mancante</option>
-            <option value="da-verificare">Da verificare</option>
-            <option value="verificato">Verificato</option>
-          </select>
+          <label>Cosa stai caricando</label>
+          <select id="doc-voce" onchange="aggiornaSubDoc()"></select>
+        </div>
+        <div class="form-group" style="grid-column:span 2;display:none" id="fg-doc-sub">
+          <label>Quale?</label>
+          <select id="doc-sub" onchange="aggiornaPlaceholderNomeDoc()"></select>
         </div>
         <div class="form-group" style="grid-column:span 2" id="fg-doc-nome">
           <label>Nome / descrizione</label>
           <input type="text" id="doc-nome" placeholder="es. Visura catastale pre-fusione">
-          <div id="doc-nome-hint" style="font-size:10px;color:var(--text-3);margin-top:4px">Se carichi più documenti dello stesso tipo (es. visura pre e post fusione), usa un nome che li distingua.</div>
+          <div id="doc-nome-hint" style="font-size:10px;color:var(--text-3);margin-top:4px">Se carichi più documenti della stessa voce, usa un nome che li distingua.</div>
         </div>
         <div class="form-group">
           <label>Numero / protocollo (opzionale)</label>
@@ -2956,6 +3246,14 @@
           <input type="date" id="doc-scadenza">
         </div>
         <div class="form-group">
+          <label>Stato verifica</label>
+          <select id="doc-stato-verifica">
+            <option value="mancante">Mancante (segnaposto, documento da ottenere)</option>
+            <option value="da-verificare">Da verificare</option>
+            <option value="verificato">Verificato</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:span 2">
           <label>Verificato da (opzionale)</label>
           <input type="text" id="doc-verificato-da" placeholder="es. Tecnico, Commercialista">
         </div>
@@ -3898,7 +4196,12 @@ function nomeFileContabile(fattura, pagamento) {
 
 // Nome sistematico per un documento del registro: TipoDocumento_Data_Nome
 function nomeFileDocumento(documento) {
-  const tipoLabel = sanitizzaNomeFile((TIPI_DOCUMENTO[documento?.tipo] || documento?.tipo || '').split('(')[0]);
+  // Etichetta = voce della checklist (es. «Titolo di proprietà o di disponibilità»); per i
+  // documenti ancora da classificare si usa il vecchio tipo.
+  const pos = documento ? docPos(documento) : null;
+  const voce = pos ? docVoce(pos.cat, pos.voce) : null;
+  const etichetta = voce && pos.voce !== 'altro' ? voce.n : (TIPI_DOCUMENTO[documento?.tipo] || documento?.tipo || '');
+  const tipoLabel = sanitizzaNomeFile(etichetta.split('(')[0]);
   const parti = [tipoLabel, documento?.data || '', sanitizzaNomeFile(documento?.nome)].filter(Boolean);
   return parti.join('_');
 }
@@ -7803,7 +8106,7 @@ function esportaChecklist() {
   <style>
     body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 24px;color:#1a1a18;line-height:1.5}
     h1{font-size:22px;margin-bottom:4px}
-    .sub{font-size:13px;color:#666;margin-bottom:24px}
+    .sub{font-size:13px;color:#4a4a46;margin-bottom:24px}
     .progress{background:#e8e8e4;border-radius:4px;height:6px;margin:8px 0 24px}
     .progress-fill{background:#0f6e56;border-radius:4px;height:6px}
     .sez{margin-bottom:24px;border:1px solid #e0e0d8;border-radius:8px;overflow:hidden}
@@ -7813,15 +8116,15 @@ function esportaChecklist() {
     .bassa .sez-header{background:#eeeeea;color:#5a5a56}
     .info .sez-header{background:#e6f1fb;color:#185fa5}
     .domanda{padding:12px 16px;border-top:1px solid #e0e0d8;display:flex;gap:12px;align-items:flex-start}
-    .domanda.fatta{opacity:0.5}
+    .domanda.fatta{opacity:0.7}
     .chk{width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#0f6e56}
     .q{font-size:13px;font-weight:500}
-    .domanda.fatta .q{text-decoration:line-through;color:#999}
-    .perche{font-size:12px;color:#555;margin-top:4px}
+    .domanda.fatta .q{text-decoration:line-through;color:#6b6b65}
+    .perche{font-size:12px;color:#4a4a46;margin-top:4px}
     .impatto{font-size:11px;color:#085041;background:#e1f5ee;padding:3px 8px;border-radius:4px;display:inline-block;margin-top:6px}
     .appunto{padding:12px 16px;border-top:1px solid #e0e0d8}
     .appunto-titolo{font-size:13px;font-weight:600;margin-bottom:4px}
-    .appunto-testo{font-size:12px;color:#555}
+    .appunto-testo{font-size:12px;color:#4a4a46}
     @media print{body{margin:20px}}
   </style></head><body>
   <h1>Checklist per tecnico / commercialista</h1>
@@ -12127,18 +12430,21 @@ function apriPreviewZipDocumenti() {
   const documenti = state.documenti || [];
   if (!documenti.length) { alert('Nessun documento registrato.'); return; }
 
-  const sorted = [...documenti].sort((a,b) => (a.tipo||'').localeCompare(b.tipo||'') || (a.data||'').localeCompare(b.data||''));
+  const sorted = [...documenti].sort(docOrdinamentoExport);
   const conFile = sorted.filter(d => d.fileDocId);
   const senzaFile = sorted.length - conFile.length;
 
-  const righe = conFile.map(d => `<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:0.5px solid var(--border);font-size:12px">
-      <span>${escHtml(d.nome||'—')} <span style="color:var(--text-3)">· ${escHtml(TIPI_DOCUMENTO[d.tipo]||d.tipo||'')}</span></span>
-      <span style="color:var(--text-3)">${d.data ? new Date(d.data).toLocaleDateString('it-IT') : ''}</span>
-    </div>`);
+  const righe = conFile.map(d => {
+    const et = docEtichette(d);
+    return `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 12px;border-bottom:0.5px solid var(--border);font-size:12px">
+      <span>${escHtml(d.nome||'—')} <span style="color:var(--text-3)">· ${escHtml(et.cat)}${et.voce ? ' › ' + escHtml(et.voce) : ''}</span></span>
+      <span style="color:var(--text-3);white-space:nowrap">${d.data ? new Date(d.data).toLocaleDateString('it-IT') : ''}</span>
+    </div>`;
+  });
 
   document.getElementById('preview-zip-titolo').textContent = 'Contenuto dello zip documenti';
   document.getElementById('preview-zip-riepilogo').innerHTML =
-    `Lo zip includerà un indice Excel con tutti i ${documenti.length} documenti registrati (anche quelli senza file allegato) e <strong>${conFile.length}</strong> file effettivamente caricat${conFile.length===1?'o':'i'}, organizzati in cartelle per tipo.` +
+    `Lo zip includerà un indice Excel con tutti i ${documenti.length} documenti registrati (anche quelli senza file allegato) e <strong>${conFile.length}</strong> file effettivamente caricat${conFile.length===1?'o':'i'}, organizzati in cartelle per categoria e voce della checklist. L'Excel contiene anche la scheda «Checklist» con lo stato di ogni voce.` +
     (senzaFile ? ` ${senzaFile} document${senzaFile===1?'o è registrato':'i sono registrati'} senza un file allegato (compaiono comunque nell'indice, per completezza).` : '');
 
   document.getElementById('preview-zip-lista').innerHTML = righe.length
@@ -12158,7 +12464,7 @@ function apriPreviewZipDocumenti() {
 // tecnico, ecc.), più un rimando al nome del file dentro la cartella corrispondente.
 async function _costruisciWorkbookIndiceDocumenti() {
   const oggi = new Date().toLocaleDateString('it-IT');
-  const documenti = [...(state.documenti||[])].sort((a,b) => (a.tipo||'').localeCompare(b.tipo||'') || (a.data||'').localeCompare(b.data||''));
+  const documenti = [...(state.documenti||[])].sort(docOrdinamentoExport);
 
   const FONT = 'Calibri';
   const COL = {
@@ -12219,7 +12525,8 @@ async function _costruisciWorkbookIndiceDocumenti() {
 
   const ws1 = wb.addWorksheet('Indice documenti', { views: [{ showGridLines: false, state: 'frozen', ySplit: 3 }] });
   ws1.columns = [
-    { width: 22 }, // Tipo
+    { width: 24 }, // Categoria
+    { width: 34 }, // Voce
     { width: 30 }, // Nome
     { width: 16 }, // Numero/protocollo
     { width: 12 }, // Data
@@ -12231,21 +12538,41 @@ async function _costruisciWorkbookIndiceDocumenti() {
     { width: 26 }, // Dove si trova (se non caricato)
     { width: 30 }  // Note
   ];
-  addTitolo(ws1, 'Indice documenti — archivio progetto casa', 11);
-  addSub(ws1, `Generato il ${oggi} · ${documenti.length} documenti registrati · per ogni riga con "File presente = Sì", il file si trova nella cartella del tipo corrispondente dentro questo zip.`, 11);
-  addHeader(ws1, ['Tipo documento', 'Nome / descrizione', 'Numero / protocollo', 'Data', 'Scadenza', 'Stato verifica', 'Verificato da', 'File presente', 'Nome file nello zip', 'Dove si trova', 'Note']);
+  addTitolo(ws1, 'Indice documenti — archivio progetto casa', 12);
+  addSub(ws1, `Generato il ${oggi} · ${documenti.length} documenti registrati · per ogni riga con "File presente = Sì", il file si trova nella cartella di categoria e voce indicata dentro questo zip.`, 12);
+  addHeader(ws1, ['Categoria', 'Voce della checklist', 'Nome / descrizione', 'Numero / protocollo', 'Data', 'Scadenza', 'Stato verifica', 'Verificato da', 'File presente', 'Nome file nello zip', 'Dove si trova', 'Note']);
 
   documenti.forEach((d, i) => {
     const dataFmt = d.data ? new Date(d.data).toLocaleDateString('it-IT') : '';
     const scadenzaFmt = d.scadenza ? new Date(d.scadenza).toLocaleDateString('it-IT') : '';
     const stato = d.statoVerifica || 'mancante';
-    const nomeCartella = sanitizzaNomeFile(TIPI_DOCUMENTO[d.tipo] || d.tipo || 'Altro');
-    const nomeFileZip = d.fileDocId ? `${nomeCartella}/${nomeFileDocumento(d)}.*` : '';
+    const et = docEtichette(d);
+    const nomeFileZip = d.fileDocId ? `${docCartellaZip(d)}/${docNomeFileZip(d)}.*` : '';
     addData(ws1, [
-      TIPI_DOCUMENTO[d.tipo] || d.tipo || '', d.nome || '', d.numero || '',
+      et.cat, et.voce, d.nome || '', d.numero || '',
       dataFmt, scadenzaFmt, STATO_LABEL[stato] || stato, d.verificatoDa || '',
       d.fileDocId ? 'Sì' : 'No', nomeFileZip, d.fileDocId ? '' : (d.posizione || ''), d.note || ''
-    ], { zebra: i % 2 === 1, cellColors: { 6: STATO_COLORE[stato], 8: d.fileDocId ? COL.okTx : COL.dangerTx } });
+    ], { zebra: i % 2 === 1, cellColors: { 7: STATO_COLORE[stato], 9: d.fileDocId ? COL.okTx : COL.dangerTx } });
+  });
+
+  // Scheda 2: stato della checklist, voce per voce — è ciò che serve a commercialista e tecnico
+  // per capire a colpo d'occhio cosa c'è e cosa manca per ciascuna agevolazione.
+  const idx = docIndice();
+  const STATO_CHECK = { ok: 'Presente', parziale: 'Parziale', manca: 'Da raccogliere', na: 'Non applicabile' };
+  const COL_CHECK = { ok: COL.okTx, parziale: COL.warnTx, manca: COL.dangerTx, na: COL.grayTx };
+  const ws2 = wb.addWorksheet('Checklist', { views: [{ showGridLines: false, state: 'frozen', ySplit: 3 }] });
+  ws2.columns = [{ width: 26 }, { width: 30 }, { width: 52 }, { width: 15 }, { width: 16 }, { width: 11 }, { width: 70 }];
+  addTitolo(ws2, 'Checklist documentale per agevolazione', 7);
+  addSub(ws2, `Generata il ${oggi} · checklist redatta su fonti pubbliche (Agenzia delle Entrate, ENEA, DM 6/8/2020): da confermare con tecnico e commercialista.`, 7);
+  addHeader(ws2, ['Categoria', 'Gruppo', 'Voce', 'Requisito', 'Stato', 'N° documenti', 'Note']);
+  let nRiga = 0;
+  DOC_CATEGORIE.forEach(cat => {
+    cat.voci.filter(v => !v.rif).forEach(v => {
+      const s = docStatoVoce(cat.id, v, idx);
+      const note = s.auto ? s.auto.testo : (s.att ? s.att.map(a => (a.ok ? '✓ ' : '○ ') + a.l).join(' · ') : v.w);
+      addData(ws2, [cat.nome, v.g, v.n, DOC_TAG[v.t], STATO_CHECK[s.stato], s.attivi.length, note],
+        { zebra: nRiga++ % 2 === 1, cellColors: { 5: COL_CHECK[s.stato] } });
+    });
   });
 
   const buf = await wb.xlsx.writeBuffer();
@@ -12279,18 +12606,18 @@ async function confermaScaricaZipDocumenti() {
     const bufIndice = await _costruisciWorkbookIndiceDocumenti();
     zip.file(`Indice_documenti_${new Date().toISOString().slice(0,10)}.xlsx`, bufIndice);
 
-    // 2. Un file per documento, organizzato in cartelle per tipo (una cartella per
-    // ciascun TIPI_DOCUMENTO), così chi riceve lo zip trova subito ciò che cerca
+    // 2. Un file per documento, organizzato in cartelle per categoria e voce della checklist
+    // (es. 01_Generale/Visura-catastale), così chi riceve lo zip trova subito ciò che cerca
     // senza dover aprire l'indice per ogni singolo file.
-    const sorted = [...documenti].sort((a,b) => (a.tipo||'').localeCompare(b.tipo||''));
+    const sorted = [...documenti].sort(docOrdinamentoExport);
     const conFile = sorted.filter(d => d.fileDocId);
     const nomiUsati = {};
     let contatore = 0, nSaltati = 0;
     for (const d of conFile) {
       contatore++;
       setStatoBtn(`File documento ${contatore}/${conFile.length}…`);
-      const nomeCartella = sanitizzaNomeFile(TIPI_DOCUMENTO[d.tipo] || d.tipo || 'Altro');
-      let nomeFile = sanitizzaNomeFile(nomeFileDocumento(d)) || `documento-${contatore}`;
+      const nomeCartella = docCartellaZip(d);
+      let nomeFile = docNomeFileZip(d) || `documento-${contatore}`;
       const chiave = `${nomeCartella}/${nomeFile}`;
       if (nomiUsati[chiave] != null) {
         nomiUsati[chiave]++;
@@ -12426,11 +12753,17 @@ async function confermaScaricaZipTutteFatture() {
 }
 
 // ══════════════════════════════════════════
-//  REGISTRO DOCUMENTALE
-//  Traccia titoli abilitativi, contratti, ricevute bonifico, pratiche ENEA
-//  e ogni altro documento da conservare — con stato di verifica e
-//  collegamento opzionale a una fattura o a una voce di computo.
+//  REGISTRO DOCUMENTALE — per macro-categoria
+//  Ogni documento appartiene a una categoria (Generale, Bonus ristrutturazione,
+//  Ecobonus…) e a una voce della checklist di quella categoria: a distanza di anni
+//  basta aprire la categoria per ritrovare tutto ciò che serve a ricostruire la
+//  pratica. La checklist è redatta su fonti pubbliche (Agenzia delle Entrate, ENEA,
+//  DM 6/8/2020) e va confermata dal tecnico e dal commercialista.
 // ══════════════════════════════════════════
+
+// Tipi "storici" (registro piatto precedente): restano come etichette di
+// compatibilità per i documenti già salvati; la classificazione corrente è
+// categoria + voce (vedi DOC_CATEGORIE e DOC_LEGACY_MAP).
 const TIPI_DOCUMENTO = {
   'titolo-abilitativo': 'Titolo abilitativo (CILA/SCIA)',
   'contratto-appalto': 'Contratto d\'appalto / preventivo firmato',
@@ -12446,19 +12779,9 @@ const TIPI_DOCUMENTO = {
   'atto-acquisto': 'Atto di acquisto immobile (rogito)',
   'atto-box-pregresso': 'Atto acquisto box (detrazione pregressa)',
   'altro': 'Altro',
-  // Valori storici mantenuti solo per compatibilità con documenti già salvati
   'contratto': 'Contratto / preventivo firmato',
   'atto': 'Atto notarile'
 };
-
-// Sottoinsieme di tipi mostrati nella "Checklist documentale" del tab Documenti —
-// uno per ciascun documento chiave da raccogliere; esclude 'altro' (non è un
-// documento specifico) e gli alias storici (già confluiti nei tipi precisi sopra).
-const TIPI_CHECKLIST_DOC = [
-  'titolo-abilitativo', 'contratto-appalto', 'visura-catastale', 'bonifico',
-  'certificazione', 'enea', 'asseverazione', 'ape',
-  'contratto-mutuo', 'cert-interessi-mutuo', 'preliminare-acquisto', 'atto-acquisto', 'atto-box-pregresso'
-];
 
 const STATO_VERIFICA_DOC = {
   'mancante': ['badge-danger', 'Mancante'],
@@ -12466,12 +12789,455 @@ const STATO_VERIFICA_DOC = {
   'verificato': ['badge-green', 'Verificato']
 };
 
+const DOC_TAG = { ob: 'Obbligatorio', se: 'Se applicabile', co: 'Consigliato' };
+
+// ── Blocchi condivisi dalle tre sezioni Ecobonus ──
+const _docEnea = () => [
+  { id: 'enea-ricevuta', g: 'Comunicazione ENEA', n: 'Ricevuta di trasmissione ENEA (con codice CPID)', t: 'ob', lg: 'enea',
+    w: "Da inviare entro 90 giorni dalla fine lavori su bonusfiscali.enea.it. Per l'Ecobonus la Cassazione (2024-2025) esclude la perdita della detrazione se manca, ma l'Agenzia delle Entrate l'ha contestata in passato: non saltarla. Il CPID è stampato sulla ricevuta: annotalo nel campo «Numero»." },
+  { id: 'enea-scheda', g: 'Comunicazione ENEA', n: "Scheda descrittiva dell'intervento", t: 'ob', lg: 'enea',
+    w: 'PDF generato dal portale ENEA insieme alla ricevuta: riepiloga i dati tecnici dichiarati.' }
+];
+const _docPagamentiEco = () => ({
+  id: 'pag-eco', g: 'Pagamenti', n: 'Fatture e bonifici parlanti con causale Ecobonus', t: 'ob', rif: ['gen', 'bonifici'],
+  w: "Il bonifico deve citare l'art. 14 D.L. 63/2013 (vedi pagina Requisiti): senza, la detrazione decade. Fatture e contabili si gestiscono nella pagina Fatture."
+});
+const _docFoto3 = [
+  { k: 'ante', l: 'Prima dei lavori' }, { k: 'durante', l: 'Durante' }, { k: 'post', l: 'A lavori finiti' }
+];
+const _docRifComputo = (testo) => ({
+  id: 'computo-rif', g: 'Tecnica', n: 'Computo metrico (parte relativa a questo intervento)', t: 'co', rif: ['gen', 'computo'], w: testo
+});
+
+// ── Categorie e voci della checklist ──
+// Campi voce: id · g gruppo · n nome · t tag (ob/se/co) · w perché/come · lg tipo storico
+// da riportare nel campo "tipo" (compatibilità) · at "attese" (sotto-elementi da raccogliere,
+// ciascuno con ≥1 documento) · auto stato letto da un'altra pagina · rif rimando a una voce
+// "di casa" in un'altra categoria (sola lettura, non conteggiato).
+const DOC_CATEGORIE = [
+  {
+    id: 'gen', nome: 'Generale', sub: "Tutto l'intervento",
+    desc: "Documenti che riguardano l'immobile e l'intero cantiere: servono a tutte le detrazioni. Le altre sezioni rimandano qui quando hanno bisogno di questi documenti.",
+    voci: [
+      // — Immobile e titolarità —
+      { id: 'visura', g: 'Immobile e titolarità', n: 'Visura catastale', t: 'ob', lg: 'visura-catastale',
+        at: [{ k: 'pre8', l: 'Pre-fusione · sub 8' }, { k: 'pre9', l: 'Pre-fusione · sub 9' }, { k: 'post', l: 'Post-fusione (unità accorpata)' }],
+        w: "Identifica l'immobile. Con la fusione ne servono tre: le due unità di partenza (provano quante unità c'erano a inizio lavori, da cui dipende il massimale del Bonus Ristrutturazione) e quella finale." },
+      { id: 'titolo-proprieta', g: 'Immobile e titolarità', n: 'Titolo di proprietà o di disponibilità', t: 'ob', lg: 'atto-acquisto',
+        w: "Il rogito. Finché non c'è: preliminare registrato con immissione nel possesso dell'immobile, con i suoi allegati." },
+      { id: 'identita', g: 'Immobile e titolarità', n: "Documento d'identità e codice fiscale dei beneficiari", t: 'ob',
+        w: 'Uno per ogni intestatario che porta in detrazione le spese.' },
+      { id: 'delega', g: 'Immobile e titolarità', n: 'Delega o procura', t: 'se',
+        w: 'Solo se qualcun altro agisce per conto del beneficiario (pratiche edilizie, ENEA, pagamenti).' },
+      { id: 'docfa', g: 'Immobile e titolarità', n: 'Variazione catastale (DOCFA) e planimetria aggiornata', t: 'se',
+        w: 'Per la fusione delle due unità o per modifiche della distribuzione interna: ricevuta di presentazione e nuova planimetria. Di norma entro 30 giorni dalla fine lavori (verifica col tecnico).' },
+      // — Titoli e adempimenti di cantiere —
+      { id: 'titolo-edilizio', g: 'Titoli abilitativi e adempimenti di cantiere', n: 'CILA / SCIA / Permesso di costruire', t: 'ob', lg: 'titolo-abilitativo',
+        w: 'Titolo edilizio con ricevuta di presentazione e protocollo. È il presupposto del Bonus Ristrutturazione e la prova della data di inizio lavori per il Bonus Mobili.' },
+      { id: 'inizio-lavori', g: 'Titoli abilitativi e adempimenti di cantiere', n: 'Comunicazione di inizio lavori', t: 'se',
+        w: 'Solo se è un atto separato dal titolo (con la CILA la data coincide con la presentazione). Fissa la data certa di inizio.' },
+      { id: 'varianti', g: 'Titoli abilitativi e adempimenti di cantiere', n: "Varianti in corso d'opera", t: 'se',
+        w: 'Eventuali varianti presentate al Comune durante i lavori.' },
+      { id: 'fine-lavori', g: 'Titoli abilitativi e adempimenti di cantiere', n: 'Comunicazione di fine lavori / collaudo', t: 'se',
+        w: 'Ove prevista dal titolo edilizio. Dà il punto di partenza dei 90 giorni per la comunicazione ENEA.' },
+      { id: 'agibilita', g: 'Titoli abilitativi e adempimenti di cantiere', n: 'Segnalazione certificata di agibilità (SCA)', t: 'se',
+        w: "Se i lavori incidono su sicurezza, salubrità o risparmio energetico dell'edificio (art. 24 DPR 380/2001): verifica col tecnico." },
+      { id: 'asl', g: 'Titoli abilitativi e adempimenti di cantiere', n: "Notifica preliminare all'ASL", t: 'se',
+        w: "Richiesta quando in cantiere operano più imprese, anche in tempi diversi (art. 99 D.Lgs. 81/2008). L'Agenzia delle Entrate la elenca tra i documenti del Bonus Ristrutturazione." },
+      { id: 'idoneita-imprese', g: 'Titoli abilitativi e adempimenti di cantiere', n: 'Idoneità delle imprese (DURC, visura camerale)', t: 'co',
+        w: 'Il committente deve verificarla (art. 90 D.Lgs. 81/2008): conserva DURC e visura camerale di ogni impresa che lavora in cantiere.' },
+      // — Documentazione economica —
+      { id: 'contratti', g: 'Documentazione economica', n: 'Contratti con imprese e fornitori, preventivi accettati', t: 'ob', lg: 'contratto-appalto',
+        w: "Contratti d'appalto, preventivi firmati e capitolati: provano cosa è stato commissionato e a che prezzo." },
+      { id: 'fatture', g: 'Documentazione economica', n: 'Fatture', t: 'ob', auto: 'fatture',
+        w: 'Lette dalla pagina Fatture: ogni fattura dovrebbe avere il PDF allegato.' },
+      { id: 'bonifici', g: 'Documentazione economica', n: 'Bonifici parlanti e contabili', t: 'ob', lg: 'bonifico', auto: 'pagamenti',
+        w: "Bonifico con causale, codice fiscale di chi detrae e partita IVA (o CF) di chi incassa. La causale cambia tra Bonus Ristrutturazione ed Ecobonus (vedi pagina Requisiti); senza bonifico parlante la detrazione decade." },
+      { id: 'estratti-conto', g: 'Documentazione economica', n: "Estratti conto con l'addebito dei bonifici", t: 'co',
+        w: 'Prova ulteriore dei pagamenti, utile se una contabile non è più reperibile.' },
+      { id: 'quadro-spese', g: 'Documentazione economica', n: 'Quadro riepilogativo delle spese per agevolazione', t: 'co',
+        w: 'Prospetto di fatture e pagamenti diviso per bonus (esportabile da Fatture → Excel). Serve al commercialista e a ricostruire tutto dopo anni.' },
+      { id: 'ripartizione', g: 'Documentazione economica', n: 'Ripartizione delle spese tra i beneficiari', t: 'se',
+        w: 'Se gli intestatari sono più di uno: chi ha pagato cosa (bonifici intestati a chi porta in detrazione) e in quali quote.' },
+      // — Asseverazioni, conformità e certificazioni —
+      { id: 'dm37', g: 'Asseverazioni, conformità e certificazioni', n: 'Dichiarazioni di conformità degli impianti (DM 37/2008)', t: 'ob', lg: 'certificazione',
+        w: 'Una per ogni impianto nuovo o modificato (elettrico, idrico, gas…), con gli allegati obbligatori. Quella della pompa di calore sta nella sezione Ecobonus pompa di calore.' },
+      { id: 'ce-materiali', g: 'Asseverazioni, conformità e certificazioni', n: 'Marcature CE e dichiarazioni di prestazione dei materiali', t: 'co',
+        w: 'Per i materiali non coperti dalle sezioni Ecobonus (schede di infissi, isolanti e pompa di calore vanno nelle rispettive sezioni).' },
+      { id: 'computo', g: 'Asseverazioni, conformità e certificazioni', n: 'Computo metrico estimativo e capitolato', t: 'co',
+        w: 'Dettaglio di lavori e costi, anche per estratto per singolo intervento. Il tecnico lo usa per attestare i massimali di costo.' },
+      { id: 'ape-ante', g: 'Asseverazioni, conformità e certificazioni', n: 'APE ante intervento', t: 'co', lg: 'ape',
+        w: 'Attestato di prestazione energetica prima dei lavori: documenta il miglioramento ottenuto.' },
+      { id: 'ape-post-rif', g: 'Asseverazioni, conformità e certificazioni', n: 'APE post intervento', t: 'se', rif: ['eco-iso', 'ape-post'],
+        w: 'Obbligatorio per le strutture opache, consigliato per gli altri interventi: sta nella sezione Ecobonus strutture opache.' },
+      // — Fotografie —
+      { id: 'foto', g: 'Fotografie', n: 'Foto del cantiere', t: 'co', at: _docFoto3,
+        w: 'Stato di fatto, avanzamento e finito: la prova più semplice in caso di controlli.' }
+    ]
+  },
+  {
+    id: 'br', nome: 'Bonus ristrutturazione', sub: 'Art. 16-bis TUIR',
+    desc: 'Detrazione per le spese di recupero del patrimonio edilizio. La maggior parte dei documenti sta in «Generale»: qui trovi i rimandi e ciò che è specifico del bonus.',
+    voci: [
+      { id: 'titolo-rif', g: 'Presupposti', n: 'CILA / SCIA / Permesso di costruire', t: 'ob', rif: ['gen', 'titolo-edilizio'],
+        w: "Il titolo edilizio è il presupposto dell'agevolazione." },
+      { id: 'visura-rif', g: 'Presupposti', n: 'Visure catastali pre e post fusione', t: 'ob', rif: ['gen', 'visura'],
+        w: 'Provano il numero di unità immobiliari a inizio lavori, da cui dipende il massimale di spesa.' },
+      { id: 'notorieta', g: 'Presupposti', n: 'Dichiarazione sostitutiva di atto di notorietà', t: 'se',
+        w: "Solo se per i lavori non serve alcun titolo edilizio: indica la data di inizio lavori e attesta che sono agevolabili (Provv. Agenzia delle Entrate 2/11/2011)." },
+      { id: 'accatastamento', g: 'Presupposti', n: 'Domanda di accatastamento', t: 'se',
+        w: "Solo se l'immobile non era ancora censito in catasto." },
+      { id: 'imu', g: 'Presupposti', n: 'Ricevute di pagamento IMU', t: 'se',
+        w: "Se l'imposta è dovuta sull'immobile: l'Agenzia delle Entrate le elenca tra i documenti da conservare." },
+      { id: 'consenso', g: 'Presupposti', n: 'Consenso scritto del proprietario ai lavori', t: 'se',
+        w: 'Se i lavori li esegue un detentore o chi non è ancora proprietario (es. lavori iniziati prima del rogito): serve il consenso del proprietario o venditore.' },
+      { id: 'delibera', g: 'Presupposti', n: 'Delibera assembleare e tabella millesimale', t: 'se',
+        w: 'Solo per lavori sulle parti comuni condominiali.' },
+      { id: 'asl-rif', g: 'Presupposti', n: "Notifica preliminare all'ASL", t: 'se', rif: ['gen', 'asl'],
+        w: 'Se obbligatoria per il tuo cantiere (più imprese), va conservata.' },
+      { id: 'pag-br', g: 'Spese e pagamenti', n: 'Fatture e bonifici parlanti con causale Bonus Ristrutturazione', t: 'ob', rif: ['gen', 'bonifici'],
+        w: "La causale deve citare l'art. 16-bis DPR 917/86 (vedi pagina Requisiti). Fatture e contabili si gestiscono nella pagina Fatture." },
+      { id: 'riparto', g: 'Spese e pagamenti', n: 'Prospetto di ripartizione tra Bonus Ristrutturazione ed Ecobonus', t: 'co',
+        w: 'Per le fatture miste: quale parte va in quale bonus (si ricava da Computo e Agevolazioni). Ogni bonus ha il suo bonifico con la sua causale.' },
+      { id: 'enea-br', g: 'Risparmio energetico pagato in BR', n: 'Comunicazione ENEA per interventi con risparmio energetico', t: 'se', lg: 'enea',
+        w: "Dovuta entro 90 giorni dalla fine lavori anche se l'intervento è detratto come BR. Per il BR l'omissione non fa perdere la detrazione (Ris. AdE 46/E/2019): inviala comunque e conserva ricevuta e CPID." }
+    ]
+  },
+  {
+    id: 'eco-inf', nome: 'Ecobonus infissi', sub: 'Sostituzione serramenti',
+    desc: 'Art. 14 D.L. 63/2013. Per ogni serramento sostituito servono i dati tecnici del produttore, la comunicazione ENEA e le foto.',
+    voci: [
+      { id: 'schede', g: 'Tecnica', n: 'Schede tecniche dei serramenti', t: 'ob',
+        w: 'Una per ogni tipologia di infisso installata.' },
+      { id: 'ce', g: 'Tecnica', n: 'Marcatura CE e dichiarazione di prestazione', t: 'ob',
+        w: 'Rilasciate dal produttore insieme alla fornitura.' },
+      { id: 'uw', g: 'Tecnica', n: 'Dichiarazione del produttore con la trasmittanza Uw', t: 'ob', lg: 'certificazione',
+        w: "Prova che l'Uw rispetta il limite della tua zona climatica (DM 6/8/2020). Per una singola unità immobiliare può sostituire l'asseverazione del tecnico." },
+      { id: 'asseverazione', g: 'Tecnica', n: 'Asseverazione del tecnico abilitato', t: 'se', lg: 'asseverazione',
+        w: 'Solo se non hai la dichiarazione del produttore: per gli infissi basta una delle due.' },
+      _docRifComputo('Con i m² sostituiti: serve a verificare il tetto di costo al metro quadro della tua zona climatica.'),
+      { id: 'l10', g: 'Tecnica', n: 'Relazione tecnica ex L. 10/91', t: 'se',
+        w: "ENEA la richiede solo ove prevista dall'art. 8, c. 1, D.Lgs. 192/2005 (ex L. 10/91): chiedi al tecnico se serve per i tuoi lavori." },
+      ..._docEnea(),
+      _docPagamentiEco(),
+      { id: 'foto', g: 'Fotografie', n: 'Foto degli infissi', t: 'co', at: _docFoto3,
+        w: 'Infissi esistenti, posa in corso e risultato finale.' }
+    ]
+  },
+  {
+    id: 'eco-pdc', nome: 'Ecobonus pompa di calore', sub: 'Climatizzazione invernale',
+    desc: "Art. 14 D.L. 63/2013. Oltre ai dati tecnici servono i documenti dell'impianto (conformità, libretto) e la comunicazione ENEA.",
+    voci: [
+      { id: 'scheda', g: 'Tecnica', n: 'Scheda tecnica della pompa di calore', t: 'ob',
+        w: 'Dati di potenza e rendimento: servono anche per compilare la pratica ENEA.' },
+      { id: 'cert-energetica', g: 'Tecnica', n: 'Certificazione energetica del produttore', t: 'ob',
+        w: "Dichiarazione del fornitore che attesta il rispetto dei requisiti tecnici del DM 6/8/2020 (COP/SCOP). Fino a 100 kW di potenza termica utile sostituisce l'asseverazione del tecnico." },
+      { id: 'ce', g: 'Tecnica', n: 'Marcatura CE', t: 'ob',
+        w: "Dichiarazione di conformità del produttore dell'apparecchio." },
+      { id: 'dm37-pdc', g: 'Tecnica', n: "Dichiarazione di conformità dell'impianto (DM 37/2008)", t: 'ob', lg: 'certificazione',
+        w: "Rilasciata dall'installatore al termine della posa." },
+      { id: 'libretto', g: 'Tecnica', n: 'Libretto di impianto', t: 'ob',
+        w: "Compilato dall'installatore alla messa in servizio dell'impianto." },
+      { id: 'rapporto', g: 'Tecnica', n: 'Rapporto di controllo tecnico (efficienza energetica)', t: 'se',
+        w: 'Ove previsto dalla normativa sugli impianti termici (DPR 74/2013), in base alla potenza.' },
+      { id: 'asseverazione', g: 'Tecnica', n: 'Asseverazione del tecnico abilitato', t: 'se', lg: 'asseverazione',
+        w: 'Serve oltre i 100 kW di potenza termica utile o se il fornitore non rilascia la dichiarazione: fino a 100 kW basta quella (voce sopra). Conferma col tecnico.' },
+      { id: 'l10', g: 'Tecnica', n: 'Relazione tecnica ex L. 10/91', t: 'se',
+        w: "ENEA la richiede solo ove prevista dall'art. 8, c. 1, D.Lgs. 192/2005 (ex L. 10/91): chiedi al tecnico se serve per i tuoi lavori." },
+      { id: 'fgas', g: 'Tecnica', n: "Certificazione F-Gas dell'installatore e relativa dichiarazione", t: 'se',
+        w: "Se l'impianto contiene gas fluorurati: installatore certificato e dichiarazione nella banca dati FGAS." },
+      ..._docEnea(),
+      _docPagamentiEco(),
+      { id: 'foto', g: 'Fotografie', n: "Foto dell'impianto", t: 'co',
+        at: [{ k: 'esistente', l: 'Impianto esistente' }, { k: 'installazione', l: 'Installazione' }, { k: 'finito', l: 'Impianto ultimato' }],
+        w: 'Prima, durante e dopo la sostituzione.' }
+    ]
+  },
+  {
+    id: 'eco-iso', nome: 'Ecobonus strutture opache', sub: 'Cappotto, coperture, pareti, solai',
+    desc: "Art. 14 D.L. 63/2013. Per l'isolamento servono le prestazioni termiche dei materiali, l'asseverazione del tecnico e l'APE finale.",
+    voci: [
+      { id: 'schede-isolanti', g: 'Tecnica', n: 'Schede tecniche degli isolanti', t: 'ob',
+        w: 'Una per ogni materiale isolante posato.' },
+      { id: 'ce', g: 'Tecnica', n: 'Marcatura CE e dichiarazione di prestazione', t: 'ob',
+        w: 'Rilasciate dal produttore insieme alla fornitura.' },
+      { id: 'prestazioni', g: 'Tecnica', n: 'Certificati delle prestazioni termiche (λ, trasmittanza U)', t: 'ob',
+        w: "Conducibilità λ dell'isolante e trasmittanza U finale: devono rispettare i limiti della tua zona climatica (DM 6/8/2020)." },
+      { id: 'asseverazione', g: 'Tecnica', n: 'Asseverazione del tecnico abilitato', t: 'ob', lg: 'asseverazione',
+        w: 'Per le strutture opache serve il tecnico: la sostituzione con la dichiarazione del produttore vale per infissi e pompe di calore fino a 100 kW.' },
+      { id: 'ape-post', g: 'Tecnica', n: 'APE post intervento', t: 'ob', lg: 'ape',
+        w: "Per le strutture opache l'attestato di prestazione energetica dopo i lavori è obbligatorio; lo redige un tecnico abilitato." },
+      _docRifComputo("Serve al tecnico per attestare la congruità dei costi rispetto ai massimali per metro quadro."),
+      { id: 'l10', g: 'Tecnica', n: 'Relazione tecnica ex L. 10/91', t: 'se',
+        w: "ENEA la richiede solo ove prevista dall'art. 8, c. 1, D.Lgs. 192/2005 (ex L. 10/91): chiedi al tecnico se serve per i tuoi lavori." },
+      { id: 'cam', g: 'Tecnica', n: 'Certificazioni CAM degli isolanti', t: 'co',
+        w: "Non richieste per l'Ecobonus ordinario (riguardano il Superbonus): conservale solo se il fornitore le rilascia." },
+      ..._docEnea(),
+      _docPagamentiEco(),
+      { id: 'foto', g: 'Fotografie', n: 'Foto delle strutture isolate', t: 'co', at: _docFoto3,
+        w: "Soprattutto durante la posa: l'isolante poi non si vede più." }
+    ]
+  },
+  {
+    id: 'mob', nome: 'Bonus mobili', sub: 'Mobili ed elettrodomestici',
+    desc: 'Detrazione 50% su mobili e grandi elettrodomestici, solo se i lavori edilizi sono iniziati prima dell\'acquisto. Per le spese 2026: massimo 5.000 € e lavori avviati dal 1° gennaio 2025.',
+    voci: [
+      { id: 'titolo-rif', g: 'Presupposto', n: 'Titolo edilizio con la data di inizio lavori', t: 'ob', rif: ['gen', 'titolo-edilizio'],
+        w: "La data di inizio lavori deve precedere l'acquisto di mobili ed elettrodomestici." },
+      { id: 'fatture-mob', g: 'Acquisti', n: 'Fatture o scontrini «parlanti»', t: 'ob',
+        w: 'Con descrizione dei beni (natura, qualità, quantità) e il tuo codice fiscale: non basta uno scontrino generico.' },
+      { id: 'pagamento-mob', g: 'Acquisti', n: 'Prova di pagamento tracciabile', t: 'ob',
+        w: 'Bonifico (anche ordinario, non serve il parlante) o carta di debito/credito: ricevuta POS o estratto conto. Mai contanti né assegni.' },
+      { id: 'etichette', g: 'Acquisti', n: 'Etichette energetiche dei grandi elettrodomestici', t: 'se',
+        w: 'Classe minima: forni A; lavatrici, lavasciuga e lavastoviglie E; frigoriferi e congelatori F.' },
+      { id: 'enea-elettrodomestici', g: 'Acquisti', n: 'Ricevuta ENEA per gli elettrodomestici', t: 'se', lg: 'enea',
+        w: "Per i grandi elettrodomestici la comunicazione va fatta entro 90 giorni dall'acquisto; se omessa non si perde la detrazione, ma resta un adempimento (conferma col commercialista)." }
+    ]
+  },
+  {
+    id: 'mut', nome: 'Detrazione mutuo', sub: 'Interessi passivi · art. 15 TUIR',
+    desc: "Detrazione del 19% degli interessi del mutuo ipotecario per l'abitazione principale, fino a 4.000 € l'anno. Ogni anno serve la certificazione della banca.",
+    voci: [
+      { id: 'contratto-mutuo', g: 'Mutuo e acquisto', n: 'Contratto di mutuo ipotecario', t: 'ob', lg: 'contratto-mutuo',
+        w: "Il mutuo deve essere garantito da ipoteca sull'immobile e stipulato per l'acquisto dell'abitazione principale." },
+      { id: 'atto-rif', g: 'Mutuo e acquisto', n: 'Atto di acquisto (rogito)', t: 'ob', rif: ['gen', 'titolo-proprieta'],
+        w: "Il mutuo va stipulato nei 12 mesi precedenti o successivi all'acquisto: servono le due date." },
+      { id: 'piano', g: 'Mutuo e acquisto', n: 'Piano di ammortamento', t: 'co',
+        w: 'Il piano ufficiale della banca, da affiancare a quello calcolato nell\'app (pagina Mutuo).' },
+      { id: 'residenza', g: 'Abitazione principale', n: 'Certificato di residenza o autocertificazione di abitazione principale', t: 'ob',
+        w: "L'immobile deve diventare abitazione principale entro 12 mesi dall'acquisto (verifica col commercialista se ci sono lavori di ristrutturazione)." },
+      { id: 'cert-interessi', g: 'Ogni anno', n: 'Certificazione annuale degli interessi passivi', t: 'ob', lg: 'cert-interessi-mutuo',
+        w: 'La rilascia la banca: ne serve una per ogni anno di dichiarazione. Con più intestatari indica la quota di ciascuno.' },
+      { id: 'oneri', g: 'Costi e variazioni', n: 'Spese accessorie del mutuo', t: 'se',
+        w: "Parcella del notaio per l'atto di mutuo, imposta sostitutiva, perizia, istruttoria: rientrano nel tetto annuo degli interessi. Conserva fatture e quietanze." },
+      { id: 'estinzione', g: 'Costi e variazioni', n: 'Estinzioni anticipate, surroga o rinegoziazione', t: 'se',
+        w: 'Conteggio estintivo, contabili e lettere della banca: servono a ricostruire gli interessi pagati in ogni anno.' }
+    ]
+  },
+  {
+    id: 'pre', nome: 'Detrazioni pregresse', sub: 'Rate residue nel 730',
+    desc: "Detrazioni maturate su altri immobili che continui a recuperare in dichiarazione. Conserva i documenti fino al 31 dicembre del quinto anno successivo alla dichiarazione dell'ultima rata (circa 15 anni in tutto).",
+    voci: [
+      { id: 'atto-pregresso', g: "Documenti dell'agevolazione", n: 'Atto di acquisto del bene agevolato (es. box pertinenziale)', t: 'ob', lg: 'atto-box-pregresso',
+        w: 'Giustifica le rate residue ancora portate in detrazione nel 730.' },
+      { id: 'attestazione', g: "Documenti dell'agevolazione", n: 'Attestazione del costo di realizzazione (box acquistato da impresa)', t: 'se',
+        w: 'Se il box è stato comprato da un costruttore, la detrazione si calcola sul costo di realizzazione attestato dal venditore.' },
+      { id: 'pagamenti-pre', g: "Documenti dell'agevolazione", n: "Fatture, bonifici e quietanze dell'epoca", t: 'ob',
+        w: 'Provano le spese su cui sono calcolate le rate.' },
+      { id: 'rate', g: 'Controllo delle rate', n: 'Prospetto delle rate (usate e residue)', t: 'co', auto: 'pregresse',
+        w: 'Già registrato in Agevolazioni → Detrazioni pregresse: qui risulta presente se ne hai inserita almeno una.' },
+      { id: 'dichiarazioni', g: 'Controllo delle rate', n: 'Dichiarazioni dei redditi degli anni già detratti (730)', t: 'co',
+        w: 'Mostrano le rate già portate in detrazione e quelle residue.' },
+      { id: 'vendita', g: 'Controllo delle rate', n: 'Atto di vendita con la clausola sulle detrazioni residue', t: 'se',
+        w: "Solo se hai ceduto l'immobile: le rate non ancora usate passano all'acquirente, salvo diverso accordo scritto nell'atto (art. 16-bis c. 8 TUIR)." }
+    ]
+  }
+];
+const DOC_CAT = Object.fromEntries(DOC_CATEGORIE.map(c => [c.id, c]));
+
+// Tipi storici → (categoria, voce). Quelli ambigui (ENEA, asseverazione, atto notarile, altro)
+// non hanno una destinazione certa: finiscono in «Da classificare» finché non li assegni.
+const DOC_LEGACY_MAP = {
+  'titolo-abilitativo': ['gen', 'titolo-edilizio'],
+  'contratto-appalto': ['gen', 'contratti'],
+  'contratto': ['gen', 'contratti'],
+  'visura-catastale': ['gen', 'visura'],
+  'bonifico': ['gen', 'bonifici'],
+  'certificazione': ['gen', 'dm37'],
+  'contratto-mutuo': ['mut', 'contratto-mutuo'],
+  'cert-interessi-mutuo': ['mut', 'cert-interessi'],
+  'preliminare-acquisto': ['gen', 'titolo-proprieta'],
+  'atto-acquisto': ['gen', 'titolo-proprieta'],
+  'atto-box-pregresso': ['pre', 'atto-pregresso']
+};
+
 let editingDocumentoId = null;
-let filtroTipoDocumento = null;
 let fileDocumentoCorrente = null; // File selezionato ma non ancora caricato su Storage (modalità singola)
 let fileDocumentiMultipli = []; // File selezionati in modalità multi-upload: [{file, ok, motivo}]
+let docCatCorrente = 'gen';       // categoria aperta nel dettaglio
+let filtroCatDocumento = null;    // registro completo: null | id categoria | '__nc' (da classificare)
+const docRigheEspanse = new Set(); // voci con l'elenco completo dei documenti aperto
 
-function apriModalDocumento(id, tipoPreselezionato) {
+// ── Classificazione dei documenti ──
+function docKey(catId, voceId) { return catId + '.' + voceId; }
+
+function docVoce(catId, voceId) {
+  const c = DOC_CAT[catId];
+  if (!c) return null;
+  if (voceId === 'altro') return { id: 'altro', g: 'Altri documenti', n: 'Altro documento di questa categoria', t: 'co', w: '' };
+  return c.voci.find(v => v.id === voceId && !v.rif) || null;
+}
+
+// Per le visure il sotto-elemento (pre sub 8, pre sub 9, post) si ricava dal nome se non è
+// stato scelto esplicitamente: è la stessa convenzione usata finora, così i documenti
+// già caricati continuano a essere riconosciuti senza toccarli.
+function docSubDaNome(catId, voceId, nome) {
+  if (catId !== 'gen' || voceId !== 'visura') return null;
+  const n = (nome || '').toLowerCase();
+  if (n.includes('post')) return 'post';
+  if (n.includes('pre') && n.includes('8')) return 'pre8';
+  if (n.includes('pre') && n.includes('9')) return 'pre9';
+  return null;
+}
+
+// Posizione di un documento: {cat, voce, sub} oppure null se da classificare.
+// Nessuna scrittura: i documenti storici vengono mappati "al volo" dal vecchio campo tipo.
+function docPos(d) {
+  if (!d) return null;
+  if (d.categoria && DOC_CAT[d.categoria]) {
+    const voce = docVoce(d.categoria, d.voce) ? d.voce : 'altro';
+    return { cat: d.categoria, voce, sub: d.sub || docSubDaNome(d.categoria, voce, d.nome) };
+  }
+  let m = DOC_LEGACY_MAP[d.tipo];
+  if (!m && d.tipo === 'ape') {
+    const n = (d.nome || '').toLowerCase();
+    m = n.includes('post') ? ['eco-iso', 'ape-post'] : (n.includes('ante') ? ['gen', 'ape-ante'] : null);
+  }
+  if (!m) return null;
+  return { cat: m[0], voce: m[1], sub: docSubDaNome(m[0], m[1], d.nome) };
+}
+
+function docEtichette(d) {
+  const p = docPos(d);
+  if (!p) return { cat: 'Da classificare', voce: TIPI_DOCUMENTO[d.tipo] || d.tipo || '', nc: true, ordine: 99, ordineVoce: 0, catId: null };
+  const c = DOC_CAT[p.cat];
+  const v = docVoce(p.cat, p.voce);
+  const i = c.voci.findIndex(x => x.id === p.voce);
+  return { cat: c.nome, voce: v ? v.n : '', nc: false, ordine: DOC_CATEGORIE.indexOf(c), ordineVoce: i < 0 ? 999 : i, catId: p.cat };
+}
+
+// ── Stato della checklist ──
+function docIndice() {
+  const documenti = state.documenti || [];
+  const byKey = {}, perCat = {}, nonClass = [];
+  documenti.forEach(d => {
+    const p = docPos(d);
+    if (!p) { nonClass.push(d); return; }
+    const k = docKey(p.cat, p.voce);
+    (byKey[k] = byKey[k] || []).push({ d, sub: p.sub });
+    perCat[p.cat] = (perCat[p.cat] || 0) + 1;
+  });
+  Object.values(byKey).forEach(arr => arr.sort((a, b) =>
+    (a.d.data || '').localeCompare(b.d.data || '') || (a.d.nome || '').localeCompare(b.d.nome || '')));
+
+  // Voci che si leggono da altre pagine dell'app
+  const fatture = state.fatture || [];
+  const pagamenti = [];
+  fatture.forEach(f => getPagamenti(f).forEach(p => pagamenti.push(p)));
+  const nF = fatture.length, nFpdf = fatture.filter(f => f.fileDocId).length;
+  const nP = pagamenti.length, nPf = pagamenti.filter(p => p.fileDocId).length;
+  const nPre = (state.detrPregresse || []).length;
+  const plur = (n, s, p) => n + ' ' + (n === 1 ? s : p);
+  const auto = {
+    fatture: {
+      stato: nF === 0 ? 'manca' : (nFpdf === nF ? 'ok' : 'parziale'),
+      testo: nF === 0 ? 'Nessuna fattura registrata'
+        : plur(nF, 'fattura registrata', 'fatture registrate') + ' · ' + (nFpdf === nF ? 'tutte con PDF allegato' : (nF - nFpdf) + ' senza PDF allegato'),
+      vai: 'fatture', btn: 'Apri Fatture'
+    },
+    pagamenti: {
+      stato: nP === 0 ? 'manca' : (nPf === nP ? 'ok' : 'parziale'),
+      testo: nP === 0 ? 'Nessun pagamento registrato'
+        : plur(nP, 'pagamento registrato', 'pagamenti registrati') + ' · ' + (nPf === nP ? 'tutti con contabile allegata' : (nP - nPf) + ' senza contabile allegata'),
+      vai: 'fatture', btn: 'Apri Fatture'
+    },
+    pregresse: {
+      stato: nPre ? 'ok' : 'manca',
+      testo: nPre ? plur(nPre, 'detrazione registrata', 'detrazioni registrate') + ' in Agevolazioni' : 'Nessuna detrazione pregressa registrata',
+      vai: 'agevolazioni', btn: 'Apri Agevolazioni'
+    }
+  };
+  return { documenti, byKey, perCat, nonClass, auto };
+}
+
+function docStatoVoce(catId, v, idx) {
+  const key = docKey(catId, v.id);
+  const items = idx.byKey[key] || [];
+  // «Mancante» è un segnaposto: il documento è atteso ma non ancora ottenuto
+  const attivi = items.filter(x => x.d.statoVerifica !== 'mancante');
+  const na = !!(state.docNA && state.docNA[key]);
+  let stato, att = null, auto = null;
+  if (v.at) {
+    att = v.at.map(a => ({ ...a, ok: attivi.some(x => x.sub === a.k) }));
+    const n = att.filter(a => a.ok).length;
+    // Un documento caricato senza indicare «Quale?» non spunta nessun elemento, ma la voce non è vuota: «parziale».
+    stato = n === att.length ? 'ok' : ((n > 0 || attivi.length > 0) ? 'parziale' : 'manca');
+  } else {
+    stato = attivi.length ? 'ok' : 'manca';
+    if (v.auto) {
+      auto = idx.auto[v.auto];
+      if (stato !== 'ok') stato = auto.stato;
+    }
+  }
+  if (na) stato = 'na';
+  return { key, v, na, items, attivi, stato, att, auto };
+}
+
+// Avanzamento. Per ogni categoria contano tutte le righe obbligatorie che vedi, rimandi compresi
+// (un rimando riflette lo stato della voce "di casa"); i totali generali contano invece ogni
+// documento una volta sola, quindi solo le voci proprie e non i rimandi.
+function docRiepilogo(idx) {
+  const cats = {};
+  let obTot = 0, obOk = 0;
+  DOC_CATEGORIE.forEach(cat => {
+    const righe = cat.voci.map(v => {
+      let s;
+      if (v.rif) {
+        const target = DOC_CAT[v.rif[0]].voci.find(x => x.id === v.rif[1]);
+        s = docStatoVoce(v.rif[0], target, idx);
+      } else {
+        s = docStatoVoce(cat.id, v, idx);
+      }
+      return { id: v.id, t: v.t, rif: !!v.rif, stato: s.stato, na: s.na };
+    });
+    const ob = righe.filter(r => r.t === 'ob' && !r.na);
+    const ok = ob.filter(r => r.stato === 'ok').length;
+    cats[cat.id] = { righe, obTot: ob.length, obOk: ok, nDocs: idx.perCat[cat.id] || 0 };
+    const proprie = ob.filter(r => !r.rif);
+    obTot += proprie.length;
+    obOk += proprie.filter(r => r.stato === 'ok').length;
+  });
+  return { cats, obTot, obOk, daRaccogliere: obTot - obOk };
+}
+
+// ══════════════════════════════════════════
+//  Etichette e percorsi per export (zip / Excel)
+// ══════════════════════════════════════════
+// Nome leggibile per cartelle e file dello zip: senza parentesi né accenti, apostrofi come separatori,
+// tagliato a fine parola (mai a metà) e senza finire su un «di», «e», «del»…
+const DOC_PAROLE_LEGAME = new Set(['di','e','o','a','da','del','dei','della','delle','dello','degli','con','per','tra','fra','il','la','le','lo','gli','un','una','ex','d','l','dell','all','nell','sull','al','ai','alla']);
+function docNomeCartella(testo, max, conParentesi) {
+  max = max || 44;
+  const parole = (conParentesi ? String(testo || '') : String(testo || '').split('(')[0])
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^\w\s-]/g, ' ').trim().split(/\s+/).filter(Boolean);
+  const out = [];
+  for (const w of parole) {
+    if (out.length && out.concat(w).join('-').length > max) break;
+    out.push(w);
+  }
+  while (out.length > 1 && DOC_PAROLE_LEGAME.has(out[out.length - 1].toLowerCase())) out.pop();
+  return out.join('-').slice(0, max);
+}
+function docCartellaZip(d) {
+  const p = docPos(d);
+  if (!p) return '99_Da-classificare';
+  const i = DOC_CATEGORIE.findIndex(c => c.id === p.cat) + 1;
+  const cat = String(i).padStart(2, '0') + '_' + docNomeCartella(DOC_CAT[p.cat].nome);
+  const v = docVoce(p.cat, p.voce);
+  const voce = p.voce === 'altro' ? 'Altri-documenti' : (docNomeCartella(v ? v.n : p.voce) || 'Documenti');
+  return cat + '/' + voce;
+}
+// Dentro la cartella della voce non serve ripetere la voce: bastano data e nome del documento.
+function docNomeFileZip(d) {
+  return [d.data || '', docNomeCartella(d.nome, 60, true)].filter(Boolean).join('_') || 'documento';
+}
+function docOrdinamentoExport(a, b) {
+  const ea = docEtichette(a), eb = docEtichette(b);
+  return (ea.ordine - eb.ordine) || (ea.ordineVoce - eb.ordineVoce) || (a.data || '').localeCompare(b.data || '');
+}
+
+function apriModalDocumento(id, pre) {
   editingDocumentoId = id || null;
   fileDocumentoCorrente = null;
   fileDocumentiMultipli = [];
@@ -12483,16 +13249,19 @@ function apriModalDocumento(id, tipoPreselezionato) {
   document.getElementById('fg-doc-nome').style.display = '';
   document.getElementById('modal-documento-title').textContent = id ? 'Modifica documento' : 'Nuovo documento';
 
-  const selTipo = document.getElementById('doc-tipo');
-  selTipo.innerHTML = Object.entries(TIPI_DOCUMENTO).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+  document.getElementById('doc-categoria').innerHTML =
+    '<option value="">Da classificare</option>' +
+    DOC_CATEGORIE.map(c => `<option value="${c.id}">${escHtml(c.nome)}</option>`).join('');
 
   const fileCorrenteBox = document.getElementById('doc-file-corrente');
   const fileCorrenteLink = document.getElementById('doc-file-link');
+  let cat = '', voce = '', sub = '';
 
   if (id) {
     const d = (state.documenti||[]).find(x => x.id===id);
     if (!d) return;
-    document.getElementById('doc-tipo').value = d.tipo || 'altro';
+    const p = docPos(d);
+    if (p) { cat = p.cat; voce = p.voce; sub = p.sub || ''; }
     document.getElementById('doc-nome').value = d.nome || '';
     document.getElementById('doc-numero').value = d.numero || '';
     document.getElementById('doc-data').value = d.data || '';
@@ -12516,7 +13285,10 @@ function apriModalDocumento(id, tipoPreselezionato) {
       fileCorrenteBox.style.display = 'none';
     }
   } else {
-    document.getElementById('doc-tipo').value = tipoPreselezionato || 'altro';
+    // «pre» può essere {cat, voce, sub} (dalla checklist) oppure un tipo storico (compatibilità)
+    if (pre && typeof pre === 'object') { cat = pre.cat || ''; voce = pre.voce || ''; sub = pre.sub || ''; }
+    else if (typeof pre === 'string' && DOC_LEGACY_MAP[pre]) { cat = DOC_LEGACY_MAP[pre][0]; voce = DOC_LEGACY_MAP[pre][1]; }
+    else cat = DOC_CAT[docCatCorrente] ? docCatCorrente : '';
     document.getElementById('doc-nome').value = '';
     document.getElementById('doc-numero').value = '';
     document.getElementById('doc-data').value = new Date().toISOString().slice(0,10);
@@ -12529,30 +13301,79 @@ function apriModalDocumento(id, tipoPreselezionato) {
     fileCorrenteBox.style.display = 'none';
     aggiornaSelectCollegatoDoc();
   }
-  aggiornaSuggerimentoNomeDoc();
+  document.getElementById('doc-categoria').value = cat;
+  aggiornaVociDoc(voce, sub);
   document.getElementById('modal-documento').classList.add('open');
 }
 
-// Per la Visura catastale suggerisce quale delle tre sotto-attese manca ancora
-// (pre sub 8, pre sub 9, post-fusione), e propone il nome esatto da usare — così il
-// riconoscimento automatico nella checklist funziona senza dover ricordare la convenzione.
-function aggiornaSuggerimentoNomeDoc() {
-  const tipo = document.getElementById('doc-tipo')?.value;
-  const hint = document.getElementById('doc-nome-hint');
-  const nomeInput = document.getElementById('doc-nome');
-  if (!hint || !nomeInput) return;
-  if (tipo !== 'visura-catastale') {
-    hint.textContent = 'Se carichi più documenti dello stesso tipo, usa un nome che li distingua.';
-    return;
-  }
-  const documenti = state.documenti || [];
-  const mancante = SOTTOATTESE_VISURA_CATASTALE.find(sa => !trovaDocumentoSottoattesaVisura(documenti, sa));
-  if (mancante && !editingDocumentoId && !nomeInput.value) {
-    nomeInput.placeholder = mancante.label;
-    hint.innerHTML = `Suggerito: <strong>${mancante.label}</strong> — è quella che manca ancora nella checklist.`;
+// Popola «Cosa stai caricando» con le voci della categoria scelta, raggruppate come nella checklist
+function aggiornaVociDoc(voceSel, subSel) {
+  const cat = DOC_CAT[document.getElementById('doc-categoria').value];
+  const sel = document.getElementById('doc-voce');
+  if (!cat) {
+    sel.innerHTML = '<option value="">—</option>';
+    sel.disabled = true;
   } else {
-    hint.textContent = 'Usa un nome che contenga "pre"/"post" e il subalterno (8 o 9), così la checklist la riconosce.';
+    sel.disabled = false;
+    let html = '<option value="">Scegli cosa stai caricando…</option>', g = null;
+    cat.voci.filter(v => !v.rif).forEach(v => {
+      if (v.g !== g) { if (g !== null) html += '</optgroup>'; html += `<optgroup label="${escHtml(v.g)}">`; g = v.g; }
+      html += `<option value="${v.id}">${escHtml(v.n)}</option>`;
+    });
+    if (g !== null) html += '</optgroup>';
+    html += '<option value="altro">Altro documento di questa categoria</option>';
+    sel.innerHTML = html;
+    sel.value = voceSel || '';
+    if (sel.value !== (voceSel || '')) sel.value = '';
   }
+  aggiornaSubDoc(subSel);
+}
+
+// Se la voce prevede più elementi (es. visura pre sub 8 / pre sub 9 / post, foto prima-durante-dopo)
+// mostra «Quale?» e, per un documento nuovo, propone il primo elemento ancora mancante.
+function aggiornaSubDoc(subSel) {
+  const cat = document.getElementById('doc-categoria').value;
+  const voceId = document.getElementById('doc-voce').value;
+  const v = cat && voceId ? docVoce(cat, voceId) : null;
+  const fg = document.getElementById('fg-doc-sub');
+  const sel = document.getElementById('doc-sub');
+  const hint = document.getElementById('doc-nome-hint');
+  if (v && v.at) {
+    fg.style.display = 'flex';
+    sel.innerHTML = '<option value="">Non specificato</option>' + v.at.map(a => `<option value="${a.k}">${escHtml(a.l)}</option>`).join('');
+    sel.value = subSel || '';
+    if (!subSel && !editingDocumentoId) {
+      const s = docStatoVoce(cat, v, docIndice());
+      const manca = s.att && s.att.find(a => !a.ok);
+      if (manca) sel.value = manca.k;
+    }
+    hint.textContent = 'La checklist spunta l\'elemento in base alla scelta «Quale?» qui sopra.';
+  } else {
+    fg.style.display = 'none';
+    sel.innerHTML = '';
+    hint.textContent = 'Se carichi più documenti della stessa voce, usa un nome che li distingua.';
+  }
+  aggiornaPlaceholderNomeDoc();
+}
+
+function aggiornaPlaceholderNomeDoc() {
+  const nomeInput = document.getElementById('doc-nome');
+  const cat = document.getElementById('doc-categoria').value;
+  const voceId = document.getElementById('doc-voce').value;
+  const v = cat && voceId ? docVoce(cat, voceId) : null;
+  const sub = document.getElementById('doc-sub').value;
+  const att = v && v.at && sub ? v.at.find(a => a.k === sub) : null;
+  nomeInput.placeholder = att ? (v.n + ' — ' + att.l) : (v && v.id !== 'altro' ? v.n : 'es. Visura catastale pre-fusione');
+}
+
+function validaClassificazioneDoc() {
+  const cat = document.getElementById('doc-categoria').value;
+  const voce = document.getElementById('doc-voce').value;
+  if (cat && !voce) {
+    alert('Scegli cosa stai caricando (oppure «Altro documento di questa categoria»), oppure lascia la categoria su «Da classificare».');
+    return false;
+  }
+  return true;
 }
 
 function chiudiModalDocumento() {
@@ -12720,8 +13541,16 @@ function aggiornaSelectCollegatoDoc() {
 function leggiMetadatiComuniDoc() {
   const statoVerifica = document.getElementById('doc-stato-verifica').value;
   const collegatoTipo = document.getElementById('doc-collegato-tipo').value;
+  const categoria = document.getElementById('doc-categoria').value;
+  const voceId = categoria ? document.getElementById('doc-voce').value : '';
+  const sub = (categoria && voceId && document.getElementById('fg-doc-sub').style.display !== 'none')
+    ? document.getElementById('doc-sub').value : '';
+  const voceDef = categoria && voceId ? docVoce(categoria, voceId) : null;
   return {
-    tipo: document.getElementById('doc-tipo').value,
+    categoria, voce: voceId, sub,
+    // «tipo» resta valorizzato (derivato dalla voce) per compatibilità col registro precedente;
+    // vuoto = nessuna categoria scelta, e allora chi salva conserva il tipo storico del documento.
+    tipo: categoria ? ((voceDef && voceDef.lg) || 'altro') : '',
     numero: document.getElementById('doc-numero').value.trim(),
     data: document.getElementById('doc-data').value,
     scadenza: document.getElementById('doc-scadenza').value,
@@ -12735,6 +13564,7 @@ function leggiMetadatiComuniDoc() {
 }
 
 async function salvaDocumento() {
+  if (!validaClassificazioneDoc()) return;
   // Modalità multi-upload: più file selezionati insieme in un documento "nuovo" —
   // un record per file, stessi metadati condivisi, nome = nome del file.
   if (fileDocumentiMultipli.length > 0) {
@@ -12770,6 +13600,7 @@ async function salvaDocumento() {
   const documento = {
     id: docId,
     ...comuni,
+    tipo: comuni.tipo || esistente?.tipo || 'altro',
     nome,
     dataVerifica: comuni.statoVerifica === 'verificato'
       ? (esistente?.statoVerifica === 'verificato' ? esistente.dataVerifica : new Date().toISOString().slice(0,10))
@@ -12819,6 +13650,7 @@ async function salvaDocumentiMultipli() {
     state.documenti.push({
       id: uid(),
       ...comuni,
+      tipo: comuni.tipo || 'altro',
       nome: nomeFileSenzaEst,
       dataVerifica: comuni.statoVerifica === 'verificato' ? new Date().toISOString().slice(0,10) : '',
       fileDocId, fileName,
@@ -12865,131 +13697,233 @@ function descrizioneCollegamentoDoc(d) {
   return '—';
 }
 
-// Motivazione sintetica per ciascun tipo nella checklist documentale —
-// versione compatta del ragionamento già presente in "Checklist tecnico".
-const PERCHE_CHECKLIST_DOC = {
-  'titolo-abilitativo': 'Obbligatorio prima dei lavori, presupposto di ogni detrazione.',
-  'contratto-appalto': 'Documenta l\'accordo economico coi lavori concordati.',
-  'visura-catastale': 'Dimostra proprietà/possesso e categoria catastale.',
-  'bonifico': 'Mezzo di pagamento obbligatorio per le detrazioni.',
-  'certificazione': 'Richiesta per asseverazione tecnica e pratica ENEA.',
-  'enea': 'Obbligatoria entro 90gg — la mancata comunicazione fa perdere la detrazione.',
-  'asseverazione': 'Obbligatoria per PDC, isolamento e fotovoltaico.',
-  'ape': 'Dimostra il miglioramento energetico, utile anche in caso di vendita futura.',
-  'contratto-mutuo': 'Collega il mutuo all\'abitazione principale — condizione per dedurre gli interessi.',
-  'cert-interessi-mutuo': 'Necessaria ogni anno per la dichiarazione dei redditi.',
-  'preliminare-acquisto': 'Fissa prezzo, caparre e condizioni della compravendita — base per mutuo e rogito.',
-  'atto-acquisto': 'Collega mutuo e detrazioni all\'acquisto dell\'abitazione principale.',
-  'atto-box-pregresso': 'Giustifica le rate residue della detrazione pregressa.'
-};
-
-// Sotto-attese specifiche per la "Visura catastale", legate allo scenario di
-// fusione tra i due subalterni acquistati: servono tre visure diverse (le due
-// situazioni "pre" e quella "post" a fusione avvenuta), non una sola generica.
-// Il riconoscimento avviene sul campo "nome" del documento — quando lo carichi,
-// usa un nome che contenga una di queste chiavi (es. "Visura pre-fusione sub 8").
-const SOTTOATTESE_VISURA_CATASTALE = [
-  { chiave: 'pre', sub: '8', label: 'Visura pre-fusione — sub 8' },
-  { chiave: 'pre', sub: '9', label: 'Visura pre-fusione — sub 9' },
-  { chiave: 'post', sub: null, label: 'Visura post-fusione (unità accorpata)' }
-];
-
-function trovaDocumentoSottoattesaVisura(documenti, sottoattesa) {
-  const nomeContiene = (nome, testo) => (nome||'').toLowerCase().includes(testo);
-  return documenti.find(d => {
-    if (d.tipo !== 'visura-catastale') return false;
-    const nome = d.nome || '';
-    if (sottoattesa.chiave === 'post') return nomeContiene(nome, 'post');
-    // "pre" richiede anche il subalterno giusto, per non confondere sub 8 e sub 9
-    return nomeContiene(nome, 'pre') && nomeContiene(nome, sottoattesa.sub);
+// ══════════════════════════════════════════
+//  Azioni della pagina Documenti
+// ══════════════════════════════════════════
+function docToggleNA(key) {
+  if (!state.docNA) state.docNA = {};
+  if (state.docNA[key]) delete state.docNA[key]; else state.docNA[key] = true;
+  salvaStato();
+  renderDocumenti();
+}
+function docSelezionaCategoria(id) { docCatCorrente = id; renderDocumenti(); }
+function docVai(catId, voceId) {
+  docCatCorrente = catId;
+  renderDocumenti();
+  requestAnimationFrame(() => {
+    const el = document.querySelector('#doc-cat-detail [data-key="' + docKey(catId, voceId) + '"]');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.remove('dc-flash'); void el.offsetWidth; el.classList.add('dc-flash');
   });
 }
+function docAggiungi(catId, voceId, sub) { apriModalDocumento(null, { cat: catId, voce: voceId, sub: sub || '' }); }
+function docToggleEspansa(key) {
+  if (docRigheEspanse.has(key)) docRigheEspanse.delete(key); else docRigheEspanse.add(key);
+  renderDocumenti();
+}
+function docVisualizza(id) {
+  const d = (state.documenti || []).find(x => x.id === id);
+  if (d && d.fileDocId) visualizzaFileDaFirestore(d.fileDocId, nomeFileDocumento(d));
+}
+function docScarica(id) {
+  const d = (state.documenti || []).find(x => x.id === id);
+  if (d && d.fileDocId) apriFileDaFirestore(d.fileDocId, nomeFileDocumento(d));
+}
+function docFiltraRegistro(val) { filtroCatDocumento = val || null; renderDocumenti(); }
+function docMostraNonClassificati() {
+  filtroCatDocumento = '__nc';
+  renderDocumenti();
+  const el = document.getElementById('doc-registro');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
-function renderChecklistDocumentale() {
-  const body = document.getElementById('doc-checklist-body');
-  const contatore = document.getElementById('doc-checklist-contatore');
-  if (!body) return;
-  const documenti = state.documenti || [];
-  // Per la visura catastale, "raccolta" richiede tutte e tre le sotto-attese (pre sub 8,
-  // pre sub 9, post-fusione), non solo una qualsiasi — coerente col dettaglio mostrato sotto.
-  const presenti = TIPI_CHECKLIST_DOC.filter(t => t === 'visura-catastale'
-    ? SOTTOATTESE_VISURA_CATASTALE.every(sa => trovaDocumentoSottoattesaVisura(documenti, sa))
-    : documenti.some(d => d.tipo === t));
-  if (contatore) contatore.textContent = `${presenti.length}/${TIPI_CHECKLIST_DOC.length} raccolti`;
+// ══════════════════════════════════════════
+//  Rendering
+// ══════════════════════════════════════════
+const DOC_STATO_LABEL = { ok: 'Presente', parziale: 'Parziale', manca: 'Da raccogliere', na: 'Non applicabile' };
+// Nel cerchio di stato (.dc-st) «parziale» e «da raccogliere» sono disegnati in CSS (mezzo cerchio / cerchio tratteggiato):
+// i glifi Unicode ◐ ○ escono piccoli e sbilanciati nei font di sistema. Il testo resta solo per ✓ e –.
+const DOC_STATO_ICONA = { ok: '✓', parziale: '', manca: '', na: '–' };
+const docIconaChip = st => st === 'ok' ? '✓ ' : '';
 
-  body.innerHTML = TIPI_CHECKLIST_DOC.map(tipo => {
-    const trovati = documenti.filter(d => d.tipo === tipo);
-    const conFile = trovati.some(d => d.fileDocId);
+function htmlDocPill(x, attese) {
+  const d = x.d;
+  const segnaposto = d.statoVerifica === 'mancante';
+  const dataFmt = d.data ? new Date(d.data).toLocaleDateString('it-IT') : '';
+  const att = attese && x.sub ? attese.find(a => a.k === x.sub) : null;
+  const stato = segnaposto ? '<span class="badge badge-danger">Segnaposto: mancante</span>'
+    : (d.statoVerifica === 'da-verificare' ? '<span class="badge badge-amber">Da verificare</span>' : '');
+  const file = d.fileDocId
+    ? `<button type="button" class="dc-ico" title="Visualizza il file" onclick="docVisualizza('${d.id}')">👁</button><button type="button" class="dc-ico" title="Scarica il file" onclick="docScarica('${d.id}')">📎</button>`
+    : (d.posizione ? `<span class="dc-doc-meta" title="Dove si trova">📍 ${escHtml(d.posizione)}</span>` : '<span class="dc-doc-meta">senza file</span>');
+  return `<span class="dc-doc${segnaposto ? ' ph' : ''}">
+    ${att ? `<em>${escHtml(att.l)}</em>` : ''}
+    <span class="dc-doc-name" title="${escHtml(d.nome || '')}">${escHtml(d.nome || '—')}</span>
+    ${dataFmt ? `<span class="dc-doc-meta">${dataFmt}</span>` : ''}
+    ${stato}${file}
+    <button type="button" class="dc-ico" title="Modifica" onclick="apriModalDocumento('${d.id}')">✏️</button>
+  </span>`;
+}
 
-    // La Visura catastale ha un trattamento dedicato: "presente" richiede tutte e tre
-    // le sotto-attese (pre sub 8, pre sub 9, post-fusione), non un documento qualsiasi
-    // di quel tipo — altrimenti la spunta verde in alto sarebbe in contraddizione col
-    // dettaglio sotto, che mostrerebbe ancora sotto-voci mancanti.
-    const presente = tipo === 'visura-catastale'
-      ? SOTTOATTESE_VISURA_CATASTALE.every(sa => trovaDocumentoSottoattesaVisura(documenti, sa))
-      : trovati.length > 0;
+function htmlDocRigaRif(cat, v, idx) {
+  const tc = v.rif[0], tv = v.rif[1];
+  const target = DOC_CAT[tc].voci.find(x => x.id === tv);
+  const s = docStatoVoce(tc, target, idx);
+  return `<div class="dc-row dc-ptr ${s.stato}" data-key="${cat.id}.${v.id}">
+    <div class="dc-st" role="img" aria-label="${DOC_STATO_LABEL[s.stato]}" title="${DOC_STATO_LABEL[s.stato]}">${DOC_STATO_ICONA[s.stato]}</div>
+    <div class="dc-main">
+      <div class="dc-title">${escHtml(v.n)} <span class="dc-tag ${v.t}">${DOC_TAG[v.t]}</span></div>
+      <div class="dc-why">${escHtml(v.w || '')}</div>
+      <div class="dc-att"><span class="dc-chip${s.stato === 'ok' ? ' ok' : (s.stato === 'parziale' ? ' part' : '')}">${docIconaChip(s.stato)}${DOC_STATO_LABEL[s.stato]} in «${escHtml(DOC_CAT[tc].nome)}»</span></div>
+    </div>
+    <div class="dc-actions"><button type="button" class="btn btn-sm" onclick="docVai('${tc}','${tv}')">Vai →</button></div>
+  </div>`;
+}
 
-    const dettaglioVisura = tipo === 'visura-catastale' ? `
-      <div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">
-        ${SOTTOATTESE_VISURA_CATASTALE.map(sa => {
-          const doc = trovaDocumentoSottoattesaVisura(documenti, sa);
-          return `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:${doc?'var(--success)':'var(--text-3)'}">
-            <span>${doc?'✓':'○'}</span><span>${sa.label}</span>
-          </div>`;
-        }).join('')}
-      </div>` : '';
+function htmlDocRiga(cat, v, idx) {
+  if (v.rif) return htmlDocRigaRif(cat, v, idx);
+  const s = docStatoVoce(cat.id, v, idx);
+  const MAXP = 3;
+  const aperta = docRigheEspanse.has(s.key);
+  const visibili = aperta ? s.items : s.items.slice(0, MAXP);
+  const pills = visibili.map(x => htmlDocPill(x, v.at)).join('');
+  const piu = s.items.length > MAXP
+    ? `<button type="button" class="dc-link" onclick="docToggleEspansa('${s.key}')">${aperta ? 'Mostra meno' : 'Mostra tutti (' + s.items.length + ')'}</button>` : '';
+  const chips = s.att
+    ? `<div class="dc-att">${s.att.map(a => `<span class="dc-chip${a.ok ? ' ok' : ''}">${a.ok ? '✓' : '○'} ${escHtml(a.l)}</span>`).join('')}</div>` : '';
+  const auto = s.auto
+    ? `<div class="dc-att"><span class="dc-chip${s.auto.stato === 'ok' ? ' ok' : (s.auto.stato === 'parziale' ? ' part' : '')}">${escHtml(s.auto.testo)}</span><button type="button" class="dc-link" onclick="goTo('${s.auto.vai}')">${escHtml(s.auto.btn)} →</button></div>` : '';
+  const subSug = s.att ? ((s.att.find(a => !a.ok) || {}).k || '') : '';
+  const azioni = s.na
+    ? `<button type="button" class="btn btn-sm" onclick="docToggleNA('${s.key}')">Ripristina</button>`
+    : `<button type="button" class="btn btn-sm${s.stato === 'ok' ? '' : ' btn-primary'}" onclick="docAggiungi('${cat.id}','${v.id}','${subSug}')">+ Aggiungi</button>` +
+      `<button type="button" class="btn btn-sm" title="Segna come non applicabile al mio caso" onclick="docToggleNA('${s.key}')">N/A</button>`;
+  return `<div class="dc-row ${s.stato}" data-key="${s.key}">
+    <div class="dc-st" role="img" aria-label="${DOC_STATO_LABEL[s.stato]}" title="${DOC_STATO_LABEL[s.stato]}">${DOC_STATO_ICONA[s.stato]}</div>
+    <div class="dc-main">
+      <div class="dc-title">${escHtml(v.n)} <span class="dc-tag ${v.t}">${DOC_TAG[v.t]}</span>${s.na ? ' <span class="dc-chip">Non applicabile</span>' : ''}</div>
+      <div class="dc-why">${escHtml(v.w)}</div>
+      ${chips}${auto}
+      ${s.items.length ? `<div class="dc-docs">${pills}${piu}</div>` : ''}
+    </div>
+    <div class="dc-actions">${azioni}</div>
+  </div>`;
+}
 
-    return `<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 18px;border-bottom:0.5px solid var(--border)">
-      <div style="font-size:16px;line-height:1.3;color:${presente?'var(--success)':'var(--text-3)'}">${presente?'✓':'○'}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:${presente?'var(--text)':'var(--text-2)'}">${TIPI_DOCUMENTO[tipo]}</div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:2px">${PERCHE_CHECKLIST_DOC[tipo]||''}</div>
-        ${dettaglioVisura}
-        ${(trovati.length > 0 && !dettaglioVisura) ? `<div style="font-size:11px;color:var(--success);margin-top:3px">${trovati.length} document${trovati.length===1?'o':'i'} registrat${trovati.length===1?'o':'i'}${conFile?' · almeno un file caricato':''}</div>` : ''}
+function htmlDocCategoria(cat, idx, riep) {
+  const r = riep.cats[cat.id];
+  let h = `<div class="card-header dc-head">
+      <div>
+        <span class="card-title">${escHtml(cat.nome)}</span>
+        <span class="dc-head-sub">${escHtml(cat.sub)}</span>
       </div>
-      ${trovati.length > 0
-        ? `<div class="flex-gap" style="gap:6px">
-             <button class="btn btn-sm" onclick="filtroTipoDocumento='${tipo}';renderDocumenti();document.getElementById('empty-documenti').scrollIntoView({behavior:'smooth',block:'center'})">Vedi</button>
-             <button class="btn btn-sm btn-primary" onclick="apriModalDocumento(null,'${tipo}')">+ Aggiungi altro</button>
-           </div>`
-        : `<button class="btn btn-sm btn-primary" onclick="apriModalDocumento(null,'${tipo}')">+ Aggiungi</button>`}
-    </div>`;
-  }).join('');
+      <div class="flex-gap dc-head-actions">
+        <span class="dc-head-prog">${r.obOk}/${r.obTot} obbligatori raccolti</span>
+        <button type="button" class="btn btn-sm btn-primary" onclick="docAggiungi('${cat.id}','','')">+ Aggiungi documento</button>
+      </div>
+    </div>
+    <div class="dc-desc">${escHtml(cat.desc)}</div>
+    <div class="dc-legenda"><span class="dc-tag ob">Obbligatorio</span> richiesto per ottenere la detrazione
+      <span class="dc-tag se">Se applicabile</span> dipende dal tuo caso
+      <span class="dc-tag co">Consigliato</span> utile, ma non richiesto</div>`;
+  let gruppo = null;
+  cat.voci.forEach(v => {
+    if (v.g !== gruppo) { gruppo = v.g; h += `<div class="dc-group">${escHtml(v.g)}</div>`; }
+    h += htmlDocRiga(cat, v, idx);
+  });
+  // Documenti della categoria non riconducibili a una voce precisa
+  const altri = idx.byKey[docKey(cat.id, 'altro')] || [];
+  h += `<div class="dc-group">Altri documenti</div>
+    <div class="dc-row altro" data-key="${cat.id}.altro">
+      <div class="dc-st" aria-hidden="true">+</div>
+      <div class="dc-main">
+        <div class="dc-title">Altri documenti di questa categoria</div>
+        <div class="dc-why">Tutto ciò che non rientra nelle voci sopra ma serve a ricostruire la pratica.</div>
+        ${altri.length ? `<div class="dc-docs">${altri.map(x => htmlDocPill(x, null)).join('')}</div>` : ''}
+      </div>
+      <div class="dc-actions"><button type="button" class="btn btn-sm" onclick="docAggiungi('${cat.id}','altro','')">+ Aggiungi</button></div>
+    </div>
+    <div class="dc-foot">Checklist redatta su fonti pubbliche (Agenzia delle Entrate, ENEA, DM 6/8/2020): fai confermare le voci al tecnico e al commercialista prima di farci affidamento.</div>`;
+  return h;
 }
 
 function renderDocumenti() {
-  renderChecklistDocumentale();
-  const documenti = state.documenti || [];
+  const idx = docIndice();
+  const riep = docRiepilogo(idx);
+  const documenti = idx.documenti;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+  // Metriche
+  const verificati = documenti.filter(d => d.statoVerifica === 'verificato').length;
+  set('doc-tot', documenti.length);
+  set('doc-tot-sub', documenti.length ? verificati + ' verificat' + (verificati === 1 ? 'o' : 'i') : 'nessun documento');
+  set('doc-ob-raccolti', riep.obOk + '/' + riep.obTot);
+  set('doc-ob-sub', riep.obTot ? Math.round(100 * riep.obOk / riep.obTot) + '% della checklist' : '');
+  set('doc-da-raccogliere', riep.daRaccogliere);
+  const cr = document.getElementById('doc-card-raccogliere');
+  if (cr) cr.className = 'metric-card ' + (riep.daRaccogliere > 0 ? 'dc-warn' : 'dc-ok');
+  set('doc-da-verificare', documenti.length - verificati);
+  const cv = document.getElementById('doc-card-verificare');
+  if (cv) cv.className = 'metric-card' + (documenti.length - verificati > 0 ? ' dc-warn' : '');
+
+  // Contatore nel menu: documenti registrati (come Computo e Fatture); il dettaglio è nel tooltip
+  const badgeNav = document.getElementById('nav-badge-documenti');
+  if (badgeNav) {
+    badgeNav.textContent = documenti.length;
+    badgeNav.title = documenti.length + ' documenti registrati · ' + riep.daRaccogliere + ' obbligatori ancora da raccogliere';
+  }
+
+  // Avviso documenti da classificare
+  const nc = idx.nonClass.length;
+  const banner = document.getElementById('doc-nc-banner');
+  if (banner) {
+    banner.style.display = nc ? 'block' : 'none';
+    banner.innerHTML = nc ? `<div class="dc-banner"><span><strong>${nc} document${nc === 1 ? 'o' : 'i'} da classificare</strong> — non ${nc === 1 ? 'rientra' : 'rientrano'} in nessuna categoria: aprilo${nc === 1 ? '' : 'li'} e scegli dove va${nc === 1 ? '' : 'nno'}.</span><button type="button" class="btn btn-sm" onclick="docMostraNonClassificati()">Mostra</button></div>` : '';
+  }
+
+  // Navigatore categorie
+  if (!DOC_CAT[docCatCorrente]) docCatCorrente = DOC_CATEGORIE[0].id;
+  const nav = document.getElementById('doc-cat-nav');
+  if (nav) {
+    nav.innerHTML = DOC_CATEGORIE.map(c => {
+      const r = riep.cats[c.id];
+      const pct = r.obTot ? Math.round(100 * r.obOk / r.obTot) : 0;
+      const piena = r.obTot > 0 && r.obOk === r.obTot;
+      return `<button type="button" class="dc-tile${c.id === docCatCorrente ? ' sel' : ''}" onclick="docSelezionaCategoria('${c.id}')" aria-pressed="${c.id === docCatCorrente}">
+        <span class="dc-tile-name">${escHtml(c.nome)}</span>
+        <span class="dc-tile-sub">${escHtml(c.sub)}</span>
+        <span class="dc-tile-prog"><span class="dc-bar${piena ? ' full' : ''}"><i style="width:${pct}%"></i></span><b>${r.obOk}/${r.obTot}</b></span>
+        <span class="dc-tile-docs">${r.nDocs} document${r.nDocs === 1 ? 'o' : 'i'}</span>
+      </button>`;
+    }).join('');
+  }
+  const dettaglio = document.getElementById('doc-cat-detail');
+  if (dettaglio) dettaglio.innerHTML = htmlDocCategoria(DOC_CAT[docCatCorrente], idx, riep);
+
+  // ── Registro completo ──
   const empty = document.getElementById('empty-documenti');
   const table = document.getElementById('tabella-documenti');
   const tbody = document.getElementById('tbody-documenti');
   const cards = document.getElementById('cards-documenti');
-
-  // Statistiche (sempre sul totale, non sul filtro)
-  document.getElementById('doc-tot').textContent = documenti.length;
-  document.getElementById('doc-verificati').textContent = documenti.filter(d=>d.statoVerifica==='verificato').length;
-  document.getElementById('doc-da-verificare').textContent = documenti.filter(d=>d.statoVerifica==='da-verificare').length;
-  document.getElementById('doc-mancanti').textContent = documenti.filter(d=>d.statoVerifica==='mancante').length;
-  const nonVerificati = documenti.filter(d=>d.statoVerifica!=='verificato').length;
-  const badgeNav = document.getElementById('nav-badge-documenti');
-  if (badgeNav) badgeNav.textContent = nonVerificati || 0;
-
-  // Filtri per tipo (solo i tipi effettivamente presenti)
   const filtriEl = document.getElementById('doc-filtri');
-  const tipiPresenti = [...new Set(documenti.map(d=>d.tipo))];
-  if (tipiPresenti.length > 1) {
+  set('doc-registro-contatore', documenti.length ? documenti.length + ' document' + (documenti.length === 1 ? 'o' : 'i') : '');
+
+  const chip = (val, label, n) => `<button type="button" class="btn btn-sm${(filtroCatDocumento || '') === val ? ' btn-primary' : ''}" onclick="docFiltraRegistro('${val}')">${escHtml(label)} (${n})</button>`;
+  if (documenti.length > 0) {
     filtriEl.style.display = 'flex';
-    filtriEl.innerHTML = `<button class="btn btn-sm${!filtroTipoDocumento?' btn-primary':''}" onclick="filtroTipoDocumento=null;renderDocumenti()">Tutti (${documenti.length})</button>` +
-      tipiPresenti.map(t => {
-        const n = documenti.filter(d=>d.tipo===t).length;
-        return `<button class="btn btn-sm${filtroTipoDocumento===t?' btn-primary':''}" onclick="filtroTipoDocumento='${t}';renderDocumenti()">${TIPI_DOCUMENTO[t]||t} (${n})</button>`;
-      }).join('');
+    filtriEl.innerHTML = chip('', 'Tutti', documenti.length) +
+      DOC_CATEGORIE.filter(c => idx.perCat[c.id]).map(c => chip(c.id, c.nome, idx.perCat[c.id])).join('') +
+      (nc ? chip('__nc', 'Da classificare', nc) : '');
   } else {
     filtriEl.style.display = 'none';
     filtriEl.innerHTML = '';
   }
 
-  const filtrati = filtroTipoDocumento ? documenti.filter(d=>d.tipo===filtroTipoDocumento) : documenti;
+  let filtrati = documenti;
+  if (filtroCatDocumento === '__nc') filtrati = idx.nonClass;
+  else if (filtroCatDocumento) filtrati = documenti.filter(d => { const p = docPos(d); return p && p.cat === filtroCatDocumento; });
+  if (filtroCatDocumento && !filtrati.length) { filtroCatDocumento = null; filtrati = documenti; }
 
   if (!filtrati.length) {
     empty.style.display = 'block'; table.style.display = 'none';
@@ -13008,10 +13942,11 @@ function renderDocumenti() {
     const dataFmt = d.data ? new Date(d.data).toLocaleDateString('it-IT') : '—';
     const scadenzaFmt = d.scadenza ? new Date(d.scadenza).toLocaleDateString('it-IT') : '';
     const scaduta = d.scadenza && d.scadenza < oggiStr;
+    const et = docEtichette(d);
     return `<tr>
-      <td><span class="badge badge-gray" style="font-size:10px">${TIPI_DOCUMENTO[d.tipo]||d.tipo}</span></td>
+      <td><span class="badge ${et.nc ? 'badge-amber' : 'badge-gray'}" style="font-size:10px">${escHtml(et.cat)}</span><div class="dc-sub">${escHtml(et.voce.split('(')[0].trim())}</div></td>
       <td>
-        <div style="font-weight:500;font-size:13px">${escHtml(d.nome)}${d.fileDocId?` <a href="#" onclick="visualizzaFileDaFirestore('${d.fileDocId}','${nomeFileDocumento(d)}');return false;" title="Visualizza file allegato" style="text-decoration:none">👁</a> <a href="#" onclick="apriFileDaFirestore('${d.fileDocId}','${nomeFileDocumento(d)}');return false;" title="Scarica file allegato" style="text-decoration:none">📎</a>`:''}</div>
+        <div style="font-weight:500;font-size:13px">${escHtml(d.nome)}${d.fileDocId?` <a href="#" onclick="docVisualizza('${d.id}');return false;" title="Visualizza file allegato" style="text-decoration:none">👁</a> <a href="#" onclick="docScarica('${d.id}');return false;" title="Scarica file allegato" style="text-decoration:none">📎</a>`:''}</div>
         ${d.note ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px">${escHtml(d.note)}</div>` : ''}
       </td>
       <td style="font-size:12px">${d.numero?escHtml(d.numero)+'<br>':''}<span style="color:var(--text-3)">${dataFmt}</span></td>
@@ -13035,11 +13970,12 @@ function renderDocumenti() {
       const scadenzaFmt = d.scadenza ? new Date(d.scadenza).toLocaleDateString('it-IT') : '';
       const scaduta = d.scadenza && d.scadenza < oggiStr;
       const collegamento = descrizioneCollegamentoDoc(d);
+      const et = docEtichette(d);
       return `<div class="entity-card">
         <div class="entity-card-top">
           <div>
             <div class="entity-card-title">${escHtml(d.nome)}</div>
-            <div class="entity-card-sub">${TIPI_DOCUMENTO[d.tipo]||d.tipo} · ${dataFmt}${d.numero?' · '+escHtml(d.numero):''}</div>
+            <div class="entity-card-sub">${escHtml(et.cat)}${et.voce ? ' · ' + escHtml(et.voce) : ''} · ${dataFmt}${d.numero?' · '+escHtml(d.numero):''}</div>
           </div>
         </div>
         <div class="entity-card-badges">
@@ -13047,7 +13983,7 @@ function renderDocumenti() {
           ${scadenzaFmt ? `<span class="badge ${scaduta?'badge-danger':'badge-gray'}">Scad. ${scadenzaFmt}</span>` : ''}
         </div>
         ${collegamento !== '—' ? `<div style="font-size:11px;color:var(--text-3);margin-top:8px">🔗 ${collegamento}</div>` : ''}
-        ${d.fileDocId ? `<div style="font-size:11px;margin-top:4px"><a href="#" onclick="visualizzaFileDaFirestore('${d.fileDocId}','${nomeFileDocumento(d)}');return false;" style="color:var(--accent-text);text-decoration:underline">👁 Visualizza</a> · <a href="#" onclick="apriFileDaFirestore('${d.fileDocId}','${nomeFileDocumento(d)}');return false;" style="color:var(--accent-text);text-decoration:underline">📎 ${escHtml(d.fileName||'Scarica file')}</a></div>` : ''}
+        ${d.fileDocId ? `<div style="font-size:11px;margin-top:4px"><a href="#" onclick="docVisualizza('${d.id}');return false;" style="color:var(--accent-text);text-decoration:underline">👁 Visualizza</a> · <a href="#" onclick="docScarica('${d.id}');return false;" style="color:var(--accent-text);text-decoration:underline">📎 ${escHtml(d.fileName||'Scarica file')}</a></div>` : ''}
         ${d.posizione ? `<div style="font-size:11px;color:var(--text-3);margin-top:4px">📍 ${escHtml(d.posizione)}</div>` : ''}
         ${d.note ? `<div style="font-size:11px;color:var(--text-3);margin-top:4px">${escHtml(d.note)}</div>` : ''}
         <div class="entity-card-actions">
@@ -13100,6 +14036,41 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   });
 });
+</script>
+<script>
+// Selettore tema: disegna le opzioni da window.TEMI (definito nello <head>) e applica la scelta
+(function () {
+  var box = document.getElementById('theme-picker');
+  if (!box || !window.TEMI) return;
+  function layer(t, cls) {
+    return '<span class="sw-layer ' + (cls || '') + '" style="--sw-bg:' + t.bg + ';--sw-surface:' + t.surface + ';--sw-text:' + t.text + ';--sw-accent:' + t.accent + ';--sw-nav:' + t.nav + '">' +
+           '<span class="sw-nav"></span><span class="sw-main"><span class="sw-card"><span class="sw-pill"></span><span class="sw-line"></span></span></span></span>';
+  }
+  function swatch(id) {
+    if (id === 'auto') return '<span class="theme-swatch">' + layer(window.TEMI.light, 'sw-l') + layer(window.TEMI.dark, 'sw-d') + '</span>';
+    return '<span class="theme-swatch">' + layer(window.TEMI[id]) + '</span>';
+  }
+  box.innerHTML = Object.keys(window.TEMI).map(function (id) {
+    var t = window.TEMI[id];
+    return '<label class="theme-opt" data-tema="' + id + '">' +
+      '<input type="radio" name="tema" value="' + id + '" aria-label="' + t.label + ' — ' + t.desc + '">' +
+      swatch(id) +
+      '<span class="theme-name">' + t.label + '</span><span class="theme-desc">' + t.desc + '</span></label>';
+  }).join('');
+  function sync() {
+    var cur = window.temaCorrente();
+    box.querySelectorAll('.theme-opt').forEach(function (l) {
+      var on = l.getAttribute('data-tema') === cur;
+      l.classList.toggle('sel', on);
+      l.querySelector('input').checked = on;
+    });
+  }
+  box.addEventListener('change', function (e) {
+    if (e.target && e.target.name === 'tema') window.applicaTema(e.target.value, true);
+  });
+  document.addEventListener('tema-cambiato', sync);
+  sync();
+})();
 </script>
 </body>
 </html>
