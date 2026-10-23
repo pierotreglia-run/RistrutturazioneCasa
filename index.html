@@ -2610,7 +2610,7 @@
           Allocazione voci di spesa
           <span id="agev-alloc-arrow" style="font-size:11px;color:var(--text-3);margin-left:8px">▼</span>
         </span>
-        <span style="font-size:11px;color:var(--text-3)">Base: imponibile + IVA 10%</span>
+        <span style="font-size:11px;color:var(--text-3)">Base: imponibile + IVA 10% · la colonna Nota finisce nell'Excel per il commercialista</span>
       </div>
       <div id="agev-allocazione-body">
         <div class="empty-state">
@@ -5218,6 +5218,7 @@ async function eseguiImportCSV(modalita) {
     agevState.allocazioni = {};
     state.agevSplit = {};
     agevState.split = {};
+    state.agevNote = {}; // le note per voce puntano a ID non più esistenti
     // Le voci vecchie non esistono più: elimina anche i collegamenti a fatture che le riguardavano
     const idVociNuove = new Set(csvParsed.map(v => v.id));
     state.collegamenti = (state.collegamenti || []).filter(c => idVociNuove.has(c.voceId));
@@ -7362,6 +7363,15 @@ function renderAllocazioneVoci(voci, vociPerCont, vociProQuota) {
         <span style="font-size:10px;color:var(--text-3)">% PDC</span>
         ${splitVal > 0 ? `<span style="font-size:10px;color:var(--accent-text);margin-left:2px">${formatEur(splitImporto)}</span>` : ''}
       </div>`;
+    const _spN = agevState.split[v.id] || 0;
+    const notaCell = `
+      <div style="display:flex;gap:4px;align-items:flex-start">
+        <textarea rows="2" data-nota-id="${v.id}" placeholder="Nessuna nota" title="Nota per l'Excel del commercialista (colonna «Note — criterio di allocazione»)"
+          style="flex:1;font-size:11px;padding:4px 6px;min-height:42px;resize:vertical;line-height:1.35"
+          onchange="cambiaNota('${v.id}',this.value)">${escHtml(notaVoce(v, allocCorrente, _spN))}</textarea>
+        <button type="button" class="btn btn-sm" data-nota-reset="${v.id}" title="Ripristina la nota automatica"
+          style="padding:2px 6px;${haNotaPersonalizzata(v) ? '' : 'display:none'}" onclick="ripristinaNota('${v.id}')">↺</button>
+      </div>`;
     return `<tr style="${opacita}transition:opacity 0.2s">
       <td style="font-size:11px;color:var(--text-3)">${escHtml(v.numero||'')}</td>
       <td style="font-size:12px">${escHtml(v.descrizione)}</td>
@@ -7374,16 +7384,18 @@ function renderAllocazioneVoci(voci, vociPerCont, vociProQuota) {
         ${isDefault ? '<span style="font-size:10px;color:var(--text-3);margin-left:4px">auto</span>' : ''}
       </td>
       <td>${splitCell}</td>
+      <td>${notaCell}</td>
     </tr>`;
   }).join('');
 
   body.innerHTML = filtroHeader + alertACS + `<table>
     <thead><tr>
       <th style="width:4%">N°</th>
-      <th style="width:42%">Descrizione</th>
-      <th class="text-right" style="width:14%">Imponibile+IVA</th>
-      <th style="width:24%">Contenitore agevolazione</th>
-      <th style="width:16%">Quota PDC/ACS</th>
+      <th style="width:27%">Descrizione</th>
+      <th class="text-right" style="width:11%">Imponibile+IVA</th>
+      <th style="width:16%">Contenitore agevolazione</th>
+      <th style="width:14%">Quota PDC/ACS</th>
+      <th style="width:28%">Nota per Excel</th>
     </tr></thead>
     <tbody>${righe}</tbody>
   </table>
@@ -7416,9 +7428,82 @@ function renderAllocazioneVoci(voci, vociPerCont, vociProQuota) {
             <span class="alloc-card-split-info">% → ${splitVal > 0 ? `<strong>${formatEur(splitImporto)}</strong> in Eco Climatizzazione` : 'nessuno spostamento'}</span>
           </div>
         </div>
+        <div class="alloc-card-field">
+          <label>Nota per Excel commercialista</label>
+          <textarea rows="3" data-nota-id="${v.id}" placeholder="Nessuna nota" style="width:100%;font-size:12px;padding:6px 8px;resize:vertical"
+            onchange="cambiaNota('${v.id}',this.value)">${escHtml(notaVoce(v, allocCorrente, splitVal))}</textarea>
+          <button type="button" class="btn btn-sm" data-nota-reset="${v.id}" style="margin-top:4px;${haNotaPersonalizzata(v) ? '' : 'display:none'}" onclick="ripristinaNota('${v.id}')">↺ Ripristina nota automatica</button>
+        </div>
       </div>`;
     }).join('')}
   </div>`;
+}
+
+// ══════════════════════════════════════════
+//  NOTE PER L'EXCEL COMMERCIALISTA (colonna "Note — criterio di allocazione")
+//  Testo automatico di default, sovrascrivibile voce per voce dall'utente.
+//  state.agevNote[idVoce] = testo personalizzato ('' = nessuna nota in Excel).
+//  Se la chiave non esiste, nell'Excel finisce il testo automatico.
+// ══════════════════════════════════════════
+const NOTE_ACCESSORIO_DEFAULT = {
+  '6':  'Smontaggio infissi esistenti: opera preparatoria alla sostituzione, accessoria a Ecobonus Infissi.',
+  '20': 'Controsoffitto funzionale alle canalizzazioni dell\'impianto: accessorio a Ecobonus Isolamento.',
+  '21': 'Isolamento termico dell\'intradosso solaio: intervento diretto di Ecobonus Isolamento.',
+  '31': 'Soglie/davanzali in pietra: opera accessoria alla sostituzione infissi (Ecobonus Infissi).',
+  '32': 'Posa soglie/davanzali: opera accessoria alla sostituzione infissi (Ecobonus Infissi).',
+  '35': 'Infissi PVC a taglio termico: intervento diretto di riqualificazione energetica (Ecobonus Infissi).'
+};
+
+function allocazioneVoce(v) {
+  return (agevState.allocazioni && agevState.allocazioni[v.id]) || MAPPA_DEFAULT[v.numero] || 'br';
+}
+
+function notaDefaultVoce(v, alloc, sp) {
+  if (alloc === 'non-detraibile') return 'Spesa non riconducibile a nessuna agevolazione fiscale.';
+  if (alloc === 'pro-quota') return 'Spesa generale di cantiere non riferibile a un intervento specifico (es. bagno chimico, ponteggi, smaltimenti). Ripartita in proporzione al peso di ciascun contenitore sul totale già allocato.';
+  if (sp > 0) {
+    if (v.numero === '36') return 'Quota stimata dell\'impianto elettrico dedicata all\'alimentazione della pompa di calore (linea dedicata, magnetotermico). Il resto è impianto elettrico generale non specificamente legato alla PDC.';
+    if (v.numero === '37') return 'Quota stimata per tubazioni ACS, collettori, circolatori e coibentazioni della pompa di calore. Il resto è impianto idrico/fognario generico non specificamente legato alla PDC.';
+    return 'Quota allocata a Ecobonus Climatizzazione secondo lo split configurato in app; il resto resta nell\'allocazione base.';
+  }
+  return NOTE_ACCESSORIO_DEFAULT[v.numero] || '';
+}
+
+function haNotaPersonalizzata(v) {
+  return !!state.agevNote && Object.prototype.hasOwnProperty.call(state.agevNote, v.id);
+}
+
+// Nota effettiva per la voce: personalizzata se presente, altrimenti automatica
+function notaVoce(v, alloc, sp) {
+  return haNotaPersonalizzata(v) ? state.agevNote[v.id] : notaDefaultVoce(v, alloc, sp);
+}
+
+function _aggiornaUiNota(v, testo, personalizzata) {
+  document.querySelectorAll('[data-nota-id="' + v.id + '"]').forEach(el => { if (el.value !== testo) el.value = testo; });
+  document.querySelectorAll('[data-nota-reset="' + v.id + '"]').forEach(el => { el.style.display = personalizzata ? '' : 'none'; });
+}
+
+function cambiaNota(voceid, valore) {
+  const v = (state.voci || []).find(x => x.id === voceid);
+  if (!v) return;
+  if (!state.agevNote) state.agevNote = {};
+  const alloc = allocazioneVoce(v);
+  const sp = (agevState.split && agevState.split[v.id]) || 0;
+  const testo = String(valore || '').trim();
+  if (testo === notaDefaultVoce(v, alloc, sp)) delete state.agevNote[v.id]; // uguale all'automatica → torna in auto
+  else state.agevNote[v.id] = testo;                                           // anche '' = nessuna nota in Excel
+  salvaStato();
+  _aggiornaUiNota(v, notaVoce(v, alloc, sp), haNotaPersonalizzata(v));
+}
+
+function ripristinaNota(voceid) {
+  const v = (state.voci || []).find(x => x.id === voceid);
+  if (!v) return;
+  if (state.agevNote) delete state.agevNote[v.id];
+  salvaStato();
+  const alloc = allocazioneVoce(v);
+  const sp = (agevState.split && agevState.split[v.id]) || 0;
+  _aggiornaUiNota(v, notaDefaultVoce(v, alloc, sp), false);
 }
 
 function cambiaSplit(voceid, valore) {
@@ -11539,14 +11624,7 @@ async function _buildExcelCommercialista() {
 
   // ── Calcoli (identici alla logica app, ma con righe ESPANSE invece di colonne nascoste:
   //    ogni euro allocato ha una riga Excel propria e visibile, con nota che spiega il criterio) ──
-  const NOTE_ACCESSORIO = {
-    '6':  'Smontaggio infissi esistenti: opera preparatoria alla sostituzione, accessoria a Ecobonus Infissi.',
-    '20': 'Controsoffitto funzionale alle canalizzazioni dell\'impianto: accessorio a Ecobonus Isolamento.',
-    '21': 'Isolamento termico dell\'intradosso solaio: intervento diretto di Ecobonus Isolamento.',
-    '31': 'Soglie/davanzali in pietra: opera accessoria alla sostituzione infissi (Ecobonus Infissi).',
-    '32': 'Posa soglie/davanzali: opera accessoria alla sostituzione infissi (Ecobonus Infissi).',
-    '35': 'Infissi PVC a taglio termico: intervento diretto di riqualificazione energetica (Ecobonus Infissi).'
-  };
+  // Le note per voce vengono da notaVoce(): testo personalizzato (state.agevNote) oppure automatico.
   const CONTAINER_ORDER = ['br','eco-iso','eco-inf','eco-pdc'];
   const totCont = { br: 0, 'eco-iso': 0, 'eco-inf': 0, 'eco-pdc': 0 };
   const righeVoci = [];
@@ -11563,7 +11641,7 @@ async function _buildExcelCommercialista() {
       return; // espansa al passo successivo, quando le quote di riparto sono note
     }
     if (alloc === 'non-detraibile') {
-      righeVoci.push({ n: v.numero, desc: v.descrizione, impLordo: v.imponibile, impNetto: impNettoTot, iva: impNettoTot*0.10, base: baseTot, alloc: 'Non detraibile', nota: 'Spesa non riconducibile a nessuna agevolazione fiscale.', tipo: 'non-detraibile' });
+      righeVoci.push({ n: v.numero, desc: v.descrizione, impLordo: v.imponibile, impNetto: impNettoTot, iva: impNettoTot*0.10, base: baseTot, alloc: 'Non detraibile', nota: notaVoce(v, alloc, 0), tipo: 'non-detraibile' });
       return;
     }
 
@@ -11576,19 +11654,15 @@ async function _buildExcelCommercialista() {
       totCont['eco-pdc'] += quotaPdcBase;
       if (totCont[alloc] !== undefined) totCont[alloc] += quotaRestoBase;
 
-      const notaSplit = v.numero === '36'
-        ? `Quota stimata dell'impianto elettrico dedicata all'alimentazione della pompa di calore (linea dedicata, magnetotermico). Il resto è impianto elettrico generale non specificamente legato alla PDC.`
-        : v.numero === '37'
-        ? `Quota stimata per tubazioni ACS, collettori, circolatori e coibentazioni della pompa di calore. Il resto è impianto idrico/fognario generico non specificamente legato alla PDC.`
-        : `Quota allocata a Ecobonus Climatizzazione secondo lo split configurato in app; il resto resta nell'allocazione base.`;
+      const notaSplit = notaVoce(v, alloc, sp);
 
       righeVoci.push({
-        n: v.numero, desc: `${v.descrizione} — quota ${(100-sp).toFixed(0)}% (${LABEL_CONT[alloc]||alloc})`,
+        n: v.numero, desc: `${v.descrizione} — quota ${String(+(100-sp).toFixed(1)).replace('.',',')}% (${LABEL_CONT[alloc]||alloc})`,
         impLordo: quotaRestoLordo, impNetto: quotaRestoLordo*fs, iva: quotaRestoLordo*fs*0.10, base: quotaRestoBase,
         alloc: LABEL_CONT[alloc] || alloc, nota: notaSplit, tipo: 'split'
       });
       righeVoci.push({
-        n: v.numero, desc: `${v.descrizione} — quota ${sp}% (Ecobonus Climatizzazione)`,
+        n: v.numero, desc: `${v.descrizione} — quota ${String(sp).replace('.',',')}% (Ecobonus Climatizzazione)`,
         impLordo: quotaPdcLordo, impNetto: quotaPdcLordo*fs, iva: quotaPdcLordo*fs*0.10, base: quotaPdcBase,
         alloc: LABEL_CONT['eco-pdc'], nota: notaSplit, tipo: 'split'
       });
@@ -11596,7 +11670,7 @@ async function _buildExcelCommercialista() {
       if (totCont[alloc] !== undefined) totCont[alloc] += baseTot;
       righeVoci.push({
         n: v.numero, desc: v.descrizione, impLordo: v.imponibile, impNetto: impNettoTot, iva: impNettoTot*0.10, base: baseTot,
-        alloc: LABEL_CONT[alloc] || alloc, nota: NOTE_ACCESSORIO[v.numero] || '', tipo: 'normale'
+        alloc: LABEL_CONT[alloc] || alloc, nota: notaVoce(v, alloc, 0), tipo: 'normale'
       });
     }
   });
@@ -11614,10 +11688,12 @@ async function _buildExcelCommercialista() {
       totCont[k] += quotaBase;
       const quotaLordo = v.imponibile * ratioPQ[k];
       righeVoci.push({
-        n: v.numero, desc: `${v.descrizione} — quota ${LABEL_CONT[k]} (${(ratioPQ[k]*100).toFixed(1)}%)`,
+        n: v.numero, desc: `${v.descrizione} — quota ${LABEL_CONT[k]} (${(ratioPQ[k]*100).toFixed(1).replace('.',',')}%)`,
         impLordo: quotaLordo, impNetto: impNettoTot*ratioPQ[k], iva: impNettoTot*ratioPQ[k]*0.10, base: quotaBase,
         alloc: LABEL_CONT[k],
-        nota: `Spesa generale di cantiere non riferibile a un intervento specifico (es. bagno chimico, ponteggi, smaltimenti). Ripartita in proporzione al peso di ciascun contenitore sul totale già allocato (${(ratioPQ[k]*100).toFixed(1)}% del totale ante-onorari va a ${LABEL_CONT[k]}).`,
+        nota: haNotaPersonalizzata(v)
+          ? state.agevNote[v.id]
+          : `${notaDefaultVoce(v, 'pro-quota', 0)} Quota assegnata a ${LABEL_CONT[k]}: ${(ratioPQ[k]*100).toFixed(1).replace('.',',')}% del totale ante-onorari.`,
         tipo: 'pro-quota'
       });
     });
